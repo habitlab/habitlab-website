@@ -24,6 +24,10 @@
   app.get('/addsignup', function(req, res){
     var email;
     email = req.query.email;
+    if (email == null) {
+      res.send('need email parameter');
+      return;
+    }
     return getSignupsCollection(function(signups){
       return signups.insertOne(req.query, {}, function(err, result){
         res.send('done adding ' + email);
@@ -33,6 +37,10 @@
   app.post('/addsignup', function(req, res){
     var email;
     email = req.body.email;
+    if (email == null) {
+      res.send('need email parameter');
+      return;
+    }
     return getSignupsCollection(function(signups){
       return signups.insertOne(req.body, {}, function(err, result){
         res.send('done adding ' + email);

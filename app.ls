@@ -25,6 +25,9 @@ app.set 'port', port
 
 app.get '/addsignup', (req, res) ->
   {email} = req.query
+  if not email?
+    res.send 'need email parameter'
+    return
   signups <- getSignupsCollection()
   err,result <- signups.insertOne req.query, {}
   res.send('done adding ' + email)
@@ -32,6 +35,9 @@ app.get '/addsignup', (req, res) ->
 
 app.post '/addsignup', (req, res) ->
   {email} = req.body
+  if not email?
+    res.send 'need email parameter'
+    return
   signups <- getSignupsCollection()
   err,result <- signups.insertOne req.body, {}
   res.send('done adding ' + email)
