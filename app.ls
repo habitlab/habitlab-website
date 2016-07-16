@@ -7,6 +7,7 @@ require! {
   'koa-router'
   'koa-logger'
   'koa-bodyparser'
+  'monk'
 }
 
 kapp = koa()
@@ -14,26 +15,18 @@ kapp.use(koa-logger())
 kapp.use(koa-bodyparser())
 app = koa-router()
 
-
-{MongoClient} = require 'mongodb'
 {cfy, cfy_node, yfy_node} = require 'cfy'
 
-get_db = cfy ->*
-  mongourl = process.env.MONGODB_URI ? 'mongodb://localhost:27017/default'
-  db = yield -> MongoClient.connect mongourl, it
-  return db
-
-get_signups_collection = cfy ->*
-  db = yield get_db()
-  return db.collection('signups')
+mongourl = process.env.MONGODB_URI ? 'mongodb://localhost:27017/default'
+db = monk(mongourl)
+signups = db.get 'signups'
 
 app.get '/addsignup', ->*
   {email} = this.request.query
   if not email?
     this.body = 'need email parameter'
     return
-  signups = yield get_signups_collection()
-  result = yield -> signups.insertOne(this.request.query, {}, it)
+  result = yield signups.insert(this.request.query)
   this.body = 'done adding ' + email
 
 app.post '/addsignup', ->*
@@ -41,13 +34,11 @@ app.post '/addsignup', ->*
   if not email?
     this.body = 'need email parameter'
     return
-  signups = yield get_signups_collection()
-  result = yield -> signups.insertOne(this.request.body, {}, it)
+  result = yield signups.insert(this.request.body)
   this.body = 'done adding ' + email
 
 app.get '/getsignups', ->*
-  signups = yield get_signups_collection()
-  all_results = yield -> signups.find({}).toArray(it)
+  all_results = yield signups.find({})
   this.body = JSON.stringify([x.email for x in all_results])
 
 app.get '/addlog', ->*

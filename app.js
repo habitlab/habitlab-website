@@ -1,5 +1,5 @@
 (function(){
-  var koa, koaStatic, koaRouter, koaLogger, koaBodyparser, kapp, app, MongoClient, ref$, cfy, cfy_node, yfy_node, get_db, get_signups_collection, port;
+  var koa, koaStatic, koaRouter, koaLogger, koaBodyparser, monk, kapp, app, ref$, cfy, cfy_node, yfy_node, mongourl, db, signups, port;
   process.on('unhandledRejection', function(reason, p){
     throw new Error(reason);
   });
@@ -8,57 +8,38 @@
   koaRouter = require('koa-router');
   koaLogger = require('koa-logger');
   koaBodyparser = require('koa-bodyparser');
+  monk = require('monk');
   kapp = koa();
   kapp.use(koaLogger());
   kapp.use(koaBodyparser());
   app = koaRouter();
-  MongoClient = require('mongodb').MongoClient;
   ref$ = require('cfy'), cfy = ref$.cfy, cfy_node = ref$.cfy_node, yfy_node = ref$.yfy_node;
-  get_db = cfy(function*(){
-    var mongourl, ref$, db;
-    mongourl = (ref$ = process.env.MONGODB_URI) != null ? ref$ : 'mongodb://localhost:27017/default';
-    db = (yield function(it){
-      return MongoClient.connect(mongourl, it);
-    });
-    return db;
-  });
-  get_signups_collection = cfy(function*(){
-    var db;
-    db = (yield get_db());
-    return db.collection('signups');
-  });
+  mongourl = (ref$ = process.env.MONGODB_URI) != null ? ref$ : 'mongodb://localhost:27017/default';
+  db = monk(mongourl);
+  signups = db.get('signups');
   app.get('/addsignup', function*(){
-    var email, signups, result;
+    var email, result;
     email = this.request.query.email;
     if (email == null) {
       this.body = 'need email parameter';
       return;
     }
-    signups = (yield get_signups_collection());
-    result = (yield function(it){
-      return signups.insertOne(this.request.query, {}, it);
-    });
+    result = (yield signups.insert(this.request.query));
     return this.body = 'done adding ' + email;
   });
   app.post('/addsignup', function*(){
-    var email, signups, result;
+    var email, result;
     email = this.request.body.email;
     if (email == null) {
       this.body = 'need email parameter';
       return;
     }
-    signups = (yield get_signups_collection());
-    result = (yield function(it){
-      return signups.insertOne(this.request.body, {}, it);
-    });
+    result = (yield signups.insert(this.request.body));
     return this.body = 'done adding ' + email;
   });
   app.get('/getsignups', function*(){
-    var signups, all_results, x;
-    signups = (yield get_signups_collection());
-    all_results = (yield function(it){
-      return signups.find({}).toArray(it);
-    });
+    var all_results, x;
+    all_results = (yield signups.find({}));
     return this.body = JSON.stringify((yield* (function*(){
       var i$, ref$, len$, results$ = [];
       for (i$ = 0, len$ = (ref$ = all_results).length; i$ < len$; ++i$) {
