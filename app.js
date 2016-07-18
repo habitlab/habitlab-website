@@ -1,5 +1,5 @@
 (function(){
-  var koa, koaStatic, koaRouter, koaLogger, koaBodyparser, monk, kapp, app, ref$, cfy, cfy_node, yfy_node, mongourl, db, signups, port;
+  var koa, koaStatic, koaRouter, koaLogger, koaBodyparser, koaJsonp, monk, kapp, app, ref$, cfy, cfy_node, yfy_node, mongourl, db, signups, port;
   process.on('unhandledRejection', function(reason, p){
     throw new Error(reason);
   });
@@ -8,8 +8,10 @@
   koaRouter = require('koa-router');
   koaLogger = require('koa-logger');
   koaBodyparser = require('koa-bodyparser');
+  koaJsonp = require('koa-jsonp');
   monk = require('monk');
   kapp = koa();
+  kapp.use(koaJsonp());
   kapp.use(koaLogger());
   kapp.use(koaBodyparser());
   app = koaRouter();

@@ -7,10 +7,12 @@ require! {
   'koa-router'
   'koa-logger'
   'koa-bodyparser'
+  'koa-jsonp'
   'monk'
 }
 
 kapp = koa()
+kapp.use(koa-jsonp())
 kapp.use(koa-logger())
 kapp.use(koa-bodyparser())
 app = koa-router()
