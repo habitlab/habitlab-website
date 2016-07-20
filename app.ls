@@ -32,16 +32,16 @@ list_collections = cfy ->*
   collections_list = yield -> ndb.listCollections().toArray(it)
   return collections_list.map (.name)
 
-list_intervention_log_collections_for_user = cfy (userid) ->*
-  all_collections = list_collections()
-  return all_collections.filter -> it.startsWith("interventionlog_#{userid}_")
+list_log_collections_for_user = cfy (userid) ->*
+  all_collections = yield list_collections()
+  return all_collections.filter -> it.startsWith("#{userid}_")
 
-list_intervention_log_collections_for_intervention = cfy (intervention) ->*
-  all_collections = list_collections()
-  return all_collections.filter -> it.startsWith("interventionlog_") and it.endsWith("_#{intervention_name}")
+list_log_collections_for_logname = cfy (logname) ->*
+  all_collections = yield list_collections()
+  return all_collections.filter -> it.endsWith("_#{logname}")
 
-get_intervention_logs_for_user = (userid, intervention_name) ->
-  return db.get "interventionlogs_#{userid}_#{intervention_name}"
+get_collection_for_user_and_logname = (userid, logname) ->
+  return db.get "#{userid}_#{logname}"
 
 app.get '/addsignup', ->*
   this.type = 'json'
@@ -66,30 +66,59 @@ app.get '/getsignups', ->*
   all_results = yield signups.find({})
   this.body = JSON.stringify([x.email for x in all_results])
 
-app.get '/get_logs_for_user', ->*
+app.get '/list_logs_for_user', ->*
   this.type = 'json'
-  {userid} = this.request.body
+  {userid} = this.request.query
   if not userid?
     this.body = JSON.stringify {response: 'error', error: 'need parameter userid'}
     return
-  user_collections = yield list_intervention_log_collections_for_user(userid)
+  user_collections = yield list_log_collections_for_user(userid)
   this.body = JSON.stringify user_collections
+
+app.get '/list_logs_for_logname', ->*
+  this.type = 'json'
+  {logname} = this.request.query
+  if not logname?
+    this.body = JSON.stringify {response: 'error', error: 'need parameter logname'}
+    return
+  user_collections = yield list_log_collections_for_logname(logname)
+  this.body = JSON.stringify user_collections
+
+app.get '/printcollection', ->*
+  {collection, userid, logname} = this.request.query
+  if userid? and logname?
+    collection = "#{userid}_#{logname}"
+  if not collection?
+    this.body = JSON.stringify {response: 'error', error: 'need paramter collection'}
+  collection_name = collection
+  collection = db.get collection_name
+  items = yield collection.find({})
+  this.body = JSON.stringify items
 
 app.get '/listcollections', ->*
   this.type = 'json'
   this.body = JSON.stringify yield list_collections()
 
-app.post '/add_intervention_log', ->*
+app.post '/addtolog', ->*
   this.type = 'json'
-  {userid, intervention} = this.request.body
+  {userid, logname, itemid} = this.request.body
   if not userid?
     this.body = JSON.stringify {response: 'error', error: 'need parameter userid'}
     return
-  if not intervention?
-    this.body = JSON.stringify {response: 'error', error: 'need parameter intervention'}
+  if not logname?
+    this.body = JSON.stringify {response: 'error', error: 'need parameter logname'}
     return
-  this.body = JSON.stringify {response: 'error', error: 'not yet implemented'}
-  #this.body = JSON.stringify {response: 'success', success: true}
+  if not itemid?
+    this.body = JSON.stringify {response: 'error', error: 'need parameter itemid'}
+    return
+  if itemid.length != 24
+    this.body = JSON.stringify {response: 'error', error: 'itemid length needs to be 24'}
+    return
+  collection = get_collection_for_user_and_logname(userid, logname)
+  this.request.body._id = monk.id itemid
+  yield collection.insert this.request.body
+  #this.body = JSON.stringify {response: 'error', error: 'not yet implemented'}
+  this.body = JSON.stringify {response: 'success', success: true}
 
 kapp.use(app.routes())
 kapp.use(app.allowedMethods())
