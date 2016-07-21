@@ -99,6 +99,21 @@ app.get '/listcollections', ->*
   this.type = 'json'
   this.body = JSON.stringify yield list_collections()
 
+app.post '/sync_collection_item', ->*
+  this.type = 'json'
+  {userid, collection} = this.request.body
+  collection_name = collection
+  if not userid?
+    this.body = JSON.stringify {response: 'error', error: 'need parameter userid'}
+    return
+  if not collection_name?
+    this.body = JSON.stringify {response: 'error', error: 'need parameter collection'}
+    return
+  collection = get_collection_for_user_and_logname(userid, 'synced/' + collection_name)
+  yield collection.insert this.request.body
+  #this.body = JSON.stringify {response: 'error', error: 'not yet implemented'}
+  this.body = JSON.stringify {response: 'success', success: true}
+
 app.post '/addtolog', ->*
   this.type = 'json'
   {userid, logname, itemid} = this.request.body

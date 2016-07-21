@@ -148,6 +148,32 @@
     this.type = 'json';
     return this.body = JSON.stringify((yield list_collections()));
   });
+  app.post('/sync_collection_item', function*(){
+    var ref$, userid, collection, collection_name;
+    this.type = 'json';
+    ref$ = this.request.body, userid = ref$.userid, collection = ref$.collection;
+    collection_name = collection;
+    if (userid == null) {
+      this.body = JSON.stringify({
+        response: 'error',
+        error: 'need parameter userid'
+      });
+      return;
+    }
+    if (collection_name == null) {
+      this.body = JSON.stringify({
+        response: 'error',
+        error: 'need parameter collection'
+      });
+      return;
+    }
+    collection = get_collection_for_user_and_logname(userid, 'synced/' + collection_name);
+    (yield collection.insert(this.request.body));
+    return this.body = JSON.stringify({
+      response: 'success',
+      success: true
+    });
+  });
   app.post('/addtolog', function*(){
     var ref$, userid, logname, itemid, collection;
     this.type = 'json';
