@@ -66,9 +66,7 @@ app.get '/getactiveusers' ->*
     entry_parts = entry.split('_')
     userid = entry_parts[0]
     logname = entry_parts[1 to].join('_')
-    if logname.startsWith('synced/')
-      continue
-    if logname.startsWith('facebook/')
+    if logname.startsWith('facebook:')
     #if entry.indexOf("logs/interventions") > -1 #filter to check if data gotten today
     #see if intervention latest timestamp was today
       collection = db.get entry
@@ -78,7 +76,7 @@ app.get '/getactiveusers' ->*
         if not users_set[userid]?
           users.push userid
           users_set[userid] = true
-  this.body = JSON.stringify users  
+  this.body = JSON.stringify users
   return
 
 app.post '/addsignup', ->*
@@ -138,7 +136,7 @@ app.post '/sync_collection_item', ->*
   if not collection_name?
     this.body = JSON.stringify {response: 'error', error: 'need parameter collection'}
     return
-  collection = get_collection_for_user_and_logname(userid, 'synced/' + collection_name)
+  collection = get_collection_for_user_and_logname(userid, 'synced:' + collection_name)
   yield collection.insert this.request.body
   #this.body = JSON.stringify {response: 'error', error: 'not yet implemented'}
   this.body = JSON.stringify {response: 'success', success: true}
@@ -146,6 +144,7 @@ app.post '/sync_collection_item', ->*
 app.post '/addtolog', ->*
   this.type = 'json'
   {userid, logname, itemid} = this.request.body
+  logname = logname.split('/').join(':')
   if not userid?
     this.body = JSON.stringify {response: 'error', error: 'need parameter userid'}
     return

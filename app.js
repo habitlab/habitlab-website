@@ -85,10 +85,7 @@
       entry_parts = entry.split('_');
       userid = entry_parts[0];
       logname = slice$.call(entry_parts, 1).join('_');
-      if (logname.startsWith('synced/')) {
-        continue;
-      }
-      if (logname.startsWith('facebook/')) {
+      if (logname.startsWith('facebook:')) {
         collection = db.get(entry);
         all_items = (yield collection.find({}, ["timestamp"]));
         timestamp = prelude.maximum(all_items.map(fn$));
@@ -203,7 +200,7 @@
       });
       return;
     }
-    collection = get_collection_for_user_and_logname(userid, 'synced/' + collection_name);
+    collection = get_collection_for_user_and_logname(userid, 'synced:' + collection_name);
     (yield collection.insert(this.request.body));
     return this.body = JSON.stringify({
       response: 'success',
@@ -214,6 +211,7 @@
     var ref$, userid, logname, itemid, collection;
     this.type = 'json';
     ref$ = this.request.body, userid = ref$.userid, logname = ref$.logname, itemid = ref$.itemid;
+    logname = logname.split('/').join(':');
     if (userid == null) {
       this.body = JSON.stringify({
         response: 'error',
