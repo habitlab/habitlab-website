@@ -70,15 +70,17 @@
     });
   });
   app.get('/hello', function*(){
-    var users, collections, i$, len$, entry, collection, timestamp;
+    var users, now, secs_in_day, collections, i$, len$, entry, collection, timestamp;
     users = [];
+    now = Date.now();
+    secs_in_day = 86400000;
     collections = (yield list_collections());
     for (i$ = 0, len$ = collections.length; i$ < len$; ++i$) {
       entry = collections[i$];
       if (entry.indexOf("logs/interventions") > -1) {
         collection = db.get(entry);
         timestamp = (yield collection.findOne({}, ["timestamp", "userid"]));
-        users.push(timestamp);
+        users.push(timestamp["timestamp"]);
       }
     }
     this.body = JSON.stringify(users);

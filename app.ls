@@ -54,6 +54,8 @@ app.get '/addsignup', ->*
 
 app.get '/hello' ->*
   users = []
+  now = Date.now()
+  secs_in_day = 86400000
   collections = yield list_collections()
   for entry in collections
     if entry.indexOf("logs/interventions") > -1 #filter to check if data gotten today
@@ -61,8 +63,8 @@ app.get '/hello' ->*
       collection = db.get entry
 
       timestamp = yield collection.findOne({}, ["timestamp", "userid"])
-
-      users.push timestamp
+      #if timestamp[]
+      users.push timestamp["timestamp"]
   this.body = JSON.stringify users  
   return
 
