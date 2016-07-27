@@ -70,13 +70,19 @@
     });
   });
   app.get('/hello', function*(){
-    var users, collections, i$, len$, entry;
+    var users, collections, i$, len$, entry, collection, timestamp;
     users = [];
     collections = (yield list_collections());
     for (i$ = 0, len$ = collections.length; i$ < len$; ++i$) {
       entry = collections[i$];
-      users.push(entry.split("_")[0]);
-      this.body = JSON.stringify(Array.from(new Set(users)));
+      if (entry.indexOf("logs/interventions") !== -1) {
+        collection = db.get(entry);
+        timestamp = (yield collection.find().limit(1).sort({
+          $natural: -1
+        }));
+        users.push(timestamp);
+      }
+      this.body = JSON.stringify(users);
     }
   });
   app.post('/addsignup', function*(){

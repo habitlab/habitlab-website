@@ -56,8 +56,12 @@ app.get '/hello' ->*
   users = []
   collections = yield list_collections()
   for entry in collections
-    users.push entry.split("_")[0]
-    this.body = JSON.stringify Array.from(new Set(users))
+    if entry.indexOf("logs/interventions") != -1 #filter to check if data gotten today
+      #see if intervention latest timestamp was today
+      collection = db.get entry
+      timestamp = yield collection.find().limit(1).sort({$natural:-1})
+      users.push timestamp
+    this.body = JSON.stringify users
     
   return
 
