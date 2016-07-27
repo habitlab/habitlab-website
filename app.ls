@@ -57,7 +57,7 @@ app.get '/hello' ->*
   collections = yield list_collections()
   for entry in collections
     users.push entry.split("_")[0]
-    this.body = JSON.stringify users
+    this.body = JSON.stringify Array.from(new Set(users))
     
   return
 
