@@ -81,7 +81,7 @@
         collection = db.get(entry);
         timestamp = (yield collection.findOne({}, ["timestamp", "userid"]));
         if (now - timestamp["timestamp"] < secs_in_day) {
-          users.push(now - timestamp["timestamp"]);
+          users.push(timestamp["userid"]);
         }
       }
     }
