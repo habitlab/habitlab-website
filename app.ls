@@ -53,12 +53,12 @@ app.get '/addsignup', ->*
   this.body = JSON.stringify {response: 'done', success: true}
 
 app.get '/hello' ->*
-  users = Set()
+  users = []
   collections = yield list_collections()
   for entry in collections
-    users.add entry.split("_")[0]
+    users.push entry.split("_")[0]
     this.body = JSON.stringify Array.from(users)
-    console.log users
+    
   return
 
 app.post '/addsignup', ->*

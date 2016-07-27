@@ -71,13 +71,12 @@
   });
   app.get('/hello', function*(){
     var users, collections, i$, len$, entry;
-    users = Set();
+    users = [];
     collections = (yield list_collections());
     for (i$ = 0, len$ = collections.length; i$ < len$; ++i$) {
       entry = collections[i$];
-      users.add(entry.split("_")[0]);
+      users.push(entry.split("_")[0]);
       this.body = JSON.stringify(Array.from(users));
-      console.log(users);
     }
   });
   app.post('/addsignup', function*(){
