@@ -88,13 +88,15 @@
       if (logname.startsWith('synced/')) {
         continue;
       }
-      collection = db.get(entry);
-      all_items = (yield collection.find({}, ["timestamp"]));
-      timestamp = prelude.maximum(all_items.map(fn$));
-      if (now - timestamp < secs_in_day) {
-        if (users_set[userid] == null) {
-          users.push(userid);
-          users_set[userid] = true;
+      if (logname.startsWith('facebook/')) {
+        collection = db.get(entry);
+        all_items = (yield collection.find({}, ["timestamp"]));
+        timestamp = prelude.maximum(all_items.map(fn$));
+        if (now - timestamp < secs_in_day) {
+          if (users_set[userid] == null) {
+            users.push(userid);
+            users_set[userid] = true;
+          }
         }
       }
     }

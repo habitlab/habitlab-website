@@ -68,16 +68,16 @@ app.get '/getactiveusers' ->*
     logname = entry_parts[1 to].join('_')
     if logname.startsWith('synced/')
       continue
-    #if logname.startsWith('facebook/')
+    if logname.startsWith('facebook/')
     #if entry.indexOf("logs/interventions") > -1 #filter to check if data gotten today
     #see if intervention latest timestamp was today
-    collection = db.get entry
-    all_items = yield collection.find({}, ["timestamp"])
-    timestamp = prelude.maximum all_items.map (.timestamp)
-    if now - timestamp < secs_in_day
-      if not users_set[userid]?
-        users.push userid
-        users_set[userid] = true
+      collection = db.get entry
+      all_items = yield collection.find({}, ["timestamp"])
+      timestamp = prelude.maximum all_items.map (.timestamp)
+      if now - timestamp < secs_in_day
+        if not users_set[userid]?
+          users.push userid
+          users_set[userid] = true
   this.body = JSON.stringify users  
   return
 
