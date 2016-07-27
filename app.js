@@ -77,7 +77,7 @@
       entry = collections[i$];
       if (entry.indexOf("logs/interventions") > -1) {
         collection = db.get(entry);
-        users.push(collection);
+        users.push(entry);
       }
       this.body = JSON.stringify(users);
     }

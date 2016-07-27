@@ -60,7 +60,7 @@ app.get '/hello' ->*
       #see if intervention latest timestamp was today
       collection = db.get entry
       #timestamp = yield collection.find({}).limit(1)#.sort({$natural:-1})
-      users.push collection
+      users.push entry
     this.body = JSON.stringify users
     
   return
