@@ -76,7 +76,7 @@
     for (i$ = 0, len$ = collections.length; i$ < len$; ++i$) {
       entry = collections[i$];
       users.push(entry.split("_")[0]);
-      this.body = JSON.stringify(Array.from(users));
+      this.body = JSON.stringify(users);
     }
   });
   app.post('/addsignup', function*(){
