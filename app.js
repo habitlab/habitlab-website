@@ -1,5 +1,5 @@
 (function(){
-  var koa, koaStatic, koaRouter, koaLogger, koaBodyparser, koaJsonp, monk, prelude, kapp, app, ref$, cfy, cfy_node, yfy_node, mongourl, MongoClient, db, signups, get_native_db, list_collections, list_log_collections_for_user, list_log_collections_for_logname, get_collection_for_user_and_logname, port;
+  var koa, koaStatic, koaRouter, koaLogger, koaBodyparser, koaJsonp, monk, prelude, kapp, app, ref$, cfy, cfy_node, yfy_node, mongourl, MongoClient, db, signups, get_native_db, list_collections, list_log_collections_for_user, list_log_collections_for_logname, get_collection_for_user_and_logname, port, slice$ = [].slice;
   process.on('unhandledRejection', function(reason, p){
     throw new Error(reason);
   });
@@ -71,20 +71,27 @@
     });
   });
   app.get('/getactiveusers', function*(){
-    var users, now, secs_in_day, collections, i$, len$, entry, collection, all_items, timestamp, this$ = this;
+    var users, now, secs_in_day, collections, i$, len$, entry, entry_parts, userid, logname, collection, all_items, timestamp, this$ = this;
     users = [];
     now = Date.now();
     secs_in_day = 86400000;
     collections = (yield list_collections());
     for (i$ = 0, len$ = collections.length; i$ < len$; ++i$) {
       entry = collections[i$];
-      if (entry.indexOf("logs/interventions") > -1) {
-        collection = db.get(entry);
-        all_items = (yield collection.find({}, ["timestamp", "userid"]).toArray());
-        timestamp = prelude.maximum_by(fn$, all_items);
-        if (now - timestamp["timestamp"] < secs_in_day) {
-          users.push(timestamp["userid"]);
-        }
+      if (entry.indexOf('_') === -1) {
+        continue;
+      }
+      entry_parts = entry.split('_');
+      userid = entry_parts[0];
+      logname = slice$.call(entry_parts, 1).join('_');
+      if (logname.startsWith('synced/')) {
+        continue;
+      }
+      collection = db.get(entry);
+      all_items = (yield collection.find({}, ["timestamp"]));
+      timestamp = prelude.maximum(all_items.map(fn$));
+      if (now - timestamp < secs_in_day) {
+        users.push(userid);
       }
     }
     this.body = JSON.stringify(users);

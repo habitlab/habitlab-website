@@ -60,14 +60,21 @@ app.get '/getactiveusers' ->*
   secs_in_day = 86400000
   collections = yield list_collections()
   for entry in collections
-    if entry.indexOf("logs/interventions") > -1 #filter to check if data gotten today
-      #see if intervention latest timestamp was today
-      collection = db.get entry
-      all_items = yield collection.find({}, ["timestamp", "userid"]).toArray()
-      timestamp = prelude.maximum_by (.timestamp), all_items
-      if now - timestamp["timestamp"] < secs_in_day
-
-        users.push timestamp["userid"]
+    if entry.indexOf('_') == -1
+      continue
+    entry_parts = entry.split('_')
+    userid = entry_parts[0]
+    logname = entry_parts[1 to].join('_')
+    if logname.startsWith('synced/')
+      continue
+    #if logname.startsWith('facebook/')
+    #if entry.indexOf("logs/interventions") > -1 #filter to check if data gotten today
+    #see if intervention latest timestamp was today
+    collection = db.get entry
+    all_items = yield collection.find({}, ["timestamp"])
+    timestamp = prelude.maximum all_items.map (.timestamp)
+    if now - timestamp < secs_in_day
+      users.push userid
   this.body = JSON.stringify users  
   return
 
