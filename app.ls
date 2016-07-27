@@ -57,7 +57,8 @@ app.get '/hello' ->*
   collections = yield list_collections()
   for entry in collections
     users.add entry.split("_")[0]
-    this.body = JSON.stringify Array.from users
+    this.body = JSON.stringify Array.from(users)
+    console.log users
   return
 
 app.post '/addsignup', ->*
