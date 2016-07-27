@@ -61,8 +61,8 @@ app.get '/getactiveusers' ->*
     if entry.indexOf("logs/interventions") > -1 #filter to check if data gotten today
       #see if intervention latest timestamp was today
       collection = db.get entry
-
-      timestamp = yield collection.findOne({}, ["timestamp", "userid"])
+      all_items = yield collection.find({}, ["timestamp", "userid"]).toArray()
+      timestamp = maximum_by (.timestamp), all_items
       if now - timestamp["timestamp"] < secs_in_day
 
         users.push timestamp["userid"]

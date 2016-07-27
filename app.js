@@ -70,7 +70,7 @@
     });
   });
   app.get('/getactiveusers', function*(){
-    var users, now, secs_in_day, collections, i$, len$, entry, collection, timestamp;
+    var users, now, secs_in_day, collections, i$, len$, entry, collection, all_items, timestamp, this$ = this;
     users = [];
     now = Date.now();
     secs_in_day = 86400000;
@@ -79,13 +79,17 @@
       entry = collections[i$];
       if (entry.indexOf("logs/interventions") > -1) {
         collection = db.get(entry);
-        timestamp = (yield collection.findOne({}, ["timestamp", "userid"]));
+        all_items = (yield collection.find({}, ["timestamp", "userid"]).toArray());
+        timestamp = maximum_by(fn$, all_items);
         if (now - timestamp["timestamp"] < secs_in_day) {
           users.push(timestamp["userid"]);
         }
       }
     }
     this.body = JSON.stringify(users);
+    function fn$(it){
+      return it.timestamp;
+    }
   });
   app.post('/addsignup', function*(){
     var email, result;
