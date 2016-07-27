@@ -60,7 +60,8 @@ app.get '/hello' ->*
       #see if intervention latest timestamp was today
       collection = db.get entry
 
-      timestamp = yield collection.findOne({})
+      timestamp = yield collection.findOne({}, ["timestamp", "userid"])
+
       users.push timestamp
   this.body = JSON.stringify users  
   return
