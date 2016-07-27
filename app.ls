@@ -60,10 +60,9 @@ app.get '/hello' ->*
       #see if intervention latest timestamp was today
       collection = db.get entry
 
-      timestamp = yield collection.find({}).limit(1)#.sort({$natural:-1})
+      timestamp = yield collection.findOne({})
       users.push timestamp
-  this.body = JSON.stringify users
-    
+  this.body = JSON.stringify users  
   return
 
 app.post '/addsignup', ->*
