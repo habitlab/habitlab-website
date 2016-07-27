@@ -64,7 +64,8 @@ app.get '/hello' ->*
 
       timestamp = yield collection.findOne({}, ["timestamp", "userid"])
       if now - timestamp["timestamp"] < secs_in_day
-        users.push timestamp["timestamp"]
+        
+        users.push now - timestamp["timestamp"]
   this.body = JSON.stringify users  
   return
 
