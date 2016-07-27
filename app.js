@@ -69,7 +69,7 @@
       success: true
     });
   });
-  app.get('/hello', function*(){
+  app.get('/getactiveusers', function*(){
     var users, now, secs_in_day, collections, i$, len$, entry, collection, timestamp;
     users = [];
     now = Date.now();

@@ -52,7 +52,7 @@ app.get '/addsignup', ->*
   result = yield signups.insert(this.request.query)
   this.body = JSON.stringify {response: 'done', success: true}
 
-app.get '/hello' ->*
+app.get '/getactiveusers' ->*
   users = []
   now = Date.now()
   secs_in_day = 86400000
