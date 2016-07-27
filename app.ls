@@ -56,6 +56,7 @@ app.get '/addsignup', ->*
 
 app.get '/getactiveusers' ->*
   users = []
+  users_set = {}
   now = Date.now()
   secs_in_day = 86400000
   collections = yield list_collections()
@@ -74,7 +75,9 @@ app.get '/getactiveusers' ->*
     all_items = yield collection.find({}, ["timestamp"])
     timestamp = prelude.maximum all_items.map (.timestamp)
     if now - timestamp < secs_in_day
-      users.push userid
+      if not users_set[userid]?
+        users.push userid
+        users_set[userid] = true
   this.body = JSON.stringify users  
   return
 

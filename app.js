@@ -71,8 +71,9 @@
     });
   });
   app.get('/getactiveusers', function*(){
-    var users, now, secs_in_day, collections, i$, len$, entry, entry_parts, userid, logname, collection, all_items, timestamp, this$ = this;
+    var users, users_set, now, secs_in_day, collections, i$, len$, entry, entry_parts, userid, logname, collection, all_items, timestamp, this$ = this;
     users = [];
+    users_set = {};
     now = Date.now();
     secs_in_day = 86400000;
     collections = (yield list_collections());
@@ -91,7 +92,10 @@
       all_items = (yield collection.find({}, ["timestamp"]));
       timestamp = prelude.maximum(all_items.map(fn$));
       if (now - timestamp < secs_in_day) {
-        users.push(userid);
+        if (users_set[userid] == null) {
+          users.push(userid);
+          users_set[userid] = true;
+        }
       }
     }
     this.body = JSON.stringify(users);
