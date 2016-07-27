@@ -69,6 +69,11 @@
       success: true
     });
   });
+  app.get('/hello', function(){
+    this.body = JSON.stringify({
+      response: 'hello'
+    });
+  });
   app.post('/addsignup', function*(){
     var email, result;
     this.type = 'json';

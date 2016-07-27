@@ -52,6 +52,10 @@ app.get '/addsignup', ->*
   result = yield signups.insert(this.request.query)
   this.body = JSON.stringify {response: 'done', success: true}
 
+app.get '/hello' ->
+  this.body = JSON.stringify {response: 'hello'}
+  return
+
 app.post '/addsignup', ->*
   this.type = 'json'
   {email} = this.request.body
