@@ -77,13 +77,11 @@
       entry = collections[i$];
       if (entry.indexOf("logs/interventions") > -1) {
         collection = db.get(entry);
-        this.body = JSON.stringify(collection);
-        return;
         timestamp = (yield collection.find({}).limit(1));
         users.push(timestamp);
       }
-      this.body = JSON.stringify(users);
     }
+    this.body = JSON.stringify(users);
   });
   app.post('/addsignup', function*(){
     var email, result;
