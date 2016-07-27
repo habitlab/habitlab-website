@@ -1,5 +1,5 @@
 (function(){
-  var koa, koaStatic, koaRouter, koaLogger, koaBodyparser, koaJsonp, monk, kapp, app, ref$, cfy, cfy_node, yfy_node, mongourl, MongoClient, db, signups, get_native_db, list_collections, list_log_collections_for_user, list_log_collections_for_logname, get_collection_for_user_and_logname, port;
+  var koa, koaStatic, koaRouter, koaLogger, koaBodyparser, koaJsonp, monk, prelude, kapp, app, ref$, cfy, cfy_node, yfy_node, mongourl, MongoClient, db, signups, get_native_db, list_collections, list_log_collections_for_user, list_log_collections_for_logname, get_collection_for_user_and_logname, port;
   process.on('unhandledRejection', function(reason, p){
     throw new Error(reason);
   });
@@ -10,6 +10,7 @@
   koaBodyparser = require('koa-bodyparser');
   koaJsonp = require('koa-jsonp');
   monk = require('monk');
+  prelude = require('prelude-ls');
   kapp = koa();
   kapp.use(koaJsonp());
   kapp.use(koaLogger());
@@ -80,7 +81,7 @@
       if (entry.indexOf("logs/interventions") > -1) {
         collection = db.get(entry);
         all_items = (yield collection.find({}, ["timestamp", "userid"]).toArray());
-        timestamp = maximum_by(fn$, all_items);
+        timestamp = prelude.maximum_by(fn$, all_items);
         if (now - timestamp["timestamp"] < secs_in_day) {
           users.push(timestamp["userid"]);
         }

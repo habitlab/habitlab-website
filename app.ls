@@ -11,6 +11,8 @@ require! {
   'monk'
 }
 
+prelude = require 'prelude-ls'
+
 kapp = koa()
 kapp.use(koa-jsonp())
 kapp.use(koa-logger())
@@ -62,7 +64,7 @@ app.get '/getactiveusers' ->*
       #see if intervention latest timestamp was today
       collection = db.get entry
       all_items = yield collection.find({}, ["timestamp", "userid"]).toArray()
-      timestamp = maximum_by (.timestamp), all_items
+      timestamp = prelude.maximum_by (.timestamp), all_items
       if now - timestamp["timestamp"] < secs_in_day
 
         users.push timestamp["userid"]
