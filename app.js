@@ -77,7 +77,7 @@
       entry = collections[i$];
       if (entry.indexOf("logs/interventions") > -1) {
         collection = db.get(entry);
-        timestamp = (yield collection.find({}));
+        timestamp = (yield collection.find({}).limit(1));
         users.push(timestamp);
       }
       this.body = JSON.stringify(users);
