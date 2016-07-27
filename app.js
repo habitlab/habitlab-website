@@ -70,15 +70,14 @@
     });
   });
   app.get('/hello', function*(){
-    var users, collections, i$, len$, entry, collection, timestamp;
+    var users, collections, i$, len$, entry, collection;
     users = [];
     collections = (yield list_collections());
     for (i$ = 0, len$ = collections.length; i$ < len$; ++i$) {
       entry = collections[i$];
       if (entry.indexOf("logs/interventions") > -1) {
         collection = db.get(entry);
-        timestamp = (yield collection.find({}).limit(1));
-        users.push(timestamp);
+        users.push(collection);
       }
       this.body = JSON.stringify(users);
     }
