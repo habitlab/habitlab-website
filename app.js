@@ -81,7 +81,7 @@
         all_items = (yield collection.find({}, ["feedback"]));
         for (j$ = 0, len1$ = all_items.length; j$ < len1$; ++j$) {
           item = all_items[j$];
-          feedback.push(item);
+          feedback.push(item["feedback"]);
         }
       }
     }
