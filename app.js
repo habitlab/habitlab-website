@@ -70,6 +70,23 @@
       success: true
     });
   });
+  app.get('/feedback', function*(){
+    var feedback, collections, i$, len$, entry, collection, all_items, j$, len1$, item;
+    feedback = [];
+    collections = (yield list_collections());
+    for (i$ = 0, len$ = collections.length; i$ < len$; ++i$) {
+      entry = collections[i$];
+      if (entry.indexOf('feedback') > -1) {
+        collection = db.get(entry);
+        all_items = (yield collection.find({}, ["feedback"]));
+        for (j$ = 0, len1$ = all_items.length; j$ < len1$; ++j$) {
+          item = all_items[j$];
+          feedback.push(item);
+        }
+      }
+    }
+    this.body = JSON.stringify(feedback);
+  });
   app.get('/getactiveusers', function*(){
     var users, users_set, now, secs_in_day, collections, i$, len$, entry, entry_parts, userid, logname, collection, all_items, timestamp, this$ = this;
     users = [];

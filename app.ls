@@ -54,6 +54,18 @@ app.get '/addsignup', ->*
   result = yield signups.insert(this.request.query)
   this.body = JSON.stringify {response: 'done', success: true}
 
+app.get '/feedback' ->*
+  feedback = []
+  collections = yield list_collections()
+  for entry in collections
+    if entry.indexOf('feedback') > -1
+      collection = db.get entry
+      all_items = yield collection.find({}, ["feedback"])
+      for item in all_items
+        feedback.push item
+  this.body = JSON.stringify feedback
+  return    
+
 app.get '/getactiveusers' ->*
   users = []
   users_set = {}
