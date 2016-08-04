@@ -4,7 +4,7 @@
   os = require('os');
   path = require('path');
   ref$ = require('shelljs'), exec = ref$.exec, which = ref$.which;
-  for (i$ = 0, len$ = (ref$ = ['gulp', 'node-dev']).length; i$ < len$; ++i$) {
+  for (i$ = 0, len$ = (ref$ = ['gulp', 'node-dev', 'mongosrv']).length; i$ < len$; ++i$) {
     command = ref$[i$];
     if (!which(command)) {
       console.log("missing " + command + " command. please run the following command:");
@@ -13,6 +13,9 @@
     }
   }
   exec('gulp', {
+    async: true
+  });
+  exec('mongosrv', {
     async: true
   });
   exec('node-dev app.ls', {
