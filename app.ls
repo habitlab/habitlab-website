@@ -62,7 +62,7 @@ app.get '/feedback' ->*
       collection = db.get entry
       all_items = yield collection.find({}, ["feedback"])
       for item in all_items
-        feedback.push item["feedback"]
+        feedback.push item["feedback"] if item["feedback"]?
   this.body = JSON.stringify feedback
   return    
 
