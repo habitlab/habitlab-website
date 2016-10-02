@@ -149,7 +149,10 @@ app.post '/sync_collection_item', ->*
     this.body = JSON.stringify {response: 'error', error: 'need parameter collection'}
     return
   collection = get_collection_for_user_and_logname(userid, 'synced:' + collection_name)
-  yield collection.insert this.request.body
+  try
+    yield collection.insert this.request.body
+  catch e
+    console.log e
   #this.body = JSON.stringify {response: 'error', error: 'not yet implemented'}
   this.body = JSON.stringify {response: 'success', success: true}
 
@@ -171,7 +174,10 @@ app.post '/addtolog', ->*
     return
   collection = get_collection_for_user_and_logname(userid, logname)
   this.request.body._id = monk.id itemid
-  yield collection.insert this.request.body
+  try
+    yield collection.insert this.request.body
+  catch e
+    console.log e
   #this.body = JSON.stringify {response: 'error', error: 'not yet implemented'}
   this.body = JSON.stringify {response: 'success', success: true}
 

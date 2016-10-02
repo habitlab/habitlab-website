@@ -201,7 +201,7 @@
     return this.body = JSON.stringify((yield list_collections()));
   });
   app.post('/sync_collection_item', function*(){
-    var ref$, userid, collection, collection_name;
+    var ref$, userid, collection, collection_name, e;
     this.type = 'json';
     ref$ = this.request.body, userid = ref$.userid, collection = ref$.collection;
     collection_name = collection;
@@ -220,14 +220,19 @@
       return;
     }
     collection = get_collection_for_user_and_logname(userid, 'synced:' + collection_name);
-    (yield collection.insert(this.request.body));
+    try {
+      (yield collection.insert(this.request.body));
+    } catch (e$) {
+      e = e$;
+      console.log(e);
+    }
     return this.body = JSON.stringify({
       response: 'success',
       success: true
     });
   });
   app.post('/addtolog', function*(){
-    var ref$, userid, logname, itemid, collection;
+    var ref$, userid, logname, itemid, collection, e;
     this.type = 'json';
     ref$ = this.request.body, userid = ref$.userid, logname = ref$.logname, itemid = ref$.itemid;
     logname = logname.split('/').join(':');
@@ -261,7 +266,12 @@
     }
     collection = get_collection_for_user_and_logname(userid, logname);
     this.request.body._id = monk.id(itemid);
-    (yield collection.insert(this.request.body));
+    try {
+      (yield collection.insert(this.request.body));
+    } catch (e$) {
+      e = e$;
+      console.log(e);
+    }
     return this.body = JSON.stringify({
       response: 'success',
       success: true
