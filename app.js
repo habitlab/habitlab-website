@@ -1,5 +1,5 @@
 (function(){
-  var koa, koaStatic, koaRouter, koaLogger, koaBodyparser, koaJsonp, monk, prelude, kapp, app, ref$, cfy, cfy_node, yfy_node, mongourl, MongoClient, db, signups, get_native_db, list_collections, list_log_collections_for_user, list_log_collections_for_logname, get_collection_for_user_and_logname, port, slice$ = [].slice;
+  var koa, koaStatic, koaRouter, koaLogger, koaBodyparser, koaJsonp, mongodb, prelude, kapp, app, ref$, cfy, cfy_node, yfy_node, mongourl, get_mongo_db, get_collection, get_signups, list_collections, list_log_collections_for_user, list_log_collections_for_logname, get_collection_for_user_and_logname, port, slice$ = [].slice;
   process.on('unhandledRejection', function(reason, p){
     throw new Error(reason);
   });
@@ -9,7 +9,7 @@
   koaLogger = require('koa-logger');
   koaBodyparser = require('koa-bodyparser');
   koaJsonp = require('koa-jsonp');
-  monk = require('monk');
+  mongodb = require('mongodb');
   prelude = require('prelude-ls');
   kapp = koa();
   kapp.use(koaJsonp());
@@ -18,20 +18,33 @@
   app = koaRouter();
   ref$ = require('cfy'), cfy = ref$.cfy, cfy_node = ref$.cfy_node, yfy_node = ref$.yfy_node;
   mongourl = (ref$ = process.env.MONGODB_URI) != null ? ref$ : 'mongodb://localhost:27017/default';
-  MongoClient = require('mongodb').MongoClient;
-  db = monk(mongourl);
-  signups = db.get('signups');
-  get_native_db = cfy(function*(){
-    return (yield function(it){
-      return MongoClient.connect(mongourl, it);
-    });
+  get_mongo_db = cfy(function*(){
+    var err;
+    try {
+      return (yield function(it){
+        return mongodb.MongoClient.connect(mongourl, it);
+      });
+    } catch (e$) {
+      err = e$;
+      console.log('error getting mongodb');
+      console.log(err);
+    }
+  });
+  get_collection = cfy(function*(collection_name){
+    var db;
+    db = (yield get_mongo_db());
+    return [db.collection(collection_name), db];
+  });
+  get_signups = cfy(function*(){
+    return (yield get_collection('signups'));
   });
   list_collections = cfy(function*(){
     var ndb, collections_list, this$ = this;
-    ndb = (yield get_native_db());
+    ndb = (yield get_mongo_db());
     collections_list = (yield function(it){
       return ndb.listCollections().toArray(it);
     });
+    ndb.close();
     return collections_list.map(function(it){
       return it.name;
     });
@@ -50,11 +63,11 @@
       return it.endsWith("_" + logname);
     });
   });
-  get_collection_for_user_and_logname = function(userid, logname){
-    return db.get(userid + "_" + logname);
-  };
+  get_collection_for_user_and_logname = cfy(function*(userid, logname){
+    return (yield get_collection(userid + "_" + logname));
+  });
   app.get('/addsignup', function*(){
-    var email, result;
+    var email, ref$, signups, db, err;
     this.type = 'json';
     email = this.request.query.email;
     if (email == null) {
@@ -64,21 +77,35 @@
       });
       return;
     }
-    result = (yield signups.insert(this.request.query));
+    try {
+      ref$ = (yield get_signups()), signups = ref$[0], db = ref$[1];
+      (yield function(it){
+        return signups.insert(this.request.query, it);
+      });
+    } catch (e$) {
+      err = e$;
+      console.log('error in addsignup');
+      console.log(err);
+    } finally {
+      if (db != null) {
+        db.close();
+      }
+    }
     return this.body = JSON.stringify({
       response: 'done',
       success: true
     });
   });
   app.get('/feedback', function*(){
-    var feedback, collections, i$, len$, entry, collection, all_items, j$, len1$, item;
+    var feedback, collections, db, i$, len$, entry, collection, all_items, j$, len1$, item;
     feedback = [];
     collections = (yield list_collections());
+    db = (yield get_mongo_db());
     for (i$ = 0, len$ = collections.length; i$ < len$; ++i$) {
       entry = collections[i$];
       if (entry.indexOf('feedback') > -1) {
-        collection = db.get(entry);
-        all_items = (yield collection.find({}, ["feedback"]));
+        collection = db.collection(entry);
+        all_items = (yield fn$);
         for (j$ = 0, len1$ = all_items.length; j$ < len1$; ++j$) {
           item = all_items[j$];
           if (item["feedback"] != null) {
@@ -88,14 +115,19 @@
       }
     }
     this.body = JSON.stringify(feedback);
+    db.close();
+    function fn$(it){
+      return collection.find({}, ["feedback"]).toArray(it);
+    }
   });
   app.get('/getactiveusers', function*(){
-    var users, users_set, now, secs_in_day, collections, i$, len$, entry, entry_parts, userid, logname, collection, all_items, timestamp, this$ = this;
+    var users, users_set, now, secs_in_day, collections, db, i$, len$, entry, entry_parts, userid, logname, collection, all_items, timestamp, this$ = this;
     users = [];
     users_set = {};
     now = Date.now();
     secs_in_day = 86400000;
     collections = (yield list_collections());
+    db = (yield get_mongo_db());
     for (i$ = 0, len$ = collections.length; i$ < len$; ++i$) {
       entry = collections[i$];
       if (entry.indexOf('_') === -1) {
@@ -105,9 +137,9 @@
       userid = entry_parts[0];
       logname = slice$.call(entry_parts, 1).join('_');
       if (logname.startsWith('facebook:')) {
-        collection = db.get(entry);
-        all_items = (yield collection.find({}, ["timestamp"]));
-        timestamp = prelude.maximum(all_items.map(fn$));
+        collection = db.collection(entry);
+        all_items = (yield fn$);
+        timestamp = prelude.maximum(all_items.map(fn1$));
         if (now - timestamp < secs_in_day) {
           if (users_set[userid] == null) {
             users.push(userid);
@@ -117,7 +149,11 @@
       }
     }
     this.body = JSON.stringify(users);
+    db.close();
     function fn$(it){
+      return collection.find({}, ["timestamp"]).toArray(it);
+    }
+    function fn1$(it){
       return it.timestamp;
     }
   });
@@ -180,7 +216,7 @@
     return this.body = JSON.stringify(user_collections);
   });
   app.get('/printcollection', function*(){
-    var ref$, collection, userid, logname, collection_name, items;
+    var ref$, collection, userid, logname, collection_name, db, items, err;
     ref$ = this.request.query, collection = ref$.collection, userid = ref$.userid, logname = ref$.logname;
     if (userid != null && logname != null) {
       collection = userid + "_" + logname;
@@ -192,16 +228,30 @@
       });
     }
     collection_name = collection;
-    collection = db.get(collection_name);
-    items = (yield collection.find({}));
-    return this.body = JSON.stringify(items);
+    try {
+      ref$ = (yield get_collection(collection_name)), collection = ref$[0], db = ref$[1];
+      items = (yield collection.find({}));
+      return this.body = JSON.stringify(items);
+    } catch (e$) {
+      err = e$;
+      console.log('error in printcollection');
+      console.log(err);
+      return this.body = JSON.stringify({
+        response: 'error',
+        error: 'error in printcollection'
+      });
+    } finally {
+      if (db != null) {
+        db.close();
+      }
+    }
   });
   app.get('/listcollections', function*(){
     this.type = 'json';
     return this.body = JSON.stringify((yield list_collections()));
   });
   app.post('/sync_collection_item', function*(){
-    var ref$, userid, collection, collection_name, e;
+    var ref$, userid, collection, collection_name, db, e;
     this.type = 'json';
     ref$ = this.request.body, userid = ref$.userid, collection = ref$.collection;
     collection_name = collection;
@@ -219,12 +269,16 @@
       });
       return;
     }
-    collection = get_collection_for_user_and_logname(userid, 'synced:' + collection_name);
     try {
+      ref$ = (yield get_collection_for_user_and_logname(userid, 'synced:' + collection_name)), collection = ref$[0], db = ref$[1];
       (yield collection.insert(this.request.body));
     } catch (e$) {
       e = e$;
       console.log(e);
+    } finally {
+      if (db != null) {
+        db.close();
+      }
     }
     return this.body = JSON.stringify({
       response: 'success',
@@ -232,7 +286,7 @@
     });
   });
   app.post('/addtolog', function*(){
-    var ref$, userid, logname, itemid, collection, e;
+    var ref$, userid, logname, itemid, collection, db, err;
     this.type = 'json';
     ref$ = this.request.body, userid = ref$.userid, logname = ref$.logname, itemid = ref$.itemid;
     logname = logname.split('/').join(':');
@@ -264,13 +318,18 @@
       });
       return;
     }
-    collection = get_collection_for_user_and_logname(userid, logname);
-    this.request.body._id = monk.id(itemid);
     try {
+      ref$ = (yield get_collection_for_user_and_logname(userid, logname)), collection = ref$[0], db = ref$[1];
+      this.request.body._id = mongodb.ObjectId.createFromHexString(itemid);
       (yield collection.insert(this.request.body));
     } catch (e$) {
-      e = e$;
-      console.log(e);
+      err = e$;
+      console.log('error in addtolog');
+      console.log(err);
+    } finally {
+      if (db != null) {
+        db.close();
+      }
     }
     return this.body = JSON.stringify({
       response: 'success',
