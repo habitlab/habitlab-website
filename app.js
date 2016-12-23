@@ -66,36 +66,6 @@
   get_collection_for_user_and_logname = cfy(function*(userid, logname){
     return (yield get_collection(userid + "_" + logname));
   });
-  app.get('/addsignup', function*(){
-    var email, ref$, signups, db, err;
-    this.type = 'json';
-    email = this.request.query.email;
-    if (email == null) {
-      this.body = JSON.stringify({
-        response: 'error',
-        error: 'need parameter email'
-      });
-      return;
-    }
-    try {
-      ref$ = (yield get_signups()), signups = ref$[0], db = ref$[1];
-      (yield function(it){
-        return signups.insert(this.request.query, it);
-      });
-    } catch (e$) {
-      err = e$;
-      console.log('error in addsignup');
-      console.log(err);
-    } finally {
-      if (db != null) {
-        db.close();
-      }
-    }
-    return this.body = JSON.stringify({
-      response: 'done',
-      success: true
-    });
-  });
   app.get('/feedback', function*(){
     var feedback, collections, db, i$, len$, entry, collection, all_items, j$, len1$, item;
     feedback = [];
@@ -157,8 +127,38 @@
       return it.timestamp;
     }
   });
+  app.get('/addsignup', function*(){
+    var email, ref$, signups, db, err;
+    this.type = 'json';
+    email = this.request.query.email;
+    if (email == null) {
+      this.body = JSON.stringify({
+        response: 'error',
+        error: 'need parameter email'
+      });
+      return;
+    }
+    try {
+      ref$ = (yield get_signups()), signups = ref$[0], db = ref$[1];
+      (yield function(it){
+        return signups.insert(this.request.query, it);
+      });
+    } catch (e$) {
+      err = e$;
+      console.log('error in addsignup');
+      console.log(err);
+    } finally {
+      if (db != null) {
+        db.close();
+      }
+    }
+    return this.body = JSON.stringify({
+      response: 'done',
+      success: true
+    });
+  });
   app.post('/addsignup', function*(){
-    var email, ref$, signups, db, result, err;
+    var email, ref$, signups, db, err;
     this.type = 'json';
     email = this.request.body.email;
     if (email == null) {
@@ -170,7 +170,9 @@
     }
     try {
       ref$ = (yield get_signups()), signups = ref$[0], db = ref$[1];
-      result = (yield signups.insert(this.request.body));
+      (yield function(it){
+        return signups.insert(this.request.body, it);
+      });
     } catch (e$) {
       err = e$;
       console.log('error in addsignup');
@@ -190,7 +192,9 @@
     this.type = 'json';
     try {
       ref$ = (yield get_signups()), signups = ref$[0], db = ref$[1];
-      all_results = (yield signups.find({}));
+      all_results = (yield function(it){
+        return signups.find({}).toArray(it);
+      });
       return this.body = JSON.stringify((yield* (function*(){
         var i$, ref$, len$, results$ = [];
         for (i$ = 0, len$ = (ref$ = all_results).length; i$ < len$; ++i$) {
@@ -277,7 +281,7 @@
     return this.body = JSON.stringify((yield list_collections()));
   });
   app.post('/sync_collection_item', function*(){
-    var ref$, userid, collection, collection_name, db, e;
+    var ref$, userid, collection, collection_name, db, err;
     this.type = 'json';
     ref$ = this.request.body, userid = ref$.userid, collection = ref$.collection;
     collection_name = collection;
@@ -297,10 +301,13 @@
     }
     try {
       ref$ = (yield get_collection_for_user_and_logname(userid, 'synced:' + collection_name)), collection = ref$[0], db = ref$[1];
-      (yield collection.insert(this.request.body));
+      (yield function(it){
+        return collection.insert(this.request.body, it);
+      });
     } catch (e$) {
-      e = e$;
-      console.log(e);
+      err = e$;
+      console.log('error in sync_collection_item');
+      console.log(err);
     } finally {
       if (db != null) {
         db.close();
@@ -347,7 +354,9 @@
     try {
       ref$ = (yield get_collection_for_user_and_logname(userid, logname)), collection = ref$[0], db = ref$[1];
       this.request.body._id = mongodb.ObjectId.createFromHexString(itemid);
-      (yield collection.insert(this.request.body));
+      (yield function(it){
+        return collection.insert(this.request.body, it);
+      });
     } catch (e$) {
       err = e$;
       console.log('error in addtolog');

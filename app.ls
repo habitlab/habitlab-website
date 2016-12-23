@@ -55,22 +55,6 @@ list_log_collections_for_logname = cfy (logname) ->*
 get_collection_for_user_and_logname = cfy (userid, logname) ->*
   return yield get_collection("#{userid}_#{logname}")
 
-app.get '/addsignup', ->*
-  this.type = 'json'
-  {email} = this.request.query
-  if not email?
-    this.body = JSON.stringify {response: 'error', error: 'need parameter email'}
-    return
-  try
-    [signups,db] = yield get_signups()
-    yield -> signups.insert(this.request.query, it)
-  catch err
-    console.log 'error in addsignup'
-    console.log err
-  finally
-    db?close()
-  this.body = JSON.stringify {response: 'done', success: true}
-
 app.get '/feedback' ->*
   feedback = []
   collections = yield list_collections()
@@ -112,6 +96,22 @@ app.get '/getactiveusers' ->*
   db.close()
   return
 
+app.get '/addsignup', ->*
+  this.type = 'json'
+  {email} = this.request.query
+  if not email?
+    this.body = JSON.stringify {response: 'error', error: 'need parameter email'}
+    return
+  try
+    [signups,db] = yield get_signups()
+    yield -> signups.insert(this.request.query, it)
+  catch err
+    console.log 'error in addsignup'
+    console.log err
+  finally
+    db?close()
+  this.body = JSON.stringify {response: 'done', success: true}
+
 app.post '/addsignup', ->*
   this.type = 'json'
   {email} = this.request.body
@@ -120,7 +120,7 @@ app.post '/addsignup', ->*
     return
   try
     [signups, db] = yield get_signups()
-    result = yield signups.insert(this.request.body)
+    yield -> signups.insert(this.request.body, it)
   catch err
     console.log 'error in addsignup'
     console.log err
@@ -132,7 +132,7 @@ app.get '/getsignups', ->*
   this.type = 'json'
   try
     [signups, db] = yield get_signups()
-    all_results = yield signups.find({})
+    all_results = yield -> signups.find({}).toArray(it)
     this.body = JSON.stringify([x.email for x in all_results])
   catch err
     console.log 'error in getsignups'
@@ -193,9 +193,10 @@ app.post '/sync_collection_item', ->*
     return
   try
     [collection,db] = yield get_collection_for_user_and_logname(userid, 'synced:' + collection_name)
-    yield collection.insert this.request.body
-  catch e
-    console.log e
+    yield -> collection.insert(this.request.body, it)
+  catch err
+    console.log 'error in sync_collection_item'
+    console.log err
   finally
     db?close()
   #this.body = JSON.stringify {response: 'error', error: 'not yet implemented'}
@@ -220,7 +221,7 @@ app.post '/addtolog', ->*
   try
     [collection,db] = yield get_collection_for_user_and_logname(userid, logname)
     this.request.body._id = mongodb.ObjectId.createFromHexString(itemid)
-    yield collection.insert this.request.body
+    yield -> collection.insert(this.request.body, it)
   catch err
     console.log 'error in addtolog'
     console.log err
