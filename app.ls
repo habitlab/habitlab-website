@@ -118,13 +118,28 @@ app.post '/addsignup', ->*
   if not email?
     this.body = JSON.stringify {response: 'error', error: 'need parameter email'}
     return
-  result = yield signups.insert(this.request.body)
+  try
+    [signups, db] = yield get_signups()
+    result = yield signups.insert(this.request.body)
+  catch err
+    console.log 'error in addsignup'
+    console.log err
+  finally
+    db?close()
   this.body = JSON.stringify {response: 'success', success: true}
 
 app.get '/getsignups', ->*
   this.type = 'json'
-  all_results = yield signups.find({})
-  this.body = JSON.stringify([x.email for x in all_results])
+  try
+    [signups, db] = yield get_signups()
+    all_results = yield signups.find({})
+    this.body = JSON.stringify([x.email for x in all_results])
+  catch err
+    console.log 'error in getsignups'
+    console.log err
+    this.body = JSON.stringify {response: 'error', error: 'error in getsignups'}
+  finally
+    db?close()
 
 app.get '/list_logs_for_user', ->*
   this.type = 'json'

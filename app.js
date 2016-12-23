@@ -158,7 +158,7 @@
     }
   });
   app.post('/addsignup', function*(){
-    var email, result;
+    var email, ref$, signups, db, result, err;
     this.type = 'json';
     email = this.request.body.email;
     if (email == null) {
@@ -168,24 +168,50 @@
       });
       return;
     }
-    result = (yield signups.insert(this.request.body));
+    try {
+      ref$ = (yield get_signups()), signups = ref$[0], db = ref$[1];
+      result = (yield signups.insert(this.request.body));
+    } catch (e$) {
+      err = e$;
+      console.log('error in addsignup');
+      console.log(err);
+    } finally {
+      if (db != null) {
+        db.close();
+      }
+    }
     return this.body = JSON.stringify({
       response: 'success',
       success: true
     });
   });
   app.get('/getsignups', function*(){
-    var all_results, x;
+    var ref$, signups, db, all_results, x, err;
     this.type = 'json';
-    all_results = (yield signups.find({}));
-    return this.body = JSON.stringify((yield* (function*(){
-      var i$, ref$, len$, results$ = [];
-      for (i$ = 0, len$ = (ref$ = all_results).length; i$ < len$; ++i$) {
-        x = ref$[i$];
-        results$.push(x.email);
+    try {
+      ref$ = (yield get_signups()), signups = ref$[0], db = ref$[1];
+      all_results = (yield signups.find({}));
+      return this.body = JSON.stringify((yield* (function*(){
+        var i$, ref$, len$, results$ = [];
+        for (i$ = 0, len$ = (ref$ = all_results).length; i$ < len$; ++i$) {
+          x = ref$[i$];
+          results$.push(x.email);
+        }
+        return results$;
+      }())));
+    } catch (e$) {
+      err = e$;
+      console.log('error in getsignups');
+      console.log(err);
+      return this.body = JSON.stringify({
+        response: 'error',
+        error: 'error in getsignups'
+      });
+    } finally {
+      if (db != null) {
+        db.close();
       }
-      return results$;
-    }())));
+    }
   });
   app.get('/list_logs_for_user', function*(){
     var userid, user_collections;
