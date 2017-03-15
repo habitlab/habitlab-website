@@ -168,7 +168,7 @@ app.get '/printcollection', ->*
   collection_name = collection
   try
     [collection, db] = yield get_collection(collection_name)
-    items = yield collection.find({})
+    items = yield -> collection.find({}).toArray(it)
     this.body = JSON.stringify items
   catch err
     console.log 'error in printcollection'

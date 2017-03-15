@@ -12,6 +12,7 @@
     "koa-logger": "^1.3.0",
     "koa-router": "^5.4.0",
     "koa-static": "^2.0.0",
+    "mongodb": "^2.2.24",
     "prelude-ls": "^1.1.2"
   },
   "devDependencies": {

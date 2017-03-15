@@ -260,7 +260,9 @@
     collection_name = collection;
     try {
       ref$ = (yield get_collection(collection_name)), collection = ref$[0], db = ref$[1];
-      items = (yield collection.find({}));
+      items = (yield function(it){
+        return collection.find({}).toArray(it);
+      });
       return this.body = JSON.stringify(items);
     } catch (e$) {
       err = e$;
