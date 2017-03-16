@@ -1,5 +1,5 @@
 (function(){
-  var koa, koaStatic, koaRouter, koaLogger, koaBodyparser, koaJsonp, mongodb, prelude, kapp, app, ref$, cfy, cfy_node, yfy_node, mongourl, get_mongo_db, get_collection, get_signups, list_collections, list_log_collections_for_user, list_log_collections_for_logname, get_collection_for_user_and_logname, port, slice$ = [].slice;
+  var koa, koaStatic, koaRouter, koaLogger, koaBodyparser, koaJsonp, mongodb, getsecret, koaBasicAuth, prelude, kapp, app, auth, ref$, cfy, cfy_node, yfy_node, mongourl, get_mongo_db, get_collection, get_signups, list_collections, list_log_collections_for_user, list_log_collections_for_logname, get_collection_for_user_and_logname, port, slice$ = [].slice;
   process.on('unhandledRejection', function(reason, p){
     throw new Error(reason);
   });
@@ -10,12 +10,33 @@
   koaBodyparser = require('koa-bodyparser');
   koaJsonp = require('koa-jsonp');
   mongodb = require('mongodb');
+  getsecret = require('getsecret');
+  koaBasicAuth = require('koa-basic-auth');
   prelude = require('prelude-ls');
   kapp = koa();
   kapp.use(koaJsonp());
   kapp.use(koaLogger());
   kapp.use(koaBodyparser());
   app = koaRouter();
+  app.use(function*(next){
+    var err;
+    try {
+      return (yield next);
+    } catch (e$) {
+      err = e$;
+      if (401 === err.status) {
+        this.status = 401;
+        this.set('WWW-Authenticate', 'Basic');
+        return this.body = 'Authentication failed';
+      } else {
+        throw err;
+      }
+    }
+  });
+  auth = koaBasicAuth({
+    name: getsecret('username'),
+    pass: getsecret('password')
+  });
   ref$ = require('cfy'), cfy = ref$.cfy, cfy_node = ref$.cfy_node, yfy_node = ref$.yfy_node;
   mongourl = (ref$ = process.env.MONGODB_URI) != null ? ref$ : 'mongodb://localhost:27017/default';
   get_mongo_db = cfy(function*(){
@@ -66,7 +87,7 @@
   get_collection_for_user_and_logname = cfy(function*(userid, logname){
     return (yield get_collection(userid + "_" + logname));
   });
-  app.get('/feedback', function*(){
+  app.get('/feedback', auth, function*(){
     var feedback, collections, db, i$, len$, entry, collection, all_items, j$, len1$, item;
     feedback = [];
     collections = (yield list_collections());
@@ -90,7 +111,7 @@
       return collection.find({}, ["feedback"]).toArray(it);
     }
   });
-  app.get('/getactiveusers', function*(){
+  app.get('/getactiveusers', auth, function*(){
     var users, users_set, now, secs_in_day, collections, db, i$, len$, entry, entry_parts, userid, logname, collection, all_items, timestamp, this$ = this;
     users = [];
     users_set = {};
@@ -187,7 +208,7 @@
       success: true
     });
   });
-  app.get('/getsignups', function*(){
+  app.get('/getsignups', auth, function*(){
     var ref$, signups, db, all_results, x, err;
     this.type = 'json';
     try {
@@ -217,7 +238,7 @@
       }
     }
   });
-  app.get('/list_logs_for_user', function*(){
+  app.get('/list_logs_for_user', auth, function*(){
     var userid, user_collections;
     this.type = 'json';
     userid = this.request.query.userid;
@@ -231,7 +252,7 @@
     user_collections = (yield list_log_collections_for_user(userid));
     return this.body = JSON.stringify(user_collections);
   });
-  app.get('/list_logs_for_logname', function*(){
+  app.get('/list_logs_for_logname', auth, function*(){
     var logname, user_collections;
     this.type = 'json';
     logname = this.request.query.logname;
@@ -245,7 +266,7 @@
     user_collections = (yield list_log_collections_for_logname(logname));
     return this.body = JSON.stringify(user_collections);
   });
-  app.get('/printcollection', function*(){
+  app.get('/printcollection', auth, function*(){
     var ref$, collection, userid, logname, collection_name, db, items, err;
     ref$ = this.request.query, collection = ref$.collection, userid = ref$.userid, logname = ref$.logname;
     if (userid != null && logname != null) {
@@ -278,7 +299,7 @@
       }
     }
   });
-  app.get('/listcollections', function*(){
+  app.get('/listcollections', auth, function*(){
     this.type = 'json';
     return this.body = JSON.stringify((yield list_collections()));
   });

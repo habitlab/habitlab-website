@@ -9,6 +9,8 @@ require! {
   'koa-bodyparser'
   'koa-jsonp'
   'mongodb'
+  'getsecret'
+  'koa-basic-auth'
 }
 
 prelude = require 'prelude-ls'
@@ -18,6 +20,21 @@ kapp.use(koa-jsonp())
 kapp.use(koa-logger())
 kapp.use(koa-bodyparser())
 app = koa-router()
+
+# custom 401 handling
+
+app.use (next) ->*
+  try
+    yield next
+  catch err
+    if 401 == err.status
+      this.status = 401
+      this.set('WWW-Authenticate', 'Basic')
+      this.body = 'Authentication failed'
+    else
+      throw err
+
+auth = koa-basic-auth({name: getsecret('username'), pass: getsecret('password')})
 
 {cfy, cfy_node, yfy_node} = require 'cfy'
 
@@ -55,7 +72,7 @@ list_log_collections_for_logname = cfy (logname) ->*
 get_collection_for_user_and_logname = cfy (userid, logname) ->*
   return yield get_collection("#{userid}_#{logname}")
 
-app.get '/feedback' ->*
+app.get '/feedback', auth, ->*
   feedback = []
   collections = yield list_collections()
   db = yield get_mongo_db()
@@ -69,7 +86,7 @@ app.get '/feedback' ->*
   db.close()
   return    
 
-app.get '/getactiveusers' ->*
+app.get '/getactiveusers', auth, ->*
   users = []
   users_set = {}
   now = Date.now()
@@ -128,7 +145,7 @@ app.post '/addsignup', ->*
     db?close()
   this.body = JSON.stringify {response: 'success', success: true}
 
-app.get '/getsignups', ->*
+app.get '/getsignups', auth, ->*
   this.type = 'json'
   try
     [signups, db] = yield get_signups()
@@ -141,7 +158,7 @@ app.get '/getsignups', ->*
   finally
     db?close()
 
-app.get '/list_logs_for_user', ->*
+app.get '/list_logs_for_user', auth, ->*
   this.type = 'json'
   {userid} = this.request.query
   if not userid?
@@ -150,7 +167,7 @@ app.get '/list_logs_for_user', ->*
   user_collections = yield list_log_collections_for_user(userid)
   this.body = JSON.stringify user_collections
 
-app.get '/list_logs_for_logname', ->*
+app.get '/list_logs_for_logname', auth, ->*
   this.type = 'json'
   {logname} = this.request.query
   if not logname?
@@ -159,7 +176,7 @@ app.get '/list_logs_for_logname', ->*
   user_collections = yield list_log_collections_for_logname(logname)
   this.body = JSON.stringify user_collections
 
-app.get '/printcollection', ->*
+app.get '/printcollection', auth, ->*
   {collection, userid, logname} = this.request.query
   if userid? and logname?
     collection = "#{userid}_#{logname}"
@@ -177,7 +194,7 @@ app.get '/printcollection', ->*
   finally
     db?close()
 
-app.get '/listcollections', ->*
+app.get '/listcollections', auth, ->*
   this.type = 'json'
   this.body = JSON.stringify yield list_collections()
 
@@ -232,6 +249,7 @@ app.post '/addtolog', ->*
 
 kapp.use(app.routes())
 kapp.use(app.allowedMethods())
+
 kapp.use(koa-static(__dirname + '/www'))
 port = process.env.PORT ? 5000
 kapp.listen(port)
