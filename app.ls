@@ -55,6 +55,12 @@ get_collection = cfy (collection_name) ->*
 get_signups = cfy ->*
   return yield get_collection('signups')
 
+get_uninstalls = cfy ->*
+  return yield get_collection('uninstalls')
+
+get_uninstall_feedback = cfy ->*
+  return yield get_collection('uninstall_feedback')
+
 list_collections = cfy ->*
   ndb = yield get_mongo_db()
   collections_list = yield -> ndb.listCollections().toArray(it)
@@ -112,6 +118,56 @@ app.get '/getactiveusers', auth, ->*
   this.body = JSON.stringify users
   db.close()
   return
+
+app.get '/add_uninstall', ->*
+  this.type = 'json'
+  try
+    [uninstalls, db] = yield get_uninstalls()
+    yield -> uninstalls.insert(this.request.query, it)
+  catch err
+    console.log 'error in add_uninstall'
+    console.log err
+  finally
+    db?close()
+  this.body = JSON.stringify {response: 'done', success: true}
+
+app.get '/add_uninstall_feedback', ->*
+  this.type = 'json'
+  try
+    [uninstalls, db] = yield get_uninstall_feedback()
+    yield -> uninstalls.insert(this.request.query, it)
+  catch err
+    console.log 'error in add_uninstall'
+    console.log err
+  finally
+    db?close()
+  this.body = JSON.stringify {response: 'done', success: true}
+
+app.get '/get_uninstalls', auth, ->*
+  this.type = 'json'
+  try
+    [uninstalls, db] = yield get_uninstalls()
+    all_results = yield -> uninstalls.find({}).toArray(it)
+    this.body = JSON.stringify(all_results)
+  catch err
+    console.log 'error in get_uninstalls'
+    console.log err
+    this.body = JSON.stringify {response: 'error', error: 'error in get_uninstalls'}
+  finally
+    db?close()
+
+app.get '/get_uninstall_feedback', auth, ->*
+  this.type = 'json'
+  try
+    [uninstalls, db] = yield get_uninstall_feedback()
+    all_results = yield -> uninstalls.find({}).toArray(it)
+    this.body = JSON.stringify(all_results)
+  catch err
+    console.log 'error in get_uninstalls'
+    console.log err
+    this.body = JSON.stringify {response: 'error', error: 'error in get_uninstall_feedback'}
+  finally
+    db?close()
 
 app.get '/addsignup', ->*
   this.type = 'json'
