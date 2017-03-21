@@ -55,6 +55,9 @@ get_collection = cfy (collection_name) ->*
 get_signups = cfy ->*
   return yield get_collection('signups')
 
+get_installs = cfy ->*
+  return yield get_collection('installs')
+
 get_uninstalls = cfy ->*
   return yield get_collection('uninstalls')
 
@@ -119,11 +122,33 @@ app.get '/getactiveusers', auth, ->*
   db.close()
   return
 
+app.get '/add_install', ->*
+  this.type = 'json'
+  try
+    [installs, db] = yield get_installs()
+    query = {} <<< this.request.query
+    if query.callback?
+      delete query.callback
+    query.timestamp = Date.now()
+    query.ip = this.request.ip
+    yield -> installs.insert(query, it)
+  catch err
+    console.log 'error in add_install'
+    console.log err
+  finally
+    db?close()
+  this.body = JSON.stringify {response: 'done', success: true}
+
 app.get '/add_uninstall', ->*
   this.type = 'json'
   try
     [uninstalls, db] = yield get_uninstalls()
-    yield -> uninstalls.insert(this.request.query, it)
+    query = {} <<< this.request.query
+    if query.callback?
+      delete query.callback
+    query.timestamp = Date.now()
+    query.ip = this.request.ip
+    yield -> uninstalls.insert(query, it)
   catch err
     console.log 'error in add_uninstall'
     console.log err
@@ -135,7 +160,12 @@ app.get '/add_uninstall_feedback', ->*
   this.type = 'json'
   try
     [uninstalls, db] = yield get_uninstall_feedback()
-    yield -> uninstalls.insert(this.request.query, it)
+    query = {} <<< this.request.query
+    if query.callback?
+      delete query.callback
+    query.timestamp = Date.now()
+    query.ip = this.request.ip
+    yield -> uninstalls.insert(query, it)
   catch err
     console.log 'error in add_uninstall'
     console.log err
