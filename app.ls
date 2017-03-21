@@ -55,6 +55,9 @@ get_collection = cfy (collection_name) ->*
 get_signups = cfy ->*
   return yield get_collection('signups')
 
+get_logging_states = cfy ->*
+  return yield get_collection('logging_states')
+
 get_installs = cfy ->*
   return yield get_collection('installs')
 
@@ -121,6 +124,36 @@ app.get '/getactiveusers', auth, ->*
   this.body = JSON.stringify users
   db.close()
   return
+
+app.post '/add_logging_state', ->*
+  this.type = 'json'
+  try
+    [logging_states, db] = yield get_logging_states()
+    query = {} <<< this.request.body
+    if query.callback?
+      delete query.callback
+    query.timestamp = Date.now()
+    query.ip = this.request.ip
+    yield -> logging_states.insert(query, it)
+  catch err
+    console.log 'error in add_logging_state'
+    console.log err
+  finally
+    db?close()
+  this.body = JSON.stringify {response: 'done', success: true}
+
+app.get '/get_logging_states', auth, ->*
+  this.type = 'json'
+  try
+    [logging_states, db] = yield get_logging_states()
+    all_results = yield -> logging_states.find({}).toArray(it)
+    this.body = JSON.stringify(all_results)
+  catch err
+    console.log 'error in get_logging_states'
+    console.log err
+    this.body = JSON.stringify {response: 'error', error: 'error in get_logging_states'}
+  finally
+    db?close()
 
 app.get '/add_install', ->*
   this.type = 'json'

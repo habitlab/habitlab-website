@@ -1,5 +1,5 @@
 (function(){
-  var koa, koaStatic, koaRouter, koaLogger, koaBodyparser, koaJsonp, mongodb, getsecret, koaBasicAuth, prelude, kapp, app, auth, ref$, cfy, cfy_node, yfy_node, mongourl, get_mongo_db, get_collection, get_signups, get_installs, get_uninstalls, get_uninstall_feedback, list_collections, list_log_collections_for_user, list_log_collections_for_logname, get_collection_for_user_and_logname, port, slice$ = [].slice;
+  var koa, koaStatic, koaRouter, koaLogger, koaBodyparser, koaJsonp, mongodb, getsecret, koaBasicAuth, prelude, kapp, app, auth, ref$, cfy, cfy_node, yfy_node, mongourl, get_mongo_db, get_collection, get_signups, get_logging_states, get_installs, get_uninstalls, get_uninstall_feedback, list_collections, list_log_collections_for_user, list_log_collections_for_logname, get_collection_for_user_and_logname, port, slice$ = [].slice;
   process.on('unhandledRejection', function(reason, p){
     throw new Error(reason);
   });
@@ -58,6 +58,9 @@
   });
   get_signups = cfy(function*(){
     return (yield get_collection('signups'));
+  });
+  get_logging_states = cfy(function*(){
+    return (yield get_collection('logging_states'));
   });
   get_installs = cfy(function*(){
     return (yield get_collection('installs'));
@@ -155,6 +158,57 @@
     }
     function fn1$(it){
       return it.timestamp;
+    }
+  });
+  app.post('/add_logging_state', function*(){
+    var ref$, logging_states, db, query, err;
+    this.type = 'json';
+    try {
+      ref$ = (yield get_logging_states()), logging_states = ref$[0], db = ref$[1];
+      query = import$({}, this.request.body);
+      if (query.callback != null) {
+        delete query.callback;
+      }
+      query.timestamp = Date.now();
+      query.ip = this.request.ip;
+      (yield function(it){
+        return logging_states.insert(query, it);
+      });
+    } catch (e$) {
+      err = e$;
+      console.log('error in add_logging_state');
+      console.log(err);
+    } finally {
+      if (db != null) {
+        db.close();
+      }
+    }
+    return this.body = JSON.stringify({
+      response: 'done',
+      success: true
+    });
+  });
+  app.get('/get_logging_states', auth, function*(){
+    var ref$, logging_states, db, all_results, err;
+    this.type = 'json';
+    try {
+      ref$ = (yield get_logging_states()), logging_states = ref$[0], db = ref$[1];
+      all_results = (yield function(it){
+        return logging_states.find({}).toArray(it);
+      });
+      return this.body = JSON.stringify(all_results);
+    } catch (e$) {
+      err = e$;
+      console.log('error in get_logging_states');
+      console.log(err);
+      return this.body = JSON.stringify({
+        response: 'error',
+        error: 'error in get_logging_states'
+      });
+    } finally {
+      if (db != null) {
+        db.close();
+      }
     }
   });
   app.get('/add_install', function*(){
