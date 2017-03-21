@@ -185,6 +185,34 @@
       success: true
     });
   });
+  app.post('/add_install', function*(){
+    var ref$, installs, db, query, err;
+    this.type = 'json';
+    try {
+      ref$ = (yield get_installs()), installs = ref$[0], db = ref$[1];
+      query = import$({}, this.request.body);
+      if (query.callback != null) {
+        delete query.callback;
+      }
+      query.timestamp = Date.now();
+      query.ip = this.request.ip;
+      (yield function(it){
+        return installs.insert(query, it);
+      });
+    } catch (e$) {
+      err = e$;
+      console.log('error in add_install');
+      console.log(err);
+    } finally {
+      if (db != null) {
+        db.close();
+      }
+    }
+    return this.body = JSON.stringify({
+      response: 'done',
+      success: true
+    });
+  });
   app.get('/add_uninstall', function*(){
     var ref$, uninstalls, db, query, err;
     this.type = 'json';

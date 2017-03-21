@@ -139,6 +139,23 @@ app.get '/add_install', ->*
     db?close()
   this.body = JSON.stringify {response: 'done', success: true}
 
+app.post '/add_install', ->*
+  this.type = 'json'
+  try
+    [installs, db] = yield get_installs()
+    query = {} <<< this.request.body
+    if query.callback?
+      delete query.callback
+    query.timestamp = Date.now()
+    query.ip = this.request.ip
+    yield -> installs.insert(query, it)
+  catch err
+    console.log 'error in add_install'
+    console.log err
+  finally
+    db?close()
+  this.body = JSON.stringify {response: 'done', success: true}
+
 app.get '/add_uninstall', ->*
   this.type = 'json'
   try
