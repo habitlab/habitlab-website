@@ -167,11 +167,24 @@ app.get '/add_uninstall_feedback', ->*
     query.ip = this.request.ip
     yield -> uninstalls.insert(query, it)
   catch err
-    console.log 'error in add_uninstall'
+    console.log 'error in add_uninstall_feedback'
     console.log err
   finally
     db?close()
   this.body = JSON.stringify {response: 'done', success: true}
+
+app.get '/get_installs', auth, ->*
+  this.type = 'json'
+  try
+    [installs, db] = yield get_installs()
+    all_results = yield -> installs.find({}).toArray(it)
+    this.body = JSON.stringify(all_results)
+  catch err
+    console.log 'error in get_installs'
+    console.log err
+    this.body = JSON.stringify {response: 'error', error: 'error in get_installs'}
+  finally
+    db?close()
 
 app.get '/get_uninstalls', auth, ->*
   this.type = 'json'

@@ -229,7 +229,7 @@
       });
     } catch (e$) {
       err = e$;
-      console.log('error in add_uninstall');
+      console.log('error in add_uninstall_feedback');
       console.log(err);
     } finally {
       if (db != null) {
@@ -240,6 +240,29 @@
       response: 'done',
       success: true
     });
+  });
+  app.get('/get_installs', auth, function*(){
+    var ref$, installs, db, all_results, err;
+    this.type = 'json';
+    try {
+      ref$ = (yield get_installs()), installs = ref$[0], db = ref$[1];
+      all_results = (yield function(it){
+        return installs.find({}).toArray(it);
+      });
+      return this.body = JSON.stringify(all_results);
+    } catch (e$) {
+      err = e$;
+      console.log('error in get_installs');
+      console.log(err);
+      return this.body = JSON.stringify({
+        response: 'error',
+        error: 'error in get_installs'
+      });
+    } finally {
+      if (db != null) {
+        db.close();
+      }
+    }
   });
   app.get('/get_uninstalls', auth, function*(){
     var ref$, uninstalls, db, all_results, err;
