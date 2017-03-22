@@ -16,4 +16,4 @@ for command in ['gulp', 'node-dev', 'mongosrv'] # 'pouchdb-server'
 exec 'gulp', {async: true}
 if not getsecret('MONGODB_URI')?
   exec 'mongosrv', {async: true}
-exec 'node-dev app.ls', {async: true}
+exec 'node-dev app.js', {async: true}

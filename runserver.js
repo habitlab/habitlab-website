@@ -21,7 +21,7 @@
       async: true
     });
   }
-  exec('node-dev app.ls', {
+  exec('node-dev app.js', {
     async: true
   });
 }).call(this);
