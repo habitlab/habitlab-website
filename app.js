@@ -16,7 +16,9 @@
     roles[role] = true;
   }
   if (roles.https != null) {
-    app.use(require('koa-sslify')());
+    app.use(require('koa-sslify')({
+      trustProtoHeader: true
+    }));
   }
   require('./common_routes');
   if (roles.logging != null) {
