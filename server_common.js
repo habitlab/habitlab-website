@@ -9,6 +9,7 @@
   mongodb = require('mongodb');
   getsecret = require('getsecret');
   koaBasicAuth = require('koa-basic-auth');
+  out$.mongodb = mongodb;
   out$.prelude = prelude = require('prelude-ls');
   out$.kapp = kapp = koa();
   kapp.use(koaJsonp());

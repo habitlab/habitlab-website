@@ -10,6 +10,7 @@ require! {
   'koa-basic-auth'
 }
 
+export mongodb
 export prelude = require 'prelude-ls'
 
 export kapp = koa()
