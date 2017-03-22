@@ -18,6 +18,16 @@ roles = {}
 for role in roles_list
   roles[role] = true
 
+app.use (next) ->*
+  ip_addr = this.request.headers["x-forwarded-for"]
+  if ip_addr
+    list = ip_addr.split(",")
+    ip_addr = list[list.length-1]
+  else
+    ip_addr = this.request.ip
+  this.request.ip_address_fixed = ip_addr
+  yield next
+
 if roles.https?
   app.use(require('koa-sslify')({trustProtoHeader: true}))
 

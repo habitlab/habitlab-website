@@ -15,6 +15,18 @@
     role = roles_list[i$];
     roles[role] = true;
   }
+  app.use(function*(next){
+    var ip_addr, list;
+    ip_addr = this.request.headers["x-forwarded-for"];
+    if (ip_addr) {
+      list = ip_addr.split(",");
+      ip_addr = list[list.length - 1];
+    } else {
+      ip_addr = this.request.ip;
+    }
+    this.request.ip_address_fixed = ip_addr;
+    return (yield next);
+  });
   if (roles.https != null) {
     app.use(require('koa-sslify')({
       trustProtoHeader: true
