@@ -22,7 +22,7 @@ app.post '/add_secret', ->*
       delete query.callback
     {user_id, user_secret} = query
     query.timestamp = Date.now()
-    query.ip = this.request.ip
+    query.ip = this.request.ip_address_fixed
     if not user_id?
       this.body = JSON.stringify {response: 'error', error: 'Need user_id'}
       return
@@ -48,7 +48,7 @@ app.post '/add_logging_state', ->*
     if query.callback?
       delete query.callback
     query.timestamp = Date.now()
-    query.ip = this.request.ip
+    query.ip = this.request.ip_address_fixed
     yield -> logging_states.insert(query, it)
   catch err
     console.log 'error in add_logging_state'
@@ -65,7 +65,7 @@ app.get '/add_install', ->*
     if query.callback?
       delete query.callback
     query.timestamp = Date.now()
-    query.ip = this.request.ip
+    query.ip = this.request.ip_address_fixed
     yield -> installs.insert(query, it)
   catch err
     console.log 'error in add_install'
@@ -82,7 +82,7 @@ app.post '/add_install', ->*
     if query.callback?
       delete query.callback
     query.timestamp = Date.now()
-    query.ip = this.request.ip
+    query.ip = this.request.ip_address_fixed
     yield -> installs.insert(query, it)
   catch err
     console.log 'error in add_install'
@@ -99,7 +99,7 @@ app.get '/add_uninstall', ->*
     if query.callback?
       delete query.callback
     query.timestamp = Date.now()
-    query.ip = this.request.ip
+    query.ip = this.request.ip_address_fixed
     yield -> uninstalls.insert(query, it)
   catch err
     console.log 'error in add_uninstall'
@@ -116,7 +116,7 @@ app.get '/add_uninstall_feedback', ->*
     if query.callback?
       delete query.callback
     query.timestamp = Date.now()
-    query.ip = this.request.ip
+    query.ip = this.request.ip_address_fixed
     yield -> uninstalls.insert(query, it)
   catch err
     console.log 'error in add_uninstall_feedback'

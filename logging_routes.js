@@ -12,7 +12,7 @@
       }
       user_id = query.user_id, user_secret = query.user_secret;
       query.timestamp = Date.now();
-      query.ip = this.request.ip;
+      query.ip = this.request.ip_address_fixed;
       if (user_id == null) {
         this.body = JSON.stringify({
           response: 'error',
@@ -63,7 +63,7 @@
         delete query.callback;
       }
       query.timestamp = Date.now();
-      query.ip = this.request.ip;
+      query.ip = this.request.ip_address_fixed;
       (yield function(it){
         return logging_states.insert(query, it);
       });
@@ -91,7 +91,7 @@
         delete query.callback;
       }
       query.timestamp = Date.now();
-      query.ip = this.request.ip;
+      query.ip = this.request.ip_address_fixed;
       (yield function(it){
         return installs.insert(query, it);
       });
@@ -119,7 +119,7 @@
         delete query.callback;
       }
       query.timestamp = Date.now();
-      query.ip = this.request.ip;
+      query.ip = this.request.ip_address_fixed;
       (yield function(it){
         return installs.insert(query, it);
       });
@@ -147,7 +147,7 @@
         delete query.callback;
       }
       query.timestamp = Date.now();
-      query.ip = this.request.ip;
+      query.ip = this.request.ip_address_fixed;
       (yield function(it){
         return uninstalls.insert(query, it);
       });
@@ -175,7 +175,7 @@
         delete query.callback;
       }
       query.timestamp = Date.now();
-      query.ip = this.request.ip;
+      query.ip = this.request.ip_address_fixed;
       (yield function(it){
         return uninstalls.insert(query, it);
       });
