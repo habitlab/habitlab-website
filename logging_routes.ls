@@ -20,17 +20,17 @@ app.post '/add_secret', ->*
     query = {} <<< this.request.body
     if query.callback?
       delete query.callback
-    {user_id, secret} = query
+    {user_id, user_secret} = query
     query.timestamp = Date.now()
     query.ip = this.request.ip
     if not user_id?
       this.body = JSON.stringify {response: 'error', error: 'Need user_id'}
       return
-    if not secret?
-      this.body = JSON.stringify {response: 'error', error: 'Need secret'}
+    if not user_secret?
+      this.body = JSON.stringify {response: 'error', error: 'Need user_secret'}
       return
     if (yield secrets.findOne({'user_id': user_id}))?
-      this.body = JSON.stringify {response: 'error', error: 'Already have set secret for user_id'}
+      this.body = JSON.stringify {response: 'error', error: 'Already have set user_secret for user_id'}
       return
     yield -> secrets.insert(query, it)
   catch err
