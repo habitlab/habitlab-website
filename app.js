@@ -1,5 +1,5 @@
 (function(){
-  var koa, koaStatic, koaRouter, koaLogger, koaBodyparser, koaJsonp, mongodb, getsecret, koaBasicAuth, prelude, kapp, app, auth, ref$, cfy, cfy_node, yfy_node, mongourl, get_mongo_db, get_collection, get_signups, get_logging_states, get_installs, get_uninstalls, get_uninstall_feedback, list_collections, list_log_collections_for_user, list_log_collections_for_logname, get_collection_for_user_and_logname, port, slice$ = [].slice;
+  var koa, koaStatic, koaRouter, koaLogger, koaBodyparser, koaJsonp, mongodb, getsecret, koaBasicAuth, prelude, kapp, app, auth, ref$, cfy, cfy_node, yfy_node, mongourl, get_mongo_db, get_collection, get_signups, get_secrets, get_logging_states, get_installs, get_uninstalls, get_uninstall_feedback, list_collections, list_log_collections_for_user, list_log_collections_for_logname, get_collection_for_user_and_logname, port, slice$ = [].slice;
   process.on('unhandledRejection', function(reason, p){
     throw new Error(reason);
   });
@@ -18,25 +18,31 @@
   kapp.use(koaLogger());
   kapp.use(koaBodyparser());
   app = koaRouter();
-  app.use(function*(next){
-    var err;
-    try {
-      return (yield next);
-    } catch (e$) {
-      err = e$;
-      if (401 === err.status) {
-        this.status = 401;
-        this.set('WWW-Authenticate', 'Basic');
-        return this.body = 'Authentication failed';
-      } else {
-        throw err;
+  if (getsecret('username') != null || getsecret('password') != null) {
+    app.use(function*(next){
+      var err;
+      try {
+        return (yield next);
+      } catch (e$) {
+        err = e$;
+        if (401 === err.status) {
+          this.status = 401;
+          this.set('WWW-Authenticate', 'Basic');
+          return this.body = 'Authentication failed';
+        } else {
+          throw err;
+        }
       }
-    }
-  });
-  auth = koaBasicAuth({
-    name: getsecret('username'),
-    pass: getsecret('password')
-  });
+    });
+    auth = koaBasicAuth({
+      name: getsecret('username'),
+      pass: getsecret('password')
+    });
+  } else {
+    auth = function*(next){
+      return (yield next);
+    };
+  }
   ref$ = require('cfy'), cfy = ref$.cfy, cfy_node = ref$.cfy_node, yfy_node = ref$.yfy_node;
   mongourl = (ref$ = getsecret('MONGODB_URI')) != null ? ref$ : 'mongodb://localhost:27017/default';
   get_mongo_db = cfy(function*(){
@@ -58,6 +64,9 @@
   });
   get_signups = cfy(function*(){
     return (yield get_collection('signups'));
+  });
+  get_secrets = cfy(function*(){
+    return (yield get_collection('secrets'));
   });
   get_logging_states = cfy(function*(){
     return (yield get_collection('logging_states'));
@@ -159,6 +168,81 @@
     function fn1$(it){
       return it.timestamp;
     }
+  });
+  app.get('/get_secrets', auth, function*(){
+    var ref$, secrets, db, all_results, err;
+    this.type = 'json';
+    try {
+      ref$ = (yield get_secrets()), secrets = ref$[0], db = ref$[1];
+      all_results = (yield function(it){
+        return secrets.find({}).toArray(it);
+      });
+      return this.body = JSON.stringify(all_results);
+    } catch (e$) {
+      err = e$;
+      console.log('error in get_secrets');
+      console.log(err);
+      return this.body = JSON.stringify({
+        response: 'error',
+        error: 'error in get_secrets'
+      });
+    } finally {
+      if (db != null) {
+        db.close();
+      }
+    }
+  });
+  app.post('/add_secret', function*(){
+    var ref$, secrets, db, query, user_id, secret, err;
+    this.type = 'json';
+    try {
+      ref$ = (yield get_secrets()), secrets = ref$[0], db = ref$[1];
+      query = import$({}, this.request.body);
+      if (query.callback != null) {
+        delete query.callback;
+      }
+      user_id = query.user_id, secret = query.secret;
+      query.timestamp = Date.now();
+      query.ip = this.request.ip;
+      if (user_id == null) {
+        this.body = JSON.stringify({
+          response: 'error',
+          error: 'Need user_id'
+        });
+        return;
+      }
+      if (secret == null) {
+        this.body = JSON.stringify({
+          response: 'error',
+          error: 'Need secret'
+        });
+        return;
+      }
+      if ((yield secrets.findOne({
+        'user_id': user_id
+      })) != null) {
+        this.body = JSON.stringify({
+          response: 'error',
+          error: 'Already have set secret for user_id'
+        });
+        return;
+      }
+      (yield function(it){
+        return secrets.insert(query, it);
+      });
+    } catch (e$) {
+      err = e$;
+      console.log('error in add_secret');
+      console.log(err);
+    } finally {
+      if (db != null) {
+        db.close();
+      }
+    }
+    return this.body = JSON.stringify({
+      response: 'done',
+      success: true
+    });
   });
   app.post('/add_logging_state', function*(){
     var ref$, logging_states, db, query, err;

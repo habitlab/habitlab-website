@@ -21,20 +21,21 @@ kapp.use(koa-logger())
 kapp.use(koa-bodyparser())
 app = koa-router()
 
-# custom 401 handling
-
-app.use (next) ->*
-  try
-    yield next
-  catch err
-    if 401 == err.status
-      this.status = 401
-      this.set('WWW-Authenticate', 'Basic')
-      this.body = 'Authentication failed'
-    else
-      throw err
-
-auth = koa-basic-auth({name: getsecret('username'), pass: getsecret('password')})
+if getsecret('username')? or getsecret('password')?
+  # custom 401 handling
+  app.use (next) ->*
+    try
+      yield next
+    catch err
+      if 401 == err.status
+        this.status = 401
+        this.set('WWW-Authenticate', 'Basic')
+        this.body = 'Authentication failed'
+      else
+        throw err
+  auth = koa-basic-auth({name: getsecret('username'), pass: getsecret('password')})
+else
+  auth = (next) ->* yield next
 
 {cfy, cfy_node, yfy_node} = require 'cfy'
 
@@ -54,6 +55,9 @@ get_collection = cfy (collection_name) ->*
 
 get_signups = cfy ->*
   return yield get_collection('signups')
+
+get_secrets = cfy ->*
+  return yield get_collection('secrets')
 
 get_logging_states = cfy ->*
   return yield get_collection('logging_states')
@@ -124,6 +128,46 @@ app.get '/getactiveusers', auth, ->*
   this.body = JSON.stringify users
   db.close()
   return
+
+app.get '/get_secrets', auth, ->*
+  this.type = 'json'
+  try
+    [secrets, db] = yield get_secrets()
+    all_results = yield -> secrets.find({}).toArray(it)
+    this.body = JSON.stringify(all_results)
+  catch err
+    console.log 'error in get_secrets'
+    console.log err
+    this.body = JSON.stringify {response: 'error', error: 'error in get_secrets'}
+  finally
+    db?close()
+
+app.post '/add_secret', ->*
+  this.type = 'json'
+  try
+    [secrets, db] = yield get_secrets()
+    query = {} <<< this.request.body
+    if query.callback?
+      delete query.callback
+    {user_id, secret} = query
+    query.timestamp = Date.now()
+    query.ip = this.request.ip
+    if not user_id?
+      this.body = JSON.stringify {response: 'error', error: 'Need user_id'}
+      return
+    if not secret?
+      this.body = JSON.stringify {response: 'error', error: 'Need secret'}
+      return
+    if (yield secrets.findOne({'user_id': user_id}))?
+      this.body = JSON.stringify {response: 'error', error: 'Already have set secret for user_id'}
+      return
+    yield -> secrets.insert(query, it)
+  catch err
+    console.log 'error in add_secret'
+    console.log err
+  finally
+    db?close()
+  this.body = JSON.stringify {response: 'done', success: true}
 
 app.post '/add_logging_state', ->*
   this.type = 'json'
