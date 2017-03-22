@@ -108,6 +108,9 @@
   get_collection_for_user_and_logname = cfy(function*(userid, logname){
     return (yield get_collection(userid + "_" + logname));
   });
+  app.get('/ping', function*(){
+    this.body = 'hi';
+  });
   app.get('/feedback', auth, function*(){
     var feedback, collections, db, i$, len$, entry, collection, all_items, j$, len1$, item;
     feedback = [];

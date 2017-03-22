@@ -88,6 +88,10 @@ list_log_collections_for_logname = cfy (logname) ->*
 get_collection_for_user_and_logname = cfy (userid, logname) ->*
   return yield get_collection("#{userid}_#{logname}")
 
+app.get '/ping', ->*
+  this.body = 'hi'
+  return
+
 app.get '/feedback', auth, ->*
   feedback = []
   collections = yield list_collections()
