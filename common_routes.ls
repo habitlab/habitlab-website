@@ -12,7 +12,7 @@ app.get '/my_ip_address', ->*
   return
 
 app.get '/log_error', ->*
-  console.log 'an error should be logged'
+  console.error 'an error should be logged'
   this.body = 'hi'
   return
 

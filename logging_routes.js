@@ -41,8 +41,8 @@
       });
     } catch (e$) {
       err = e$;
-      console.log('error in add_secret');
-      console.log(err);
+      console.error('error in add_secret');
+      console.error(err);
     } finally {
       if (db != null) {
         db.close();
@@ -69,8 +69,8 @@
       });
     } catch (e$) {
       err = e$;
-      console.log('error in add_logging_state');
-      console.log(err);
+      console.error('error in add_logging_state');
+      console.error(err);
     } finally {
       if (db != null) {
         db.close();
@@ -97,8 +97,8 @@
       });
     } catch (e$) {
       err = e$;
-      console.log('error in add_install');
-      console.log(err);
+      console.error('error in add_install');
+      console.error(err);
     } finally {
       if (db != null) {
         db.close();
@@ -125,8 +125,8 @@
       });
     } catch (e$) {
       err = e$;
-      console.log('error in add_install');
-      console.log(err);
+      console.error('error in add_install');
+      console.error(err);
     } finally {
       if (db != null) {
         db.close();
@@ -153,8 +153,8 @@
       });
     } catch (e$) {
       err = e$;
-      console.log('error in add_uninstall');
-      console.log(err);
+      console.error('error in add_uninstall');
+      console.error(err);
     } finally {
       if (db != null) {
         db.close();
@@ -181,8 +181,8 @@
       });
     } catch (e$) {
       err = e$;
-      console.log('error in add_uninstall_feedback');
-      console.log(err);
+      console.error('error in add_uninstall_feedback');
+      console.error(err);
     } finally {
       if (db != null) {
         db.close();
@@ -234,8 +234,8 @@
       });
     } catch (e$) {
       err = e$;
-      console.log('error in addtolog');
-      console.log(err);
+      console.error('error in addtolog');
+      console.error(err);
     } finally {
       if (db != null) {
         db.close();
@@ -272,8 +272,8 @@
       });
     } catch (e$) {
       err = e$;
-      console.log('error in sync_collection_item');
-      console.log(err);
+      console.error('error in sync_collection_item');
+      console.error(err);
     } finally {
       if (db != null) {
         db.close();
@@ -302,8 +302,8 @@
       });
     } catch (e$) {
       err = e$;
-      console.log('error in addsignup');
-      console.log(err);
+      console.error('error in addsignup');
+      console.error(err);
     } finally {
       if (db != null) {
         db.close();
@@ -332,8 +332,8 @@
       });
     } catch (e$) {
       err = e$;
-      console.log('error in addsignup');
-      console.log(err);
+      console.error('error in addsignup');
+      console.error(err);
     } finally {
       if (db != null) {
         db.close();

@@ -43,8 +43,8 @@ export get_mongo_db = cfy ->*
   try
     return yield -> mongodb.MongoClient.connect mongourl, it
   catch err
-    console.log 'error getting mongodb'
-    console.log err
+    console.error 'error getting mongodb'
+    console.error err
     return
 
 export get_collection = cfy (collection_name) ->*

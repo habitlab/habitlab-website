@@ -51,8 +51,8 @@
       });
     } catch (e$) {
       err = e$;
-      console.log('error getting mongodb');
-      console.log(err);
+      console.error('error getting mongodb');
+      console.error(err);
     }
   });
   out$.get_collection = get_collection = cfy(function*(collection_name){

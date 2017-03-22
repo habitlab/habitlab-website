@@ -8,7 +8,7 @@
     this.body = this.request.ip_address_fixed;
   });
   app.get('/log_error', function*(){
-    console.log('an error should be logged');
+    console.error('an error should be logged');
     this.body = 'hi';
   });
   app.get('/throw_error', function*(){

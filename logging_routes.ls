@@ -35,8 +35,8 @@ app.post '/add_secret', ->*
       return
     yield -> secrets.insert(query, it)
   catch err
-    console.log 'error in add_secret'
-    console.log err
+    console.error 'error in add_secret'
+    console.error err
   finally
     db?close()
   this.body = JSON.stringify {response: 'done', success: true}
@@ -52,8 +52,8 @@ app.post '/add_logging_state', ->*
     query.ip = this.request.ip_address_fixed
     yield -> logging_states.insert(query, it)
   catch err
-    console.log 'error in add_logging_state'
-    console.log err
+    console.error 'error in add_logging_state'
+    console.error err
   finally
     db?close()
   this.body = JSON.stringify {response: 'done', success: true}
@@ -69,8 +69,8 @@ app.get '/add_install', ->*
     query.ip = this.request.ip_address_fixed
     yield -> installs.insert(query, it)
   catch err
-    console.log 'error in add_install'
-    console.log err
+    console.error 'error in add_install'
+    console.error err
   finally
     db?close()
   this.body = JSON.stringify {response: 'done', success: true}
@@ -86,8 +86,8 @@ app.post '/add_install', ->*
     query.ip = this.request.ip_address_fixed
     yield -> installs.insert(query, it)
   catch err
-    console.log 'error in add_install'
-    console.log err
+    console.error 'error in add_install'
+    console.error err
   finally
     db?close()
   this.body = JSON.stringify {response: 'done', success: true}
@@ -103,8 +103,8 @@ app.get '/add_uninstall', ->*
     query.ip = this.request.ip_address_fixed
     yield -> uninstalls.insert(query, it)
   catch err
-    console.log 'error in add_uninstall'
-    console.log err
+    console.error 'error in add_uninstall'
+    console.error err
   finally
     db?close()
   this.body = JSON.stringify {response: 'done', success: true}
@@ -120,8 +120,8 @@ app.get '/add_uninstall_feedback', ->*
     query.ip = this.request.ip_address_fixed
     yield -> uninstalls.insert(query, it)
   catch err
-    console.log 'error in add_uninstall_feedback'
-    console.log err
+    console.error 'error in add_uninstall_feedback'
+    console.error err
   finally
     db?close()
   this.body = JSON.stringify {response: 'done', success: true}
@@ -147,8 +147,8 @@ app.post '/addtolog', ->*
     this.request.body._id = mongodb.ObjectId.createFromHexString(itemid)
     yield -> collection.insert(this.request.body, it)
   catch err
-    console.log 'error in addtolog'
-    console.log err
+    console.error 'error in addtolog'
+    console.error err
   finally
     db?close()
   #this.body = JSON.stringify {response: 'error', error: 'not yet implemented'}
@@ -168,8 +168,8 @@ app.post '/sync_collection_item', ->*
     [collection,db] = yield get_collection_for_user_and_logname(userid, 'synced:' + collection_name)
     yield -> collection.insert(this.request.body, it)
   catch err
-    console.log 'error in sync_collection_item'
-    console.log err
+    console.error 'error in sync_collection_item'
+    console.error err
   finally
     db?close()
   #this.body = JSON.stringify {response: 'error', error: 'not yet implemented'}
@@ -185,8 +185,8 @@ app.post '/addsignup', ->*
     [signups, db] = yield get_signups()
     yield -> signups.insert(this.request.body, it)
   catch err
-    console.log 'error in addsignup'
-    console.log err
+    console.error 'error in addsignup'
+    console.error err
   finally
     db?close()
   this.body = JSON.stringify {response: 'success', success: true}
@@ -201,8 +201,8 @@ app.get '/addsignup', ->*
     [signups,db] = yield get_signups()
     yield -> signups.insert(this.request.query, it)
   catch err
-    console.log 'error in addsignup'
-    console.log err
+    console.error 'error in addsignup'
+    console.error err
   finally
     db?close()
   this.body = JSON.stringify {response: 'done', success: true}
