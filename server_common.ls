@@ -2,7 +2,6 @@ require! {
   'koa'
   'koa-static'
   'koa-router'
-  'koa-logger'
   'koa-bodyparser'
   'koa-jsonp'
   'mongodb'
@@ -15,7 +14,7 @@ export prelude = require 'prelude-ls'
 
 export kapp = koa()
 kapp.use(koa-jsonp())
-kapp.use(koa-logger())
+#kapp.use(koa-logger())
 kapp.use(koa-bodyparser())
 export app = koa-router()
 
