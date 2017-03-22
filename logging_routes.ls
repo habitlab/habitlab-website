@@ -128,7 +128,8 @@ app.get '/add_uninstall_feedback', ->*
 
 app.post '/addtolog', ->*
   this.type = 'json'
-  {userid, logname, itemid} = this.request.body
+  {userid, logname} = this.request.body
+  # {itemid} = this.request.body
   logname = logname.split('/').join(':')
   if not userid?
     this.body = JSON.stringify {response: 'error', error: 'need parameter userid'}
@@ -136,15 +137,15 @@ app.post '/addtolog', ->*
   if not logname?
     this.body = JSON.stringify {response: 'error', error: 'need parameter logname'}
     return
-  if not itemid?
-    this.body = JSON.stringify {response: 'error', error: 'need parameter itemid'}
-    return
-  if itemid.length != 24
-    this.body = JSON.stringify {response: 'error', error: 'itemid length needs to be 24'}
-    return
+  #if not itemid?
+  #  this.body = JSON.stringify {response: 'error', error: 'need parameter itemid'}
+  #  return
+  #if itemid.length != 24
+  #  this.body = JSON.stringify {response: 'error', error: 'itemid length needs to be 24'}
+  #  return
   try
     [collection,db] = yield get_collection_for_user_and_logname(userid, logname)
-    this.request.body._id = mongodb.ObjectId.createFromHexString(itemid)
+    #this.request.body._id = mongodb.ObjectId.createFromHexString(itemid)
     yield -> collection.insert(this.request.body, it)
   catch err
     console.error 'error in addtolog'

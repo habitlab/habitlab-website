@@ -194,9 +194,9 @@
     });
   });
   app.post('/addtolog', function*(){
-    var ref$, userid, logname, itemid, collection, db, err;
+    var ref$, userid, logname, collection, db, err;
     this.type = 'json';
-    ref$ = this.request.body, userid = ref$.userid, logname = ref$.logname, itemid = ref$.itemid;
+    ref$ = this.request.body, userid = ref$.userid, logname = ref$.logname;
     logname = logname.split('/').join(':');
     if (userid == null) {
       this.body = JSON.stringify({
@@ -212,23 +212,8 @@
       });
       return;
     }
-    if (itemid == null) {
-      this.body = JSON.stringify({
-        response: 'error',
-        error: 'need parameter itemid'
-      });
-      return;
-    }
-    if (itemid.length !== 24) {
-      this.body = JSON.stringify({
-        response: 'error',
-        error: 'itemid length needs to be 24'
-      });
-      return;
-    }
     try {
       ref$ = (yield get_collection_for_user_and_logname(userid, logname)), collection = ref$[0], db = ref$[1];
-      this.request.body._id = mongodb.ObjectId.createFromHexString(itemid);
       (yield function(it){
         return collection.insert(this.request.body, it);
       });
