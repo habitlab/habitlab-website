@@ -1,8 +1,9 @@
 (function(){
-  var fs, os, path, ref$, exec, which, i$, len$, command;
+  var fs, os, path, getsecret, ref$, exec, which, i$, len$, command;
   fs = require('fs');
   os = require('os');
   path = require('path');
+  getsecret = require('getsecret');
   ref$ = require('shelljs'), exec = ref$.exec, which = ref$.which;
   for (i$ = 0, len$ = (ref$ = ['gulp', 'node-dev', 'mongosrv']).length; i$ < len$; ++i$) {
     command = ref$[i$];
@@ -15,9 +16,11 @@
   exec('gulp', {
     async: true
   });
-  exec('mongosrv', {
-    async: true
-  });
+  if (getsecret('MONGODB_URI') == null) {
+    exec('mongosrv', {
+      async: true
+    });
+  }
   exec('node-dev app.ls', {
     async: true
   });

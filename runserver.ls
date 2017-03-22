@@ -2,6 +2,7 @@ require! {
   fs
   os
   path
+  getsecret
 }
 
 {exec, which} = require 'shelljs'
@@ -13,5 +14,6 @@ for command in ['gulp', 'node-dev', 'mongosrv'] # 'pouchdb-server'
     process.exit()
 
 exec 'gulp', {async: true}
-exec 'mongosrv', {async: true}
+if not getsecret('MONGODB_URI')?
+  exec 'mongosrv', {async: true}
 exec 'node-dev app.ls', {async: true}
