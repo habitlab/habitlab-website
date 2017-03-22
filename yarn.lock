@@ -799,6 +799,10 @@ koa-send@^3.3.0:
     mz "^2.3.1"
     resolve-path "^1.3.1"
 
+koa-sslify@^1.1.0:
+  version "1.1.0"
+  resolved "https://registry.yarnpkg.com/koa-sslify/-/koa-sslify-1.1.0.tgz#f631282f9e93f8dbb7646752aff7ccc85b3ace22"
+
 koa-static@^2.0.0:
   version "2.1.0"
   resolved "https://registry.yarnpkg.com/koa-static/-/koa-static-2.1.0.tgz#cfe292ea7dabc96aa723e4a488615cc65ae74169"

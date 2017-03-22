@@ -18,6 +18,9 @@ roles = {}
 for role in roles_list
   roles[role] = true
 
+if roles.https?
+  app.use(require('koa-sslify')())
+
 require('./common_routes')
 if roles.logging?
   require('./logging_routes')

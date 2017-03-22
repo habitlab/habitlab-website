@@ -15,6 +15,9 @@
     role = roles_list[i$];
     roles[role] = true;
   }
+  if (roles.https != null) {
+    app.use(require('koa-sslify')());
+  }
   require('./common_routes');
   if (roles.logging != null) {
     require('./logging_routes');
