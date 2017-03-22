@@ -38,7 +38,7 @@
     pass: getsecret('password')
   });
   ref$ = require('cfy'), cfy = ref$.cfy, cfy_node = ref$.cfy_node, yfy_node = ref$.yfy_node;
-  mongourl = (ref$ = process.env.MONGODB_URI) != null ? ref$ : 'mongodb://localhost:27017/default';
+  mongourl = (ref$ = getsecret('MONGODB_URI')) != null ? ref$ : 'mongodb://localhost:27017/default';
   get_mongo_db = cfy(function*(){
     var err;
     try {

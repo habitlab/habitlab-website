@@ -38,7 +38,7 @@ auth = koa-basic-auth({name: getsecret('username'), pass: getsecret('password')}
 
 {cfy, cfy_node, yfy_node} = require 'cfy'
 
-mongourl = process.env.MONGODB_URI ? 'mongodb://localhost:27017/default'
+mongourl = getsecret('MONGODB_URI') ? 'mongodb://localhost:27017/default'
 
 get_mongo_db = cfy ->*
   try
