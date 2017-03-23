@@ -1,1 +1,1 @@
-node runserver.js
+node .\scripts\runserver.js

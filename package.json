@@ -17,6 +17,7 @@
     "koa-static": "^2.0.0",
     "levn": "^0.3.0",
     "mongodb": "^2.2.24",
+    "muri": "^1.2.1",
     "prelude-ls": "^1.1.2"
   },
   "devDependencies": {
