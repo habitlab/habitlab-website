@@ -36,15 +36,14 @@ if roles.logging?
   require('./logging_routes')
 if roles.viewdata?
   require('./viewdata_routes')
+  require('./webpage_routes')
 
 kapp.use(app.routes())
 kapp.use(app.allowedMethods())
 
-require! {
-  'koa-static'
-}
+if roles.viewdata?
+  kapp.use(require('koa-static')(__dirname + '/www'))
 
-kapp.use(koa-static(__dirname + '/www'))
 port = process.env.PORT ? 5000
 kapp.listen(port)
 console.log "listening to port #{port} visit http://localhost:#{port}"

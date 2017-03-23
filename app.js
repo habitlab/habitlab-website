@@ -1,5 +1,5 @@
 (function(){
-  var ref$, kapp, app, levn, getsecret, roles_list, roles, i$, len$, role, koaStatic, port;
+  var ref$, kapp, app, levn, getsecret, roles_list, roles, i$, len$, role, port;
   process.on('unhandledRejection', function(reason, p){
     throw new Error(reason);
   });
@@ -38,11 +38,13 @@
   }
   if (roles.viewdata != null) {
     require('./viewdata_routes');
+    require('./webpage_routes');
   }
   kapp.use(app.routes());
   kapp.use(app.allowedMethods());
-  koaStatic = require('koa-static');
-  kapp.use(koaStatic(__dirname + '/www'));
+  if (roles.viewdata != null) {
+    kapp.use(require('koa-static')(__dirname + '/www'));
+  }
   port = (ref$ = process.env.PORT) != null ? ref$ : 5000;
   kapp.listen(port);
   console.log("listening to port " + port + " visit http://localhost:" + port);
