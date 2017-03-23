@@ -8,6 +8,19 @@
     "**/.DS_Store": true,
     "node_modules": true,
     "mongodata": true,
-    ".vscode": true
+    ".vscode": true,
+    ".bowerrc": true,
+    "yarn.lock": true,
+    "*.js": true,
+    "www/*.js": true,
+    "runserver": true,
+    "runserver.bat": true,
+    ".gitignore": true,
+    ".getsecret.yaml": true,
+    "deploy-production": true,
+    "package.json": true,
+    "Procfile": true,
+    "gulpfile.ls": true,
+    "README.md": true
   }
 }
