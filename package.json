@@ -5,6 +5,7 @@
   "description": "",
   "main": "app.js",
   "dependencies": {
+    "app-module-path": "^2.2.0",
     "cfy": "^1.0.17",
     "getsecret": "^1.0.2",
     "koa": "^1.2.0",

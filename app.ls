@@ -1,10 +1,12 @@
 process.on 'unhandledRejection', (reason, p) ->
   throw new Error(reason)
 
+require('app-module-path').addPath(__dirname)
+
 {
   kapp
   app
-} = require './server_common'
+} = require 'libs/server_common'
 
 require! {
   levn
@@ -31,12 +33,12 @@ app.use (next) ->*
 if roles.https?
   app.use(require('koa-sslify')({trustProtoHeader: true}))
 
-require('./common_routes')
+require('routes/common_routes')
 if roles.logging?
-  require('./logging_routes')
+  require('routes/logging_routes')
 if roles.viewdata?
-  require('./viewdata_routes')
-  require('./webpage_routes')
+  require('routes/viewdata_routes')
+  require('routes/webpage_routes')
 
 kapp.use(app.routes())
 kapp.use(app.allowedMethods())

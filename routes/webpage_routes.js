@@ -1,6 +1,6 @@
 (function(){
   var ref$, app, auth, querystring;
-  ref$ = require('./server_common'), app = ref$.app, auth = ref$.auth;
+  ref$ = require('libs/server_common'), app = ref$.app, auth = ref$.auth;
   querystring = require('querystring');
   app.get('/viewlogs', auth, function*(){
     var ref$, user_id, userid;

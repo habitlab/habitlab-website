@@ -1,6 +1,6 @@
 (function(){
   var app;
-  app = require('./server_common').app;
+  app = require('libs/server_common').app;
   app.get('/ping', function*(){
     this.body = 'hi';
   });

@@ -6,7 +6,7 @@ require! {
   'gulp-livescript'
 }
 
-lspattern = ['*.ls', 'www/*.ls']
+lspattern = ['*.ls', 'www/*.ls', 'routes/*.ls', 'libs/*.ls']
 gulp.task 'livescript', ->
   gulp.src(lspattern, {base: './'})
   .pipe(gulp-changed('.', {extension: '.js'}))

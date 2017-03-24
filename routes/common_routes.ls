@@ -1,6 +1,6 @@
 {
   app
-} = require './server_common'
+} = require 'libs/server_common'
 
 app.get '/ping', ->*
   this.body = 'hi'

@@ -1,7 +1,7 @@
 {
   app
   auth
-} = require './server_common'
+} = require 'libs/server_common'
 
 require! {
   querystring

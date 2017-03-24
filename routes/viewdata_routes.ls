@@ -14,7 +14,7 @@
   list_log_collections_for_user
   list_log_collections_for_logname
   get_collection_for_user_and_logname
-} = require './server_common'
+} = require 'libs/server_common'
 
 app.get '/feedback', auth, ->*
   feedback = []

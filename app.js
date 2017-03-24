@@ -3,7 +3,8 @@
   process.on('unhandledRejection', function(reason, p){
     throw new Error(reason);
   });
-  ref$ = require('./server_common'), kapp = ref$.kapp, app = ref$.app;
+  require('app-module-path').addPath(__dirname);
+  ref$ = require('libs/server_common'), kapp = ref$.kapp, app = ref$.app;
   levn = require('levn');
   getsecret = require('getsecret');
   roles_list = ['logging', 'viewdata'];
@@ -32,13 +33,13 @@
       trustProtoHeader: true
     }));
   }
-  require('./common_routes');
+  require('routes/common_routes');
   if (roles.logging != null) {
-    require('./logging_routes');
+    require('routes/logging_routes');
   }
   if (roles.viewdata != null) {
-    require('./viewdata_routes');
-    require('./webpage_routes');
+    require('routes/viewdata_routes');
+    require('routes/webpage_routes');
   }
   kapp.use(app.routes());
   kapp.use(app.allowedMethods());

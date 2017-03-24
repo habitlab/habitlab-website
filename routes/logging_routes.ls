@@ -12,7 +12,7 @@
   list_log_collections_for_logname
   get_collection_for_user_and_logname
   mongodb
-} = require './server_common'
+} = require 'libs/server_common'
 
 app.post '/add_secret', ->*
   this.type = 'json'
