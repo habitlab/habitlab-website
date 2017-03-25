@@ -13,6 +13,8 @@
     "yarn.lock": true,
     "*.js": true,
     "www/*.js": true,
+    "routes/*.js": true,
+    "libs/*.js": true,
     "runserver": true,
     "runserver.bat": true,
     ".gitignore": true,

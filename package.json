@@ -7,6 +7,7 @@
   "dependencies": {
     "app-module-path": "^2.2.0",
     "cfy": "^1.0.17",
+    "chrome-web-store-item-property": "^1.1.2",
     "getsecret": "^1.0.2",
     "koa": "^1.2.0",
     "koa-basic-auth": "1.1.2",
@@ -19,7 +20,8 @@
     "levn": "^0.3.0",
     "mongodb": "^2.2.24",
     "muri": "^1.2.1",
-    "prelude-ls": "^1.1.2"
+    "prelude-ls": "^1.1.2",
+    "semver": "^5.3.0"
   },
   "devDependencies": {
     "gulp": "^3.9.1",
