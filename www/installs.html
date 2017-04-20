@@ -1,0 +1,134 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title></title>
+  <link rel="import" href="bower_components/polymer/polymer.html">
+  <link rel="import" href="bower_components/google-chart/google-chart.html">
+</head>
+
+<body>
+
+<style>
+#days_ago_to_num_installs {
+  width: 100%;
+}
+
+#days_ago_to_num_uninstalls {
+  width: 100%;
+}
+
+#install_primary_language {
+  width: 100%;
+}
+</style>
+
+<google-chart id="days_ago_to_num_installs" cols='[{"label": "Data", "type": "string"},{"label": "Installs", "type": "number"}]' rows='[["Something", 1]]'></google-chart>
+
+<google-chart id="days_ago_to_num_uninstalls" cols='[{"label": "Data", "type": "string"},{"label": "Uninstalls", "type": "number"}]' rows='[["Something", 1]]'></google-chart>
+
+<google-chart id="install_primary_language" cols='[{"label": "Data", "type": "string"},{"label": "Languages", "type": "number"}]' rows='[["Something", 1]]'></google-chart>
+
+<script src="bower_components/moment/moment.js"></script>
+<script src="bower_components/jquery/dist/jquery.min.js"></script>
+<script>
+async function get_install_data() {
+  let install_info_list = await fetch('/get_installs').then(x => x.json())
+  let output = []
+   for (let install_info of install_info_list) {
+    if (install_info.devmode || install_info.unofficial_version) {
+      continue
+    }
+    if (!install_info.language || !install_info.languages) {
+      continue
+    }
+    output.push(install_info)
+  }
+  return output
+}
+
+async function get_uninstall_data() {
+  let install_info_list = await fetch('/get_uninstalls').then(x => x.json())
+  let output = []
+   for (let install_info of install_info_list) {
+    if (install_info.r != 0) { // not stable release
+      continue
+    }
+    //if (!install_info.language || !install_info.languages) {
+    //  continue
+    //}
+    output.push(install_info)
+  }
+  return output
+}
+
+async function show_installs() {
+  let install_info_list = await get_install_data()
+  let current_time = moment()
+  let days_ago_to_num_installs = {}
+  for (let install_info of install_info_list) {
+    let timestamp = moment(install_info.timestamp)
+    let days_ago = current_time.diff(timestamp, 'days')
+    if (days_ago_to_num_installs[days_ago] == null) {
+      days_ago_to_num_installs[days_ago] = 0
+    }
+    days_ago_to_num_installs[days_ago] += 1
+  }
+  let days_ago_to_num_installs_data = []
+  for (let i = 0; i < 14; ++i) {
+    days_ago_to_num_installs_data.push([i + ' days ago', days_ago_to_num_installs[i]])
+  }
+  days_ago_to_num_installs_data.reverse()
+  $('#days_ago_to_num_installs').prop('rows', days_ago_to_num_installs_data)
+}
+
+async function show_uninstalls() {
+  let install_info_list = await get_uninstall_data()
+  let current_time = moment()
+  let days_ago_to_num_installs = {}
+  for (let install_info of install_info_list) {
+    let timestamp = moment(install_info.timestamp)
+    let days_ago = current_time.diff(timestamp, 'days')
+    if (days_ago_to_num_installs[days_ago] == null) {
+      days_ago_to_num_installs[days_ago] = 0
+    }
+    days_ago_to_num_installs[days_ago] += 1
+  }
+  let days_ago_to_num_installs_data = []
+  for (let i = 0; i < 14; ++i) {
+    days_ago_to_num_installs_data.push([i + ' days ago', days_ago_to_num_installs[i]])
+  }
+  days_ago_to_num_installs_data.reverse()
+  $('#days_ago_to_num_uninstalls').prop('rows', days_ago_to_num_installs_data)
+}
+
+async function show_install_primary_language() {
+  let install_info_list = await get_install_data()
+  let current_time = moment()
+  let language_to_num_installs = {}
+  for (let install_info of install_info_list) {
+    let language = install_info.language
+    if (language_to_num_installs[language] == null) {
+      language_to_num_installs[language] = 0
+    }
+    language_to_num_installs[language] += 1
+  }
+  let language_and_num_installs = []
+  for (let language of Object.keys(language_to_num_installs)) {
+    let num_installs = language_to_num_installs[language]
+    language_and_num_installs.push([language, num_installs])
+  }
+  language_and_num_installs.sort((a, b) => a[1] - b[1]).reverse()
+  $('#install_primary_language').prop('rows', language_and_num_installs)
+}
+
+async function main() {
+  show_installs()
+  show_uninstalls()
+  show_install_primary_language()
+}
+
+main();
+</script>
+
+</body>
+</html>
