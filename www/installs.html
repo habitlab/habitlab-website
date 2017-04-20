@@ -20,6 +20,14 @@
 #install_primary_language {
   width: 100%;
 }
+
+#install_country {
+  width: 100%;
+}
+
+#install_source {
+  width: 100%;
+}
 </style>
 
 <google-chart id="days_ago_to_num_installs" cols='[{"label": "Data", "type": "string"},{"label": "Installs", "type": "number"}]' rows='[["Something", 1]]'></google-chart>
@@ -28,9 +36,39 @@
 
 <google-chart id="install_primary_language" cols='[{"label": "Data", "type": "string"},{"label": "Languages", "type": "number"}]' rows='[["Something", 1]]'></google-chart>
 
+<google-chart id="install_country" cols='[{"label": "Data", "type": "string"},{"label": "Country", "type": "number"}]' rows='[["Something", 1]]'></google-chart>
+
+<google-chart id="install_source" cols='[{"label": "Data", "type": "string"},{"label": "Installs", "type": "number"}]' rows='[["Something", 1]]'></google-chart>
+
 <script src="bower_components/moment/moment.js"></script>
 <script src="bower_components/jquery/dist/jquery.min.js"></script>
 <script>
+
+async function geolocate_ip(ip_addr) {
+  let geolocate_info = {}
+  if (localStorage.getItem('geolocate_info_' + ip_addr)) {
+    geolocate_info = JSON.parse(localStorage.getItem('geolocate_info_' + ip_addr))
+  } else {
+    geolocate_info = await $.ajax({
+      url: 'http://ip-api.com/json/' + ip_addr,
+      jsonp: 'callback',
+      dataType: 'jsonp'
+    })
+    localStorage.setItem('geolocate_info_' + ip_addr, JSON.stringify(geolocate_info))
+  }
+  return geolocate_info
+}
+
+function dict_to_sorted(language_to_num_installs) {
+  let language_and_num_installs = []
+  for (let language of Object.keys(language_to_num_installs)) {
+    let num_installs = language_to_num_installs[language]
+    language_and_num_installs.push([language, num_installs])
+  }
+  language_and_num_installs.sort((a, b) => a[1] - b[1]).reverse()
+  return language_and_num_installs
+}
+
 async function get_install_data() {
   let install_info_list = await fetch('/get_installs').then(x => x.json())
   let output = []
@@ -39,6 +77,9 @@ async function get_install_data() {
       continue
     }
     if (!install_info.language || !install_info.languages) {
+      continue
+    }
+    if (!install_info.install_source) {
       continue
     }
     output.push(install_info)
@@ -112,19 +153,52 @@ async function show_install_primary_language() {
     }
     language_to_num_installs[language] += 1
   }
-  let language_and_num_installs = []
-  for (let language of Object.keys(language_to_num_installs)) {
-    let num_installs = language_to_num_installs[language]
-    language_and_num_installs.push([language, num_installs])
-  }
-  language_and_num_installs.sort((a, b) => a[1] - b[1]).reverse()
+  let language_and_num_installs = dict_to_sorted(language_to_num_installs)
   $('#install_primary_language').prop('rows', language_and_num_installs)
+}
+
+async function show_install_source() {
+  let install_info_list = await get_install_data()
+  let current_time = moment()
+  let install_source_to_num_installs = {}
+  for (let install_info of install_info_list) {
+    let install_source = install_info.install_source
+    if (install_source_to_num_installs[install_source] == null) {
+      install_source_to_num_installs[install_source] = 0
+    }
+    install_source_to_num_installs[install_source] += 1    
+  }
+  let install_source_and_num_installs = dict_to_sorted(install_source_to_num_installs)
+  $('#install_source').prop('rows', install_source_and_num_installs)
+}
+
+async function show_install_country() {
+  let install_info_list = await get_install_data()
+  let current_time = moment()
+  let country_to_num_installs = {}
+  for (let install_info of install_info_list) {
+    let ip_addr = install_info.ip
+    if (ip_addr.startsWith('::')) {
+      continue
+    }
+    let geolocate_info = await(geolocate_ip(ip_addr))
+    console.log(ip_addr)
+    let country = geolocate_info.country
+    if (country_to_num_installs[country] == null) {
+      country_to_num_installs[country] = 0
+    }
+    country_to_num_installs[country] += 1
+  }
+  let country_and_num_installs = dict_to_sorted(country_to_num_installs)
+  $('#install_country').prop('rows', country_and_num_installs)
 }
 
 async function main() {
   show_installs()
   show_uninstalls()
   show_install_primary_language()
+  show_install_source()
+  show_install_country()
 }
 
 main();
