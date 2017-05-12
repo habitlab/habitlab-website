@@ -15,7 +15,7 @@ export prelude = require 'prelude-ls'
 export kapp = koa()
 kapp.use(koa-jsonp())
 #kapp.use(koa-logger())
-kapp.use(koa-bodyparser())
+kapp.use(koa-bodyparser({jsonLimit: '10mb'}))
 export app = koa-router()
 
 if getsecret('username')? or getsecret('password')?

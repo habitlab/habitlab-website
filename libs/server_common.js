@@ -12,7 +12,9 @@
   out$.prelude = prelude = require('prelude-ls');
   out$.kapp = kapp = koa();
   kapp.use(koaJsonp());
-  kapp.use(koaBodyparser());
+  kapp.use(koaBodyparser({
+    jsonLimit: '10mb'
+  }));
   out$.app = app = koaRouter();
   if (getsecret('username') != null || getsecret('password') != null) {
     app.use(function*(next){

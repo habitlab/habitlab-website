@@ -6,12 +6,16 @@ require('app-module-path').addPath(__dirname)
 {
   kapp
   app
+  auth
 } = require 'libs/server_common'
 
 require! {
   levn
   getsecret
+  bluebird
 }
+
+fs = bluebird.promisifyAll(require('fs'))
 
 roles_list = ['logging', 'viewdata']
 if getsecret('roles')?
@@ -44,6 +48,9 @@ kapp.use(app.routes())
 kapp.use(app.allowedMethods())
 
 if roles.viewdata?
+  app.get '/installs', auth, ->*
+    index_contents = yield fs.readFileAsync(__dirname + '/www/installs.html', 'utf-8')
+    this.body = index_contents
   kapp.use(require('koa-static')(__dirname + '/www'))
 
 port = process.env.PORT ? 5000

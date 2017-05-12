@@ -1,12 +1,14 @@
 (function(){
-  var ref$, kapp, app, levn, getsecret, roles_list, roles, i$, len$, role, port;
+  var ref$, kapp, app, auth, levn, getsecret, bluebird, fs, roles_list, roles, i$, len$, role, port;
   process.on('unhandledRejection', function(reason, p){
     throw new Error(reason);
   });
   require('app-module-path').addPath(__dirname);
-  ref$ = require('libs/server_common'), kapp = ref$.kapp, app = ref$.app;
+  ref$ = require('libs/server_common'), kapp = ref$.kapp, app = ref$.app, auth = ref$.auth;
   levn = require('levn');
   getsecret = require('getsecret');
+  bluebird = require('bluebird');
+  fs = bluebird.promisifyAll(require('fs'));
   roles_list = ['logging', 'viewdata'];
   if (getsecret('roles') != null) {
     roles_list = levn.parse('[String]', getsecret('roles'));
@@ -44,6 +46,11 @@
   kapp.use(app.routes());
   kapp.use(app.allowedMethods());
   if (roles.viewdata != null) {
+    app.get('/installs', auth, function*(){
+      var index_contents;
+      index_contents = (yield fs.readFileAsync(__dirname + '/www/installs.html', 'utf-8'));
+      return this.body = index_contents;
+    });
     kapp.use(require('koa-static')(__dirname + '/www'));
   }
   port = (ref$ = process.env.PORT) != null ? ref$ : 5000;
