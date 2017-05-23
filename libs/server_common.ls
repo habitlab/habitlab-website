@@ -68,6 +68,9 @@ export get_uninstalls = cfy ->*
 export get_uninstall_feedback = cfy ->*
   return yield get_collection('uninstall_feedback')
 
+export get_proposed_goals = cfy ->*
+  return yield get_collection('proposed_goals')
+
 export list_collections = cfy ->*
   ndb = yield get_mongo_db()
   collections_list = yield -> ndb.listCollections().toArray(it)

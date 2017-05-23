@@ -1,5 +1,5 @@
 (function(){
-  var koa, koaStatic, koaRouter, koaBodyparser, koaJsonp, mongodb, getsecret, koaBasicAuth, prelude, kapp, app, auth, ref$, cfy, cfy_node, yfy_node, mongourl, get_mongo_db, get_collection, get_signups, get_secrets, get_logging_states, get_installs, get_uninstalls, get_uninstall_feedback, list_collections, list_log_collections_for_user, list_log_collections_for_logname, get_collection_for_user_and_logname, out$ = typeof exports != 'undefined' && exports || this;
+  var koa, koaStatic, koaRouter, koaBodyparser, koaJsonp, mongodb, getsecret, koaBasicAuth, prelude, kapp, app, auth, ref$, cfy, cfy_node, yfy_node, mongourl, get_mongo_db, get_collection, get_signups, get_secrets, get_logging_states, get_installs, get_uninstalls, get_uninstall_feedback, get_proposed_goals, list_collections, list_log_collections_for_user, list_log_collections_for_logname, get_collection_for_user_and_logname, out$ = typeof exports != 'undefined' && exports || this;
   koa = require('koa');
   koaStatic = require('koa-static');
   koaRouter = require('koa-router');
@@ -77,6 +77,9 @@
   });
   out$.get_uninstall_feedback = get_uninstall_feedback = cfy(function*(){
     return (yield get_collection('uninstall_feedback'));
+  });
+  out$.get_proposed_goals = get_proposed_goals = cfy(function*(){
+    return (yield get_collection('proposed_goals'));
   });
   out$.list_collections = list_collections = cfy(function*(){
     var ndb, collections_list, this$ = this;

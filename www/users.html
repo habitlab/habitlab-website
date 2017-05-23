@@ -1,0 +1,65 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title></title>
+  <link rel="import" href="bower_components/polymer/polymer.html">
+  <link rel="import" href="bower_components/google-chart/google-chart.html">
+</head>
+
+<body>
+
+<style>
+#days_ago_to_num_installs {
+  width: 100%;
+}
+
+#days_ago_to_num_uninstalls {
+  width: 100%;
+}
+
+#install_primary_language {
+  width: 100%;
+}
+
+#install_country {
+  width: 100%;
+}
+
+#install_source {
+  width: 100%;
+}
+</style>
+
+<!--
+<google-chart id="days_ago_to_num_installs" cols='[{"label": "Data", "type": "string"},{"label": "Installs", "type": "number"}]' rows='[["Something", 1]]'></google-chart>
+
+<google-chart id="days_ago_to_num_uninstalls" cols='[{"label": "Data", "type": "string"},{"label": "Uninstalls", "type": "number"}]' rows='[["Something", 1]]'></google-chart>
+
+<google-chart id="install_primary_language" cols='[{"label": "Data", "type": "string"},{"label": "Languages", "type": "number"}]' rows='[["Something", 1]]'></google-chart>
+
+<google-chart id="install_country" cols='[{"label": "Data", "type": "string"},{"label": "Country", "type": "number"}]' rows='[["Something", 1]]'></google-chart>
+
+<google-chart id="install_source" cols='[{"label": "Data", "type": "string"},{"label": "Installs", "type": "number"}]' rows='[["Something", 1]]'></google-chart>
+-->
+
+<script src="bower_components/moment/moment.js"></script>
+<script src="bower_components/jquery/dist/jquery.min.js"></script>
+<script>
+
+async function get_user_ids() {
+  let active_users = await fetch('/getactiveusers').then(x => x.json())
+  return active_users
+}
+
+async function main() {
+  let user_ids = await get_user_ids()
+  for (let user_id of user_ids) {
+    console.log(user_id)
+  }
+}
+
+main();
+</script>
+
+</body>
+</html>

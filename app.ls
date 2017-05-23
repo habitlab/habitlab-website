@@ -38,6 +38,7 @@ if roles.https?
   app.use(require('koa-sslify')({trustProtoHeader: true}))
 
 require('routes/common_routes')
+require('routes/intervention_routes')
 if roles.logging?
   require('routes/logging_routes')
 if roles.viewdata?
