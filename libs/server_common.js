@@ -1,5 +1,5 @@
 (function(){
-  var koa, koaStatic, koaRouter, koaBodyparser, koaJsonp, mongodb, getsecret, koaBasicAuth, prelude, kapp, app, auth, ref$, cfy, cfy_node, yfy_node, mongourl, get_mongo_db, get_collection, get_signups, get_secrets, get_logging_states, get_installs, get_uninstalls, get_uninstall_feedback, get_proposed_goals, list_collections, list_log_collections_for_user, list_log_collections_for_logname, get_collection_for_user_and_logname, out$ = typeof exports != 'undefined' && exports || this;
+  var koa, koaStatic, koaRouter, koaBodyparser, koaJsonp, mongodb, getsecret, koaBasicAuth, prelude, kapp, app, auth, ref$, cfy, cfy_node, yfy_node, mongourl, mongourl2, get_mongo_db, get_mongo_db2, get_collection, get_collection2, get_signups, get_secrets, get_logging_states, get_installs, get_uninstalls, get_uninstall_feedback, get_proposed_goals, list_collections, list_log_collections_for_user, list_log_collections_for_logname, get_collection_for_user_and_logname, out$ = typeof exports != 'undefined' && exports || this;
   koa = require('koa');
   koaStatic = require('koa-static');
   koaRouter = require('koa-router');
@@ -43,6 +43,7 @@
   }
   import$(out$, (ref$ = require('cfy'), cfy = ref$.cfy, cfy_node = ref$.cfy_node, yfy_node = ref$.yfy_node, ref$));
   out$.mongourl = mongourl = (ref$ = getsecret('MONGODB_URI')) != null ? ref$ : 'mongodb://localhost:27017/default';
+  out$.mongourl2 = mongourl2 = (ref$ = getsecret('MONGODB_URI2')) != null ? ref$ : 'mongodb://localhost:27017/default';
   out$.get_mongo_db = get_mongo_db = cfy(function*(){
     var err;
     try {
@@ -55,9 +56,26 @@
       console.error(err);
     }
   });
+  out$.get_mongo_db2 = get_mongo_db2 = cfy(function*(){
+    var err;
+    try {
+      return (yield function(it){
+        return mongodb.MongoClient.connect(mongourl2, it);
+      });
+    } catch (e$) {
+      err = e$;
+      console.error('error getting mongodb');
+      console.error(err);
+    }
+  });
   out$.get_collection = get_collection = cfy(function*(collection_name){
     var db;
     db = (yield get_mongo_db());
+    return [db.collection(collection_name), db];
+  });
+  out$.get_collection2 = get_collection2 = cfy(function*(collection_name){
+    var db;
+    db = (yield get_mongo_db2());
     return [db.collection(collection_name), db];
   });
   out$.get_signups = get_signups = cfy(function*(){
@@ -79,7 +97,7 @@
     return (yield get_collection('uninstall_feedback'));
   });
   out$.get_proposed_goals = get_proposed_goals = cfy(function*(){
-    return (yield get_collection('proposed_goals'));
+    return (yield get_collection2('proposed_goals'));
   });
   out$.list_collections = list_collections = cfy(function*(){
     var ndb, collections_list, this$ = this;

@@ -38,6 +38,8 @@ export {cfy, cfy_node, yfy_node} = require 'cfy'
 
 export mongourl = getsecret('MONGODB_URI') ? 'mongodb://localhost:27017/default'
 
+export mongourl2 = getsecret('MONGODB_URI2') ? 'mongodb://localhost:27017/default'
+
 export get_mongo_db = cfy ->*
   try
     return yield -> mongodb.MongoClient.connect mongourl, it
@@ -46,8 +48,20 @@ export get_mongo_db = cfy ->*
     console.error err
     return
 
+export get_mongo_db2 = cfy ->*
+  try
+    return yield -> mongodb.MongoClient.connect mongourl2, it
+  catch err
+    console.error 'error getting mongodb'
+    console.error err
+    return
+
 export get_collection = cfy (collection_name) ->*
   db = yield get_mongo_db()
+  return [db.collection(collection_name), db]
+
+export get_collection2 = cfy (collection_name) ->*
+  db = yield get_mongo_db2()
   return [db.collection(collection_name), db]
 
 export get_signups = cfy ->*
@@ -69,7 +83,7 @@ export get_uninstall_feedback = cfy ->*
   return yield get_collection('uninstall_feedback')
 
 export get_proposed_goals = cfy ->*
-  return yield get_collection('proposed_goals')
+  return yield get_collection2('proposed_goals')
 
 export list_collections = cfy ->*
   ndb = yield get_mongo_db()
