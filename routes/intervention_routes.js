@@ -1,6 +1,6 @@
 (function(){
-  var ref$, app, get_collection, get_signups, get_secrets, get_logging_states, get_installs, get_uninstalls, get_uninstall_feedback, get_proposed_goals, list_collections, list_log_collections_for_user, list_log_collections_for_logname, get_collection_for_user_and_logname, mongodb, all_contributed_interventions, intervention_name_to_data, goal_name_to_interventions, proposed_goals_list;
-  ref$ = require('libs/server_common'), app = ref$.app, get_collection = ref$.get_collection, get_signups = ref$.get_signups, get_secrets = ref$.get_secrets, get_logging_states = ref$.get_logging_states, get_installs = ref$.get_installs, get_uninstalls = ref$.get_uninstalls, get_uninstall_feedback = ref$.get_uninstall_feedback, get_proposed_goals = ref$.get_proposed_goals, list_collections = ref$.list_collections, list_log_collections_for_user = ref$.list_log_collections_for_user, list_log_collections_for_logname = ref$.list_log_collections_for_logname, get_collection_for_user_and_logname = ref$.get_collection_for_user_and_logname, mongodb = ref$.mongodb;
+  var app, all_contributed_interventions, intervention_name_to_data, goal_name_to_interventions, proposed_goals_list;
+  app = require('libs/server_common').app;
   all_contributed_interventions = [
     {
       "name": "reddit/block_gif_links",

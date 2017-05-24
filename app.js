@@ -36,7 +36,12 @@
     }));
   }
   require('routes/common_routes');
-  require('routes/intervention_routes');
+  if (roles.reportbug != null) {
+    require('routes/reportbug_routes');
+  }
+  if (roles.intervention != null) {
+    require('routes/intervention_routes');
+  }
   if (roles.logging != null) {
     require('routes/logging_routes');
   }

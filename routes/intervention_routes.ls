@@ -1,18 +1,5 @@
 {
   app
-  get_collection
-  get_signups
-  get_secrets
-  get_logging_states
-  get_installs
-  get_uninstalls
-  get_uninstall_feedback
-  get_proposed_goals
-  list_collections
-  list_log_collections_for_user
-  list_log_collections_for_logname
-  get_collection_for_user_and_logname
-  mongodb
 } = require 'libs/server_common'
 
 all_contributed_interventions = [

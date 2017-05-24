@@ -13,7 +13,7 @@
   out$.kapp = kapp = koa();
   kapp.use(koaJsonp());
   kapp.use(koaBodyparser({
-    jsonLimit: '10mb'
+    jsonLimit: '20mb'
   }));
   out$.app = app = koaRouter();
   if (getsecret('username') != null || getsecret('password') != null) {
