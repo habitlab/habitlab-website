@@ -29,6 +29,8 @@ octo = new Octokat({token: getsecret('github_api_key')})
 
 {add_noerr, cfy} = require 'cfy'
 
+jsyaml = require 'js-yaml'
+
 upload_to_cloudinary = cfy (img_data_url) ->*
   #img_data_url = 'data:image/png;base64,' + img_data
   result = yield -> cloudinary.v2.uploader.upload img_data_url, {}, it

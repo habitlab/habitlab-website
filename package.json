@@ -12,6 +12,7 @@
     "chrome-web-store-item-property": "^1.1.2",
     "cloudinary": "^1.9.0",
     "getsecret": "^1.0.2",
+    "js-yaml": "^3.8.4",
     "koa": "^1.2.0",
     "koa-basic-auth": "1.1.2",
     "koa-bodyparser": "^2.2.0",

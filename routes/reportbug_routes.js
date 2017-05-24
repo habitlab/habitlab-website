@@ -1,5 +1,5 @@
 (function(){
-  var app, sendgrid, btoa, helper, getsecret, sg, default_from_email, default_to_email, cloudinary, Gitter, gitter, Octokat, octo, ref$, add_noerr, cfy, upload_to_cloudinary, upload_to_cloudinary_json;
+  var app, sendgrid, btoa, helper, getsecret, sg, default_from_email, default_to_email, cloudinary, Gitter, gitter, Octokat, octo, ref$, add_noerr, cfy, jsyaml, upload_to_cloudinary, upload_to_cloudinary_json;
   app = require('libs/server_common').app;
   sendgrid = require('sendgrid');
   btoa = require('btoa');
@@ -21,6 +21,7 @@
     token: getsecret('github_api_key')
   });
   ref$ = require('cfy'), add_noerr = ref$.add_noerr, cfy = ref$.cfy;
+  jsyaml = require('js-yaml');
   upload_to_cloudinary = cfy(function*(img_data_url){
     var result;
     result = (yield function(it){
