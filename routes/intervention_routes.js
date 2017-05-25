@@ -1,6 +1,6 @@
 (function(){
-  var app, all_contributed_interventions, intervention_name_to_data, goal_name_to_interventions, proposed_goals_list;
-  app = require('libs/server_common').app;
+  var ref$, app, get_proposed_goals, mongodb, all_contributed_interventions, intervention_name_to_data, goal_name_to_interventions, proposed_goals_list;
+  ref$ = require('libs/server_common'), app = ref$.app, get_proposed_goals = ref$.get_proposed_goals, mongodb = ref$.mongodb;
   all_contributed_interventions = [
     {
       "name": "reddit/block_gif_links",
@@ -78,12 +78,78 @@
       downvotes: 1
     }
   ];
+  app.get('/delete_proposed_goal', function*(){
+    var goal_id, ref$, proposed_goals, db;
+    goal_id = this.request.query.goal_id;
+    if (goal_id == null) {
+      this.body = JSON.stringify({
+        response: 'error',
+        error: 'Need goal_id'
+      });
+      return;
+    }
+    ref$ = (yield get_proposed_goals()), proposed_goals = ref$[0], db = ref$[1];
+    (yield function(it){
+      return proposed_goals.remove({
+        _id: mongodb.ObjectID(goal_id)
+      }, it);
+    });
+    this.body = JSON.stringify({
+      response: 'done',
+      success: true
+    });
+    return db != null ? db.close() : void 8;
+  });
+  app.get('/add_proposed_goal', function*(){
+    var description, ref$, proposed_goals, db, existing_goals_with_description, new_proposed_goal, result;
+    description = this.request.query.description;
+    if (description == null) {
+      this.body = JSON.stringify({
+        response: 'error',
+        error: 'Need description'
+      });
+      return;
+    }
+    ref$ = (yield get_proposed_goals()), proposed_goals = ref$[0], db = ref$[1];
+    existing_goals_with_description = (yield function(it){
+      return proposed_goals.find({
+        description: description
+      }).toArray(it);
+    });
+    if (existing_goals_with_description.length > 0) {
+      this.body = JSON.stringify({
+        response: 'error',
+        error: 'Goal with this description already exists'
+      });
+      return;
+    }
+    new_proposed_goal = {
+      description: description,
+      upvotes: 0,
+      downvotes: 0
+    };
+    result = (yield function(it){
+      return proposed_goals.insert(new_proposed_goal, it);
+    });
+    this.body = JSON.stringify({
+      response: 'done',
+      success: true,
+      result: result
+    });
+    return db != null ? db.close() : void 8;
+  });
   app.get('/get_proposed_goals', function*(){
+    var ref$, proposed_goals, db, all_results;
     this.type = 'json';
-    return this.body = JSON.stringify(proposed_goals_list);
+    ref$ = (yield get_proposed_goals()), proposed_goals = ref$[0], db = ref$[1];
+    all_results = (yield function(it){
+      return proposed_goals.find({}).toArray(it);
+    });
+    this.body = JSON.stringify(all_results);
+    return db != null ? db.close() : void 8;
   });
   app.get('/upvote_proposed_goal', function*(){
-    var goal_id;
+    var goal_id, ref$, proposed_goals, db;
     this.type = 'json';
     goal_id = this.request.query.goal_id;
     if (goal_id == null) {
@@ -93,14 +159,24 @@
       });
       return;
     }
-    proposed_goals_list[goal_id].upvotes += 1;
-    return this.body = JSON.stringify({
+    ref$ = (yield get_proposed_goals()), proposed_goals = ref$[0], db = ref$[1];
+    (yield function(it){
+      return proposed_goals.update({
+        _id: mongodb.ObjectID(goal_id)
+      }, {
+        $inc: {
+          upvotes: 1
+        }
+      }, it);
+    });
+    this.body = JSON.stringify({
       response: 'done',
       success: true
     });
+    return db != null ? db.close() : void 8;
   });
   app.get('/downvote_proposed_goal', function*(){
-    var goal_id;
+    var goal_id, ref$, proposed_goals, db;
     this.type = 'json';
     goal_id = this.request.query.goal_id;
     if (goal_id == null) {
@@ -110,10 +186,20 @@
       });
       return;
     }
-    proposed_goals_list[goal_id].downvotes += 1;
-    return this.body = JSON.stringify({
+    ref$ = (yield get_proposed_goals()), proposed_goals = ref$[0], db = ref$[1];
+    (yield function(it){
+      return proposed_goals.update({
+        _id: mongodb.ObjectID(goal_id)
+      }, {
+        $inc: {
+          downvotes: 1
+        }
+      }, it);
+    });
+    this.body = JSON.stringify({
       response: 'done',
       success: true
     });
+    return db != null ? db.close() : void 8;
   });
 }).call(this);

@@ -1,5 +1,7 @@
 {
   app
+  get_proposed_goals
+  mongodb
 } = require 'libs/server_common'
 
 all_contributed_interventions = [
@@ -72,10 +74,41 @@ proposed_goals_list = [
   }
 ]
 
+app.get '/delete_proposed_goal', ->*
+  {goal_id} = this.request.query
+  if not goal_id?
+    this.body = JSON.stringify {response: 'error', error: 'Need goal_id'}
+    return
+  [proposed_goals, db] = yield get_proposed_goals()
+  yield -> proposed_goals.remove({_id: mongodb.ObjectID(goal_id)}, it)
+  this.body = JSON.stringify {response: 'done', success: true}
+  db?close()
+
+app.get '/add_proposed_goal', ->*
+  {description} = this.request.query
+  if not description?
+    this.body = JSON.stringify {response: 'error', error: 'Need description'}
+    return
+  [proposed_goals, db] = yield get_proposed_goals()
+  existing_goals_with_description = yield -> proposed_goals.find({description: description}).toArray(it)
+  if existing_goals_with_description.length > 0
+    this.body = JSON.stringify {response: 'error', error: 'Goal with this description already exists'}
+    return
+  new_proposed_goal = {
+    description: description
+    upvotes: 0
+    downvotes: 0
+  }
+  result = yield -> proposed_goals.insert(new_proposed_goal, it)
+  this.body = JSON.stringify {response: 'done', success: true, result: result}
+  db?close()
+
 app.get '/get_proposed_goals', ->*
   this.type = 'json'
-  # [proposed_goals, db] = yield 
-  this.body = JSON.stringify proposed_goals_list
+  [proposed_goals, db] = yield get_proposed_goals()
+  all_results = yield -> proposed_goals.find({}).toArray(it)
+  this.body = JSON.stringify(all_results)
+  db?close()
 
 app.get '/upvote_proposed_goal', ->*
   this.type = 'json'
@@ -83,8 +116,10 @@ app.get '/upvote_proposed_goal', ->*
   if not goal_id?
     this.body = JSON.stringify {response: 'error', error: 'Need goal_id'}
     return
-  proposed_goals_list[goal_id].upvotes += 1
+  [proposed_goals, db] = yield get_proposed_goals()
+  yield -> proposed_goals.update({_id: mongodb.ObjectID(goal_id)}, {$inc: {upvotes: 1}}, it)
   this.body = JSON.stringify {response: 'done', success: true}
+  db?close()
 
 app.get '/downvote_proposed_goal', ->*
   this.type = 'json'
@@ -92,5 +127,7 @@ app.get '/downvote_proposed_goal', ->*
   if not goal_id?
     this.body = JSON.stringify {response: 'error', error: 'Need goal_id'}
     return
-  proposed_goals_list[goal_id].downvotes += 1
+  [proposed_goals, db] = yield get_proposed_goals()
+  yield -> proposed_goals.update({_id: mongodb.ObjectID(goal_id)}, {$inc: {downvotes: 1}}, it)
   this.body = JSON.stringify {response: 'done', success: true}
+  db?close()
