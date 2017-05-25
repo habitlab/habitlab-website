@@ -92,7 +92,7 @@ app.get '/add_proposed_goal', ->*
   [proposed_goals, db] = yield get_proposed_goals()
   existing_goals_with_description = yield -> proposed_goals.find({description: description}).toArray(it)
   if existing_goals_with_description.length > 0
-    this.body = JSON.stringify {response: 'error', error: 'Goal with this description already exists'}
+    this.body = JSON.stringify {response: 'error', error: 'Goal with this description already exists', result: existing_goals_with_description[0]}
     return
   new_proposed_goal = {
     description: description

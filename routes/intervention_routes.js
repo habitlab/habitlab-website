@@ -119,7 +119,8 @@
     if (existing_goals_with_description.length > 0) {
       this.body = JSON.stringify({
         response: 'error',
-        error: 'Goal with this description already exists'
+        error: 'Goal with this description already exists',
+        result: existing_goals_with_description[0]
       });
       return;
     }
