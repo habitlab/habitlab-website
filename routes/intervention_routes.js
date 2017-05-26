@@ -1,6 +1,6 @@
 (function(){
-  var ref$, app, get_proposed_goals, mongodb, all_contributed_interventions, intervention_name_to_data, goal_name_to_interventions, proposed_goals_list;
-  ref$ = require('libs/server_common'), app = ref$.app, get_proposed_goals = ref$.get_proposed_goals, mongodb = ref$.mongodb;
+  var ref$, app, get_proposed_goals, mongodb, need_query_properties, need_query_property, all_contributed_interventions, intervention_name_to_data, goal_name_to_interventions, proposed_goals_list;
+  ref$ = require('libs/server_common'), app = ref$.app, get_proposed_goals = ref$.get_proposed_goals, mongodb = ref$.mongodb, need_query_properties = ref$.need_query_properties, need_query_property = ref$.need_query_property;
   all_contributed_interventions = [
     {
       "name": "reddit/block_gif_links",
@@ -50,20 +50,75 @@
     }
     return results$;
   })();
+  app.get('/add_contributed_intervention', function*(){
+    var ref$, name, goal, description, numusers, stars, comments, new_contributed_intervention, result;
+    ref$ = this.request.query, name = ref$.name, goal = ref$.goal, description = ref$.description, numusers = ref$.numusers, stars = ref$.stars, comments = ref$.comments;
+    if (need_query_properties(this, ['name', 'goal', 'description'])) {
+      return;
+    }
+    numusers == null && (numusers = 0);
+    stars == null && (stars = 0);
+    comments == null && (comments = []);
+    new_contributed_intervention = {
+      name: name,
+      goal: goal,
+      description: description,
+      numusers: numusers,
+      stars: stars,
+      comments: comments
+    };
+    result = (yield function(it){
+      return proposed_goals.insert(new_contributed_intervention, it);
+    });
+    this.body = JSON.stringify({
+      response: 'done',
+      success: true
+    });
+    return typeof db != 'undefined' && db !== null ? db.close() : void 8;
+  });
+  app.get('/delete_contributed_intervention', function*(){
+    var intervention_id, ref$, contributed_interventions, db;
+    intervention_id = this.request.query.intervention_id;
+    if (need_query_property(this, 'intervention_id')) {
+      return;
+    }
+    ref$ = (yield get_contributed_interventions()), contributed_interventions = ref$[0], db = ref$[1];
+    (yield function(it){
+      return contributed_interventions.remove({
+        _id: mongodb.ObjectID(intervention_id)
+      }, it);
+    });
+    this.body = JSON.stringify({
+      response: 'done',
+      success: true
+    });
+    return db != null ? db.close() : void 8;
+  });
+  app.get('/get_all_contributed_interventions', function*(){
+    var ref$, contributed_interventions, db, all_results;
+    this.type = 'json';
+    ref$ = (yield get_contributed_interventions()), contributed_interventions = ref$[0], db = ref$[1];
+    all_results = (yield function(it){
+      return contributed_interventions.find({}).toArray(it);
+    });
+    this.body = JSON.stringify(all_results);
+    return db != null ? db.close() : void 8;
+  });
   app.get('/get_contributed_interventions_for_goal', function*(){
-    var goal, interventions_list, ref$, intervention_info_list, res$, i$, len$, x;
+    var goal, ref$, contributed_interventions, db, all_results;
     this.type = 'json';
     goal = this.request.query.goal;
-    interventions_list = (ref$ = goal_name_to_interventions[goal]) != null
-      ? ref$
-      : [];
-    res$ = [];
-    for (i$ = 0, len$ = interventions_list.length; i$ < len$; ++i$) {
-      x = interventions_list[i$];
-      res$.push(intervention_name_to_data[x]);
+    if (need_query_property(this, 'goal')) {
+      return;
     }
-    intervention_info_list = res$;
-    return this.body = JSON.stringify(intervention_info_list);
+    ref$ = (yield get_contributed_interventions()), contributed_interventions = ref$[0], db = ref$[1];
+    all_results = (yield function(it){
+      return contributed_interventions.find({
+        goal: goal
+      }).toArray(it);
+    });
+    this.body = JSON.stringify(all_results);
+    return db != null ? db.close() : void 8;
   });
   proposed_goals_list = [
     {
@@ -81,11 +136,7 @@
   app.get('/delete_proposed_goal', function*(){
     var goal_id, ref$, proposed_goals, db;
     goal_id = this.request.query.goal_id;
-    if (goal_id == null) {
-      this.body = JSON.stringify({
-        response: 'error',
-        error: 'Need goal_id'
-      });
+    if (need_query_property(this, 'goal_id')) {
       return;
     }
     ref$ = (yield get_proposed_goals()), proposed_goals = ref$[0], db = ref$[1];
@@ -103,11 +154,7 @@
   app.get('/add_proposed_goal', function*(){
     var description, ref$, proposed_goals, db, existing_goals_with_description, new_proposed_goal, result;
     description = this.request.query.description;
-    if (description == null) {
-      this.body = JSON.stringify({
-        response: 'error',
-        error: 'Need description'
-      });
+    if (need_query_property(this, 'description')) {
       return;
     }
     ref$ = (yield get_proposed_goals()), proposed_goals = ref$[0], db = ref$[1];
@@ -153,11 +200,7 @@
     var goal_id, ref$, proposed_goals, db;
     this.type = 'json';
     goal_id = this.request.query.goal_id;
-    if (goal_id == null) {
-      this.body = JSON.stringify({
-        response: 'error',
-        error: 'Need goal_id'
-      });
+    if (need_query_property(this, 'goal_id')) {
       return;
     }
     ref$ = (yield get_proposed_goals()), proposed_goals = ref$[0], db = ref$[1];
@@ -180,11 +223,7 @@
     var goal_id, ref$, proposed_goals, db;
     this.type = 'json';
     goal_id = this.request.query.goal_id;
-    if (goal_id == null) {
-      this.body = JSON.stringify({
-        response: 'error',
-        error: 'Need goal_id'
-      });
+    if (need_query_property(this, 'goal_id')) {
       return;
     }
     ref$ = (yield get_proposed_goals()), proposed_goals = ref$[0], db = ref$[1];

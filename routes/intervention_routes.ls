@@ -2,6 +2,8 @@
   app
   get_proposed_goals
   mongodb
+  need_query_properties
+  need_query_property
 } = require 'libs/server_common'
 
 all_contributed_interventions = [
@@ -52,12 +54,50 @@ do ->
       goal_name_to_interventions[goal_name] = []
     goal_name_to_interventions[goal_name].push intervention_name
 
+app.get '/add_contributed_intervention', ->*
+  {name, goal, description, numusers, stars, comments} = this.request.query
+  if need_query_properties this, ['name', 'goal', 'description']
+    return
+  numusers ?= 0
+  stars ?= 0
+  comments ?= []
+  new_contributed_intervention = {
+    name
+    goal
+    description
+    numusers
+    stars
+    comments
+  }
+  result = yield -> proposed_goals.insert(new_contributed_intervention, it)
+  this.body = JSON.stringify {response: 'done', success: true}
+  db?close()
+
+app.get '/delete_contributed_intervention', ->*
+  {intervention_id} = this.request.query
+  if need_query_property this, 'intervention_id'
+    return
+  [contributed_interventions, db] = yield get_contributed_interventions()
+  yield -> contributed_interventions.remove({_id: mongodb.ObjectID(intervention_id)}, it)
+  this.body = JSON.stringify {response: 'done', success: true}
+  db?close()
+
+app.get '/get_all_contributed_interventions', ->*
+  this.type = 'json'
+  [contributed_interventions, db] = yield get_contributed_interventions()
+  all_results = yield -> contributed_interventions.find({}).toArray(it)
+  this.body = JSON.stringify(all_results)
+  db?close()
+
 app.get '/get_contributed_interventions_for_goal', ->*
   this.type = 'json'
   {goal} = this.request.query
-  interventions_list = goal_name_to_interventions[goal] ? []
-  intervention_info_list = [intervention_name_to_data[x] for x in interventions_list]
-  this.body = JSON.stringify intervention_info_list
+  if need_query_property this, 'goal'
+    return
+  [contributed_interventions, db] = yield get_contributed_interventions()
+  all_results = yield -> contributed_interventions.find({goal: goal}).toArray(it)
+  this.body = JSON.stringify(all_results)
+  db?close()
 
 proposed_goals_list = [
   {
@@ -76,8 +116,7 @@ proposed_goals_list = [
 
 app.get '/delete_proposed_goal', ->*
   {goal_id} = this.request.query
-  if not goal_id?
-    this.body = JSON.stringify {response: 'error', error: 'Need goal_id'}
+  if need_query_property this, 'goal_id'
     return
   [proposed_goals, db] = yield get_proposed_goals()
   yield -> proposed_goals.remove({_id: mongodb.ObjectID(goal_id)}, it)
@@ -86,8 +125,7 @@ app.get '/delete_proposed_goal', ->*
 
 app.get '/add_proposed_goal', ->*
   {description} = this.request.query
-  if not description?
-    this.body = JSON.stringify {response: 'error', error: 'Need description'}
+  if need_query_property this, 'description'
     return
   [proposed_goals, db] = yield get_proposed_goals()
   existing_goals_with_description = yield -> proposed_goals.find({description: description}).toArray(it)
@@ -113,8 +151,7 @@ app.get '/get_proposed_goals', ->*
 app.get '/upvote_proposed_goal', ->*
   this.type = 'json'
   {goal_id} = this.request.query
-  if not goal_id?
-    this.body = JSON.stringify {response: 'error', error: 'Need goal_id'}
+  if need_query_property this, 'goal_id'
     return
   [proposed_goals, db] = yield get_proposed_goals()
   yield -> proposed_goals.update({_id: mongodb.ObjectID(goal_id)}, {$inc: {upvotes: 1}}, it)
@@ -124,8 +161,7 @@ app.get '/upvote_proposed_goal', ->*
 app.get '/downvote_proposed_goal', ->*
   this.type = 'json'
   {goal_id} = this.request.query
-  if not goal_id?
-    this.body = JSON.stringify {response: 'error', error: 'Need goal_id'}
+  if need_query_property this, 'goal_id'
     return
   [proposed_goals, db] = yield get_proposed_goals()
   yield -> proposed_goals.update({_id: mongodb.ObjectID(goal_id)}, {$inc: {downvotes: 1}}, it)

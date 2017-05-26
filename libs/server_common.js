@@ -1,5 +1,5 @@
 (function(){
-  var koa, koaStatic, koaRouter, koaBodyparser, koaJsonp, mongodb, getsecret, koaBasicAuth, prelude, kapp, app, auth, ref$, cfy, cfy_node, yfy_node, mongourl, mongourl2, get_mongo_db, get_mongo_db2, get_collection, get_collection2, get_signups, get_secrets, get_logging_states, get_installs, get_uninstalls, get_uninstall_feedback, get_proposed_goals, list_collections, list_log_collections_for_user, list_log_collections_for_logname, get_collection_for_user_and_logname, out$ = typeof exports != 'undefined' && exports || this;
+  var koa, koaStatic, koaRouter, koaBodyparser, koaJsonp, mongodb, getsecret, koaBasicAuth, prelude, kapp, app, auth, ref$, cfy, cfy_node, yfy_node, mongourl, mongourl2, get_mongo_db, get_mongo_db2, get_collection, get_collection2, get_signups, get_secrets, get_logging_states, get_installs, get_uninstalls, get_uninstall_feedback, get_proposed_goals, get_contributed_interventions, list_collections, list_log_collections_for_user, list_log_collections_for_logname, get_collection_for_user_and_logname, need_query_properties, need_query_property, out$ = typeof exports != 'undefined' && exports || this;
   koa = require('koa');
   koaStatic = require('koa-static');
   koaRouter = require('koa-router');
@@ -99,6 +99,9 @@
   out$.get_proposed_goals = get_proposed_goals = cfy(function*(){
     return (yield get_collection2('proposed_goals'));
   });
+  out$.get_contributed_interventions = get_contributed_interventions = cfy(function*(){
+    return (yield get_collection2('contributed_interventions'));
+  });
   out$.list_collections = list_collections = cfy(function*(){
     var ndb, collections_list, this$ = this;
     ndb = (yield get_mongo_db());
@@ -127,6 +130,30 @@
   out$.get_collection_for_user_and_logname = get_collection_for_user_and_logname = cfy(function*(userid, logname){
     return (yield get_collection(userid + "_" + logname));
   });
+  out$.need_query_properties = need_query_properties = function*(ctx, properties_list){
+    var i$, len$, property;
+    for (i$ = 0, len$ = properties_list.length; i$ < len$; ++i$) {
+      property = properties_list[i$];
+      if (ctx.request.query[property] == null) {
+        ctx.body = JSON.stringify({
+          response: 'error',
+          error: 'Need ' + property
+        });
+        return true;
+      }
+    }
+    return false;
+  };
+  out$.need_query_property = need_query_property = function*(ctx, property){
+    if (ctx.request.query[property] == null) {
+      ctx.body = JSON.stringify({
+        response: 'error',
+        error: 'Need ' + property
+      });
+      return true;
+    }
+    return false;
+  };
   function import$(obj, src){
     var own = {}.hasOwnProperty;
     for (var key in src) if (own.call(src, key)) obj[key] = src[key];
