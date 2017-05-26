@@ -4,7 +4,7 @@
   gulpChanged = require('gulp-changed');
   gulpUtil = require('gulp-util');
   gulpPrint = require('gulp-print');
-  gulpLivescript = require('gulp-livescript');
+  gulpLivescript = require('gulp-livescript-async');
   lspattern = ['*.ls', 'www/*.ls', 'routes/*.ls', 'libs/*.ls'];
   gulp.task('livescript', function(){
     gulp.src(lspattern, {

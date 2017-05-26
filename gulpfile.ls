@@ -3,8 +3,9 @@ require! {
   'gulp-changed'
   'gulp-util'
   'gulp-print'
-  'gulp-livescript'
 }
+
+gulp-livescript = require 'gulp-livescript-async'
 
 lspattern = ['*.ls', 'www/*.ls', 'routes/*.ls', 'libs/*.ls']
 gulp.task 'livescript', ->
