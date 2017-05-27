@@ -42,7 +42,7 @@
     "shelljs": "^0.7.0"
   },
   "scripts": {
-    "start": "./node_modules/livescript-async/bin/lsc app.ls",
+    "start": "node server.js",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "author": "Geza Kovacs (http://gkovacs.github.com)",
