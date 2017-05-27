@@ -4,9 +4,6 @@
   "private": true,
   "description": "",
   "main": "app.js",
-  "scripts": {
-    "start": "lsc app.ls"
-  },
   "dependencies": {
     "app-module-path": "^2.2.0",
     "bluebird": "^3.5.0",
@@ -42,10 +39,10 @@
     "gulp-changed": "^3.1.0",
     "gulp-print": "^2.0.1",
     "gulp-util": "^3.0.7",
-    "livescript": "^1.5.0",
     "shelljs": "^0.7.0"
   },
   "scripts": {
+    "start": "./node_modules/livescript-async/bin/lsc app.ls",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "author": "Geza Kovacs (http://gkovacs.github.com)",
