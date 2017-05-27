@@ -4,6 +4,9 @@
   "private": true,
   "description": "",
   "main": "app.js",
+  "engines": {
+    "node": "7.x"
+  },
   "dependencies": {
     "app-module-path": "^2.2.0",
     "bluebird": "^3.5.0",
