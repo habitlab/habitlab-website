@@ -12,27 +12,27 @@ require! {
 export mongodb
 export prelude = require 'prelude-ls'
 
-export kapp = koa()
+export kapp = new koa()
 kapp.use(koa-jsonp())
 #kapp.use(koa-logger())
 kapp.use(koa-bodyparser({jsonLimit: '20mb'}))
-export app = koa-router()
+export app = new koa-router()
 
 if getsecret('username')? or getsecret('password')?
   # custom 401 handling
-  app.use (next) ->*
+  app.use (ctx, next) ->>
     try
-      yield next
+      await next()
     catch err
       if 401 == err.status
-        this.status = 401
-        this.set('WWW-Authenticate', 'Basic')
-        this.body = 'Authentication failed'
+        ctx.status = 401
+        ctx.set('WWW-Authenticate', 'Basic')
+        ctx.body = 'Authentication failed'
       else
         throw err
   export auth = koa-basic-auth({name: getsecret('username'), pass: getsecret('password')})
 else
-  export auth = (next) ->* yield next
+  export auth = (ctx, next) ->> await next()
 
 export {cfy, cfy_node, yfy_node} = require 'cfy'
 

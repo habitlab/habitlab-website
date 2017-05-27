@@ -13,7 +13,7 @@ gulp.task 'livescript', ->
   .pipe(gulp-changed('.', {extension: '.js'}))
   .pipe(gulp-livescript({bare: false}))
   .on('error', gulp-util.log)
-  .pipe(gulp-print({colors: false}))
+  .pipe(gulp-print( -> "livescript: #{it}" ))
   .pipe(gulp.dest('.'))
   return
 
