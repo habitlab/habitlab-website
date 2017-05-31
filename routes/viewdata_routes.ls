@@ -28,9 +28,9 @@ app.get '/feedback', auth, ->*
         feedback.push item["feedback"] if item["feedback"]?
   this.body = JSON.stringify feedback
   db.close()
-  return    
+  return
 
-app.get '/getactiveusers', auth, ->*
+app.get '/getactiveusers', auth, (ctx) ->>
   users = []
   users_set = {}
   now = Date.now()
@@ -53,46 +53,46 @@ app.get '/getactiveusers', auth, ->*
         if not users_set[userid]?
           users.push userid
           users_set[userid] = true
-  this.body = JSON.stringify users
+  ctx.body = JSON.stringify users
   db.close()
   return
 
-app.get '/get_secrets', auth, ->*
-  this.type = 'json'
+app.get '/get_secrets', auth, (ctx) ->>
+  ctx.type = 'json'
   try
     [secrets, db] = yield get_secrets()
     all_results = yield -> secrets.find({}).toArray(it)
-    this.body = JSON.stringify(all_results)
+    ctx.body = JSON.stringify(all_results)
   catch err
     console.log 'error in get_secrets'
     console.log err
-    this.body = JSON.stringify {response: 'error', error: 'error in get_secrets'}
+    ctx.body = JSON.stringify {response: 'error', error: 'error in get_secrets'}
   finally
     db?close()
 
-app.get '/get_logging_states', auth, ->*
-  this.type = 'json'
+app.get '/get_logging_states', auth, (ctx) ->>
+  ctx.type = 'json'
   try
     [logging_states, db] = yield get_logging_states()
     all_results = yield -> logging_states.find({}).toArray(it)
-    this.body = JSON.stringify(all_results)
+    ctx.body = JSON.stringify(all_results)
   catch err
     console.log 'error in get_logging_states'
     console.log err
-    this.body = JSON.stringify {response: 'error', error: 'error in get_logging_states'}
+    ctx.body = JSON.stringify {response: 'error', error: 'error in get_logging_states'}
   finally
     db?close()
 
-app.get '/get_installs', auth, ->*
-  this.type = 'json'
+app.get '/get_installs', auth, (ctx) ->>
+  ctx.type = 'json'
   try
     [installs, db] = yield get_installs()
     all_results = yield -> installs.find({}).toArray(it)
-    this.body = JSON.stringify(all_results)
+    ctx.body = JSON.stringify(all_results)
   catch err
     console.log 'error in get_installs'
     console.log err
-    this.body = JSON.stringify {response: 'error', error: 'error in get_installs'}
+    ctx.body = JSON.stringify {response: 'error', error: 'error in get_installs'}
   finally
     db?close()
 
