@@ -32,8 +32,6 @@ gitter = new Gitter getsecret('gitter_api_key')
 Octokat = require 'octokat'
 octo = new Octokat({token: getsecret('github_api_key')})
 
-{add_noerr, cfy} = require 'cfy'
-
 upload_to_cloudinary = (img_data_url) ->>
   #img_data_url = 'data:image/png;base64,' + img_data
   result = await n2p -> cloudinary.v2.uploader.upload img_data_url, {}, it

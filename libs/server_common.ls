@@ -35,8 +35,6 @@ if getsecret('username')? or getsecret('password')?
 else
   export auth = (ctx, next) ->> await next()
 
-export {cfy, cfy_node, yfy_node} = require 'cfy'
-
 export mongourl = getsecret('MONGODB_URI') ? 'mongodb://localhost:27017/default'
 
 export mongourl2 = getsecret('MONGODB_URI2') ? 'mongodb://localhost:27017/default'
