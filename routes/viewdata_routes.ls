@@ -16,17 +16,21 @@
   get_collection_for_user_and_logname
 } = require 'libs/server_common'
 
-app.get '/feedback', auth, ->*
+require! {
+  n2p
+}
+
+app.get '/feedback', auth, (ctx) ->>
   feedback = []
-  collections = yield list_collections()
-  db = yield get_mongo_db()
+  collections = await list_collections()
+  db = await get_mongo_db()
   for entry in collections
     if entry.indexOf('feedback') > -1
       collection = db.collection(entry)
-      all_items = yield -> collection.find({}, ["feedback"]).toArray(it)
+      all_items = await n2p -> collection.find({}, ["feedback"]).toArray(it)
       for item in all_items
         feedback.push item["feedback"] if item["feedback"]?
-  this.body = JSON.stringify feedback
+  ctx.body = JSON.stringify feedback
   db.close()
   return
 
@@ -35,8 +39,8 @@ app.get '/getactiveusers', auth, (ctx) ->>
   users_set = {}
   now = Date.now()
   secs_in_day = 86400000
-  collections = yield list_collections()
-  db = yield get_mongo_db()
+  collections = await list_collections()
+  db = await get_mongo_db()
   for entry in collections
     if entry.indexOf('_') == -1
       continue
@@ -47,7 +51,7 @@ app.get '/getactiveusers', auth, (ctx) ->>
     #if entry.indexOf("logs/interventions") > -1 #filter to check if data gotten today
     #see if intervention latest timestamp was today
       collection = db.collection(entry)
-      all_items = yield -> collection.find({}, ["timestamp"]).toArray(it)
+      all_items = await n2p -> collection.find({}, ["timestamp"]).toArray(it)
       timestamp = prelude.maximum all_items.map (.timestamp)
       if now - timestamp < secs_in_day
         if not users_set[userid]?
@@ -60,8 +64,8 @@ app.get '/getactiveusers', auth, (ctx) ->>
 app.get '/get_secrets', auth, (ctx) ->>
   ctx.type = 'json'
   try
-    [secrets, db] = yield get_secrets()
-    all_results = yield -> secrets.find({}).toArray(it)
+    [secrets, db] = await get_secrets()
+    all_results = await n2p -> secrets.find({}).toArray(it)
     ctx.body = JSON.stringify(all_results)
   catch err
     console.log 'error in get_secrets'
@@ -73,8 +77,8 @@ app.get '/get_secrets', auth, (ctx) ->>
 app.get '/get_logging_states', auth, (ctx) ->>
   ctx.type = 'json'
   try
-    [logging_states, db] = yield get_logging_states()
-    all_results = yield -> logging_states.find({}).toArray(it)
+    [logging_states, db] = await get_logging_states()
+    all_results = await n2p -> logging_states.find({}).toArray(it)
     ctx.body = JSON.stringify(all_results)
   catch err
     console.log 'error in get_logging_states'
@@ -86,8 +90,8 @@ app.get '/get_logging_states', auth, (ctx) ->>
 app.get '/get_installs', auth, (ctx) ->>
   ctx.type = 'json'
   try
-    [installs, db] = yield get_installs()
-    all_results = yield -> installs.find({}).toArray(it)
+    [installs, db] = await get_installs()
+    all_results = await n2p -> installs.find({}).toArray(it)
     ctx.body = JSON.stringify(all_results)
   catch err
     console.log 'error in get_installs'
@@ -96,82 +100,82 @@ app.get '/get_installs', auth, (ctx) ->>
   finally
     db?close()
 
-app.get '/get_uninstalls', auth, ->*
-  this.type = 'json'
+app.get '/get_uninstalls', auth, (ctx) ->>
+  ctx.type = 'json'
   try
-    [uninstalls, db] = yield get_uninstalls()
-    all_results = yield -> uninstalls.find({}).toArray(it)
-    this.body = JSON.stringify(all_results)
+    [uninstalls, db] = await get_uninstalls()
+    all_results = await n2p -> uninstalls.find({}).toArray(it)
+    ctx.body = JSON.stringify(all_results)
   catch err
     console.log 'error in get_uninstalls'
     console.log err
-    this.body = JSON.stringify {response: 'error', error: 'error in get_uninstalls'}
+    ctx.body = JSON.stringify {response: 'error', error: 'error in get_uninstalls'}
   finally
     db?close()
 
-app.get '/get_uninstall_feedback', auth, ->*
-  this.type = 'json'
+app.get '/get_uninstall_feedback', auth, (ctx) ->>
+  ctx.type = 'json'
   try
-    [uninstalls, db] = yield get_uninstall_feedback()
-    all_results = yield -> uninstalls.find({}).toArray(it)
-    this.body = JSON.stringify(all_results)
+    [uninstalls, db] = await get_uninstall_feedback()
+    all_results = await n2p -> uninstalls.find({}).toArray(it)
+    ctx.body = JSON.stringify(all_results)
   catch err
     console.log 'error in get_uninstalls'
     console.log err
-    this.body = JSON.stringify {response: 'error', error: 'error in get_uninstall_feedback'}
+    ctx.body = JSON.stringify {response: 'error', error: 'error in get_uninstall_feedback'}
   finally
     db?close()
 
 
-app.get '/getsignups', auth, ->*
-  this.type = 'json'
+app.get '/getsignups', auth, (ctx) ->>
+  ctx.type = 'json'
   try
-    [signups, db] = yield get_signups()
-    all_results = yield -> signups.find({}).toArray(it)
-    this.body = JSON.stringify([x.email for x in all_results])
+    [signups, db] = await get_signups()
+    all_results = await n2p -> signups.find({}).toArray(it)
+    ctx.body = JSON.stringify([x.email for x in all_results])
   catch err
     console.log 'error in getsignups'
     console.log err
-    this.body = JSON.stringify {response: 'error', error: 'error in getsignups'}
+    ctx.body = JSON.stringify {response: 'error', error: 'error in getsignups'}
   finally
     db?close()
 
-app.get '/list_logs_for_user', auth, ->*
-  this.type = 'json'
-  {userid} = this.request.query
+app.get '/list_logs_for_user', auth, (ctx) ->>
+  ctx.type = 'json'
+  {userid} = ctx.request.query
   if not userid?
-    this.body = JSON.stringify {response: 'error', error: 'need parameter userid'}
+    ctx.body = JSON.stringify {response: 'error', error: 'need parameter userid'}
     return
-  user_collections = yield list_log_collections_for_user(userid)
-  this.body = JSON.stringify user_collections
+  user_collections = await list_log_collections_for_user(userid)
+  ctx.body = JSON.stringify user_collections
 
-app.get '/list_logs_for_logname', auth, ->*
-  this.type = 'json'
-  {logname} = this.request.query
+app.get '/list_logs_for_logname', auth, (ctx) ->>
+  ctx.type = 'json'
+  {logname} = ctx.request.query
   if not logname?
-    this.body = JSON.stringify {response: 'error', error: 'need parameter logname'}
+    ctx.body = JSON.stringify {response: 'error', error: 'need parameter logname'}
     return
-  user_collections = yield list_log_collections_for_logname(logname)
-  this.body = JSON.stringify user_collections
+  user_collections = await list_log_collections_for_logname(logname)
+  ctx.body = JSON.stringify user_collections
 
-app.get '/printcollection', auth, ->*
-  {collection, userid, logname} = this.request.query
+app.get '/printcollection', auth, (ctx) ->>
+  {collection, userid, logname} = ctx.request.query
   if userid? and logname?
     collection = "#{userid}_#{logname}"
   if not collection?
-    this.body = JSON.stringify {response: 'error', error: 'need paramter collection'}
+    ctx.body = JSON.stringify {response: 'error', error: 'need paramter collection'}
   collection_name = collection
   try
-    [collection, db] = yield get_collection(collection_name)
-    items = yield -> collection.find({}).toArray(it)
-    this.body = JSON.stringify items
+    [collection, db] = await get_collection(collection_name)
+    items = await n2p -> collection.find({}).toArray(it)
+    ctx.body = JSON.stringify items
   catch err
     console.log 'error in printcollection'
     console.log err
-    this.body = JSON.stringify {response: 'error', error: 'error in printcollection'}
+    ctx.body = JSON.stringify {response: 'error', error: 'error in printcollection'}
   finally
     db?close()
 
-app.get '/listcollections', auth, ->*
-  this.type = 'json'
-  this.body = JSON.stringify yield list_collections()
+app.get '/listcollections', auth, (ctx) ->>
+  ctx.type = 'json'
+  ctx.body = JSON.stringify await list_collections()

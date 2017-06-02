@@ -7,6 +7,7 @@ require! {
   'mongodb'
   'getsecret'
   'koa-basic-auth'
+  'n2p'
 }
 
 export mongodb
@@ -42,7 +43,7 @@ export mongourl2 = getsecret('MONGODB_URI2') ? 'mongodb://localhost:27017/defaul
 
 export get_mongo_db = ->>
   try
-    return await new Promise -> mongodb.MongoClient.connect mongourl, it
+    return await n2p -> mongodb.MongoClient.connect mongourl, it
   catch err
     console.error 'error getting mongodb'
     console.error err
@@ -50,7 +51,7 @@ export get_mongo_db = ->>
 
 export get_mongo_db2 = ->>
   try
-    return await new Promise -> mongodb.MongoClient.connect mongourl2, it
+    return await n2p -> mongodb.MongoClient.connect mongourl2, it
   catch err
     console.error 'error getting mongodb'
     console.error err
@@ -90,7 +91,7 @@ export get_contributed_interventions = ->>
 
 export list_collections = ->>
   ndb = await get_mongo_db()
-  collections_list = await new Promise -> ndb.listCollections().toArray(it)
+  collections_list = await n2p -> ndb.listCollections().toArray(it)
   ndb.close()
   return collections_list.map (.name)
 

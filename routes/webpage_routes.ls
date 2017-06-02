@@ -7,7 +7,7 @@ require! {
   querystring
 }
 
-app.get '/viewlogs', auth, ->*
-  {user_id, userid} = this.request.query
+app.get '/viewlogs', auth, (ctx) ->>
+  {user_id, userid} = ctx.request.query
   userid ?= user_id
-  this.response.redirect('/dashboard.html?' + querystring.stringify({userid}))
+  ctx.response.redirect('/dashboard.html?' + querystring.stringify({userid}))

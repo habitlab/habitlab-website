@@ -14,196 +14,200 @@
   mongodb
 } = require 'libs/server_common'
 
-app.post '/add_secret', ->*
-  this.type = 'json'
+require! {
+  n2p
+}
+
+app.post '/add_secret', (ctx) ->>
+  ctx.type = 'json'
   try
-    [secrets, db] = yield get_secrets()
-    query = {} <<< this.request.body
+    [secrets, db] = await get_secrets()
+    query = {} <<< ctx.request.body
     if query.callback?
       delete query.callback
     {user_id, user_secret} = query
     query.timestamp = Date.now()
-    query.ip = this.request.ip_address_fixed
+    query.ip = ctx.request.ip_address_fixed
     if not user_id?
-      this.body = JSON.stringify {response: 'error', error: 'Need user_id'}
+      ctx.body = JSON.stringify {response: 'error', error: 'Need user_id'}
       return
     if not user_secret?
-      this.body = JSON.stringify {response: 'error', error: 'Need user_secret'}
+      ctx.body = JSON.stringify {response: 'error', error: 'Need user_secret'}
       return
-    if (yield secrets.findOne({'user_id': user_id}))?
-      this.body = JSON.stringify {response: 'error', error: 'Already have set user_secret for user_id'}
+    if (await n2p -> secrets.findOne({'user_id': user_id}, it))?
+      ctx.body = JSON.stringify {response: 'error', error: 'Already have set user_secret for user_id'}
       return
-    yield -> secrets.insert(query, it)
+    await n2p -> secrets.insert(query, it)
   catch err
     console.error 'error in add_secret'
     console.error err
   finally
     db?close()
-  this.body = JSON.stringify {response: 'done', success: true}
+  ctx.body = JSON.stringify {response: 'done', success: true}
 
-app.post '/add_logging_state', ->*
-  this.type = 'json'
+app.post '/add_logging_state', (ctx) ->>
+  ctx.type = 'json'
   try
-    [logging_states, db] = yield get_logging_states()
-    query = {} <<< this.request.body
+    [logging_states, db] = await get_logging_states()
+    query = {} <<< ctx.request.body
     if query.callback?
       delete query.callback
     query.timestamp = Date.now()
-    query.ip = this.request.ip_address_fixed
-    yield -> logging_states.insert(query, it)
+    query.ip = ctx.request.ip_address_fixed
+    await n2p -> logging_states.insert(query, it)
   catch err
     console.error 'error in add_logging_state'
     console.error err
   finally
     db?close()
-  this.body = JSON.stringify {response: 'done', success: true}
+  ctx.body = JSON.stringify {response: 'done', success: true}
 
-app.get '/add_install', ->*
-  this.type = 'json'
+app.get '/add_install', (ctx) ->>
+  ctx.type = 'json'
   try
-    [installs, db] = yield get_installs()
-    query = {} <<< this.request.query
+    [installs, db] = await get_installs()
+    query = {} <<< ctx.request.query
     if query.callback?
       delete query.callback
     query.timestamp = Date.now()
-    query.ip = this.request.ip_address_fixed
-    yield -> installs.insert(query, it)
+    query.ip = ctx.request.ip_address_fixed
+    await n2p -> installs.insert(query, it)
   catch err
     console.error 'error in add_install'
     console.error err
   finally
     db?close()
-  this.body = JSON.stringify {response: 'done', success: true}
+  ctx.body = JSON.stringify {response: 'done', success: true}
 
-app.post '/add_install', ->*
-  this.type = 'json'
+app.post '/add_install', (ctx) ->>
+  ctx.type = 'json'
   try
-    [installs, db] = yield get_installs()
-    query = {} <<< this.request.body
+    [installs, db] = await get_installs()
+    query = {} <<< ctx.request.body
     if query.callback?
       delete query.callback
     query.timestamp = Date.now()
-    query.ip = this.request.ip_address_fixed
-    yield -> installs.insert(query, it)
+    query.ip = ctx.request.ip_address_fixed
+    await n2p -> installs.insert(query, it)
   catch err
     console.error 'error in add_install'
     console.error err
   finally
     db?close()
-  this.body = JSON.stringify {response: 'done', success: true}
+  ctx.body = JSON.stringify {response: 'done', success: true}
 
-app.get '/add_uninstall', ->*
-  this.type = 'json'
+app.get '/add_uninstall', (ctx) ->>
+  ctx.type = 'json'
   try
-    [uninstalls, db] = yield get_uninstalls()
-    query = {} <<< this.request.query
+    [uninstalls, db] = await get_uninstalls()
+    query = {} <<< ctx.request.query
     if query.callback?
       delete query.callback
     query.timestamp = Date.now()
-    query.ip = this.request.ip_address_fixed
-    yield -> uninstalls.insert(query, it)
+    query.ip = ctx.request.ip_address_fixed
+    await n2p -> uninstalls.insert(query, it)
   catch err
     console.error 'error in add_uninstall'
     console.error err
   finally
     db?close()
-  this.body = JSON.stringify {response: 'done', success: true}
+  ctx.body = JSON.stringify {response: 'done', success: true}
 
-app.get '/add_uninstall_feedback', ->*
-  this.type = 'json'
+app.get '/add_uninstall_feedback', (ctx) ->>
+  ctx.type = 'json'
   try
-    [uninstalls, db] = yield get_uninstall_feedback()
-    query = {} <<< this.request.query
+    [uninstalls, db] = await get_uninstall_feedback()
+    query = {} <<< ctx.request.query
     if query.callback?
       delete query.callback
     query.timestamp = Date.now()
-    query.ip = this.request.ip_address_fixed
-    yield -> uninstalls.insert(query, it)
+    query.ip = ctx.request.ip_address_fixed
+    await n2p -> uninstalls.insert(query, it)
   catch err
     console.error 'error in add_uninstall_feedback'
     console.error err
   finally
     db?close()
-  this.body = JSON.stringify {response: 'done', success: true}
+  ctx.body = JSON.stringify {response: 'done', success: true}
 
-app.post '/addtolog', ->*
-  this.type = 'json'
-  {userid, logname} = this.request.body
-  # {itemid} = this.request.body
+app.post '/addtolog', (ctx) ->>
+  ctx.type = 'json'
+  {userid, logname} = ctx.request.body
+  # {itemid} = ctx.request.body
   logname = logname.split('/').join(':')
   if not userid?
-    this.body = JSON.stringify {response: 'error', error: 'need parameter userid'}
+    ctx.body = JSON.stringify {response: 'error', error: 'need parameter userid'}
     return
   if not logname?
-    this.body = JSON.stringify {response: 'error', error: 'need parameter logname'}
+    ctx.body = JSON.stringify {response: 'error', error: 'need parameter logname'}
     return
   #if not itemid?
-  #  this.body = JSON.stringify {response: 'error', error: 'need parameter itemid'}
+  #  ctx.body = JSON.stringify {response: 'error', error: 'need parameter itemid'}
   #  return
   #if itemid.length != 24
-  #  this.body = JSON.stringify {response: 'error', error: 'itemid length needs to be 24'}
+  #  ctx.body = JSON.stringify {response: 'error', error: 'itemid length needs to be 24'}
   #  return
   try
-    [collection,db] = yield get_collection_for_user_and_logname(userid, logname)
-    #this.request.body._id = mongodb.ObjectId.createFromHexString(itemid)
-    yield -> collection.insert(this.request.body, it)
+    [collection,db] = await get_collection_for_user_and_logname(userid, logname)
+    #ctx.request.body._id = mongodb.ObjectId.createFromHexString(itemid)
+    await n2p -> collection.insert(ctx.request.body, it)
   catch err
     console.error 'error in addtolog'
     console.error err
   finally
     db?close()
-  #this.body = JSON.stringify {response: 'error', error: 'not yet implemented'}
-  this.body = JSON.stringify {response: 'success', success: true}
+  #ctx.body = JSON.stringify {response: 'error', error: 'not yet implemented'}
+  ctx.body = JSON.stringify {response: 'success', success: true}
 
-app.post '/sync_collection_item', ->*
-  this.type = 'json'
-  {userid, collection} = this.request.body
+app.post '/sync_collection_item', (ctx) ->>
+  ctx.type = 'json'
+  {userid, collection} = ctx.request.body
   collection_name = collection
   if not userid?
-    this.body = JSON.stringify {response: 'error', error: 'need parameter userid'}
+    ctx.body = JSON.stringify {response: 'error', error: 'need parameter userid'}
     return
   if not collection_name?
-    this.body = JSON.stringify {response: 'error', error: 'need parameter collection'}
+    ctx.body = JSON.stringify {response: 'error', error: 'need parameter collection'}
     return
   try
-    [collection,db] = yield get_collection_for_user_and_logname(userid, 'synced:' + collection_name)
-    yield -> collection.insert(this.request.body, it)
+    [collection,db] = await get_collection_for_user_and_logname(userid, 'synced:' + collection_name)
+    await n2p -> collection.insert(ctx.request.body, it)
   catch err
     console.error 'error in sync_collection_item'
     console.error err
   finally
     db?close()
-  #this.body = JSON.stringify {response: 'error', error: 'not yet implemented'}
-  this.body = JSON.stringify {response: 'success', success: true}
+  #ctx.body = JSON.stringify {response: 'error', error: 'not yet implemented'}
+  ctx.body = JSON.stringify {response: 'success', success: true}
 
-app.post '/addsignup', ->*
-  this.type = 'json'
-  {email} = this.request.body
+app.post '/addsignup', (ctx) ->>
+  ctx.type = 'json'
+  {email} = ctx.request.body
   if not email?
-    this.body = JSON.stringify {response: 'error', error: 'need parameter email'}
+    ctx.body = JSON.stringify {response: 'error', error: 'need parameter email'}
     return
   try
-    [signups, db] = yield get_signups()
-    yield -> signups.insert(this.request.body, it)
+    [signups, db] = await get_signups()
+    await n2p -> signups.insert(ctx.request.body, it)
   catch err
     console.error 'error in addsignup'
     console.error err
   finally
     db?close()
-  this.body = JSON.stringify {response: 'success', success: true}
+  ctx.body = JSON.stringify {response: 'success', success: true}
 
-app.get '/addsignup', ->*
-  this.type = 'json'
-  {email} = this.request.query
+app.get '/addsignup', (ctx) ->>
+  ctx.type = 'json'
+  {email} = ctx.request.query
   if not email?
-    this.body = JSON.stringify {response: 'error', error: 'need parameter email'}
+    ctx.body = JSON.stringify {response: 'error', error: 'need parameter email'}
     return
   try
-    [signups,db] = yield get_signups()
-    yield -> signups.insert(this.request.query, it)
+    [signups,db] = await get_signups()
+    await n2p -> signups.insert(ctx.request.query, it)
   catch err
     console.error 'error in addsignup'
     console.error err
   finally
     db?close()
-  this.body = JSON.stringify {response: 'done', success: true}
+  ctx.body = JSON.stringify {response: 'done', success: true}

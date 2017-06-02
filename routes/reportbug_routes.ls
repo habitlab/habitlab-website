@@ -5,6 +5,7 @@
 require! {
   'sendgrid'
   'btoa'
+  'n2p'
 }
 
 jsyaml = require 'js-yaml'
@@ -33,25 +34,25 @@ octo = new Octokat({token: getsecret('github_api_key')})
 
 {add_noerr, cfy} = require 'cfy'
 
-upload_to_cloudinary = cfy (img_data_url) ->*
+upload_to_cloudinary = (img_data_url) ->>
   #img_data_url = 'data:image/png;base64,' + img_data
-  result = yield -> cloudinary.v2.uploader.upload img_data_url, {}, it
+  result = await n2p -> cloudinary.v2.uploader.upload img_data_url, {}, it
   #throw new Error('cloudinary failed')
   return result.url
 
-upload_to_cloudinary_json = cfy (json_data) ->*
+upload_to_cloudinary_json = (json_data) ->>
   public_id = [Math.floor(Math.random()*10) for i from 0 til 28].join('') + '.txt'
-  result = yield -> cloudinary.v2.uploader.upload 'data:text/plain;base64,' + btoa(JSON.stringify(json_data)), {public_id, resource_type: 'raw'}, it
+  result = await n2p -> cloudinary.v2.uploader.upload 'data:text/plain;base64,' + btoa(JSON.stringify(json_data)), {public_id, resource_type: 'raw'}, it
   return result.url
 
-app.post '/report_bug', ->*
-  this.type = 'json'
-  {message, screenshot, other} = this.request.body
-  user_email = this.request.body.email
-  is_gitter = this.request.body['gitter']
-  is_github = this.request.body['github']
+app.post '/report_bug', (ctx) ->>
+  ctx.type = 'json'
+  {message, screenshot, other} = ctx.request.body
+  user_email = ctx.request.body.email
+  is_gitter = ctx.request.body['gitter']
+  is_github = ctx.request.body['github']
   if not message?
-    this.body = JSON.stringify {response: 'error', error: 'need parameter message'}
+    ctx.body = JSON.stringify {response: 'error', error: 'need parameter message'}
     return
   screenshot_url = null
   if not other?
@@ -61,12 +62,12 @@ app.post '/report_bug', ->*
     delete other.extra
   else
     extra = {}
-  extra.ip_address = this.request.ip
+  extra.ip_address = ctx.request.ip
   extra.server_timestamp = Date.now()
   extra.server_localtime = new Date().toString()
   if screenshot?
     try
-      screenshot_url = yield upload_to_cloudinary(screenshot)
+      screenshot_url = await upload_to_cloudinary(screenshot)
     catch err
       other.screenshot_upload_error = 'Error occurred while uploading screenshot'
       other.screenshot_upload_error_message = err.toString()
@@ -80,7 +81,7 @@ app.post '/report_bug', ->*
   #  email_message += '<br><br><pre>' + (JSON.stringify(extra)) + '</pre>'
   if extra?
     try
-      data_url = yield upload_to_cloudinary_json(extra)
+      data_url = await upload_to_cloudinary_json(extra)
       email_message += '<br><br><a href="' + data_url + '">' + data_url + '</a><br><br>'
     catch err
       other.extra_upload_error = 'Error occurred while uploading extra data'
@@ -104,7 +105,7 @@ app.post '/report_bug', ->*
     path: '/v3/mail/send',
     body: mail.toJSON(),
   })
-  sendgrid_response = yield -> sg.API request, it
+  sendgrid_response = await n2p -> sg.API request, it
 
   github_issue_url = 'https://github.com/habitlab/habitlab/issues/'
   if is_github
@@ -118,7 +119,7 @@ app.post '/report_bug', ->*
       title: github_title
       body: github_message
     }
-    result = yield octo.repos('habitlab', 'habitlab').issues.create(new_issue)
+    result = await octo.repos('habitlab', 'habitlab').issues.create(new_issue)
     if result.htmlUrl? and result.htmlUrl.startsWith? and (result.htmlUrl.startsWith('https://github.com/habitlab/habitlab/issues') or result.htmlUrl.startsWith('http://github.com/habitlab/habitlab/issues'))
       github_issue_url = result.htmlUrl
 
@@ -131,7 +132,7 @@ app.post '/report_bug', ->*
   if other?
     gitter_message += '\n\n```\n' + jsyaml.safeDump(other) + '\n```\n'
   if is_gitter
-    room = yield gitter.rooms.join('habitlab/habitlab')
+    room = await gitter.rooms.join('habitlab/habitlab')
     room.send(gitter_message)
 
   response_message = 'Your message has been sent to <a href="mailto:' + default_to_email + '" target="_blank">' + default_to_email + '</a> <br><br>'
@@ -143,13 +144,13 @@ app.post '/report_bug', ->*
     response_message += 'You can track progress at <a href="' + github_issue_url + '" target="_blank">' + github_issue_url + '</a> <br><br>'
   #else
   #  response_message += 'You can file a bug at <a href="' + github_issue_url + '">' + github_issue_url + '</a> <br><br>'
-  this.body = {response: 'success', message: response_message}
+  ctx.body = {response: 'success', message: response_message}
 
 /*
-app.get '/send_test_gitter', ->*
-  this.type = 'json'
-  img_url = yield upload_to_cloudinary(img_data_base64)
-  room = yield gitter.rooms.join('habitlab/habitlab')
+app.get '/send_test_gitter', (ctx) ->>
+  ctx.type = 'json'
+  img_url = await upload_to_cloudinary(img_data_base64)
+  room = await gitter.rooms.join('habitlab/habitlab')
   room.send("""
   Here is a long message.
   And more.
@@ -157,11 +158,11 @@ app.get '/send_test_gitter', ->*
 
   [#{img_url}](#{img_url})
   """)
-  this.body = img_url
+  ctx.body = img_url
 
 # based off https://github.com/habitlab/habitlab-website/blob/master/app.ls
-app.get '/send_test_email', ->*
-  this.type = 'json'
+app.get '/send_test_email', (ctx) ->>
+  ctx.type = 'json'
   from_email = new helper.Email(default_from_email)
   to_email = new helper.Email(default_to_email)
   subject = 'Hello World from the SendGrid Node.js Library!'
@@ -183,6 +184,6 @@ app.get '/send_test_email', ->*
     body: mail.toJSON(),
   })
 
-  response = yield -> sg.API request, it
-  this.body = JSON.stringify(response)
+  response = await n2p -> sg.API request, it
+  ctx.body = JSON.stringify(response)
 */
