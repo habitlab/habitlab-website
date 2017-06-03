@@ -179,3 +179,19 @@ app.get '/printcollection', auth, (ctx) ->>
 app.get '/listcollections', auth, (ctx) ->>
   ctx.type = 'json'
   ctx.body = JSON.stringify await list_collections()
+
+app.get '/get_user_to_install_times', auth, (ctx) ->>
+  ctx.type = 'json'
+  try
+    [installs, db] = await get_installs()
+    all_results = await n2p -> installs.find({}).toArray(it)
+    output = {}
+    for install_info in all_results
+      output[install_info.user_id] = install_info.timestamp
+    ctx.body = JSON.stringify(output)
+  catch err
+    console.log 'error in get_installs'
+    console.log err
+    ctx.body = JSON.stringify {response: 'error', error: 'error in get_user_to_install_times'}
+  finally
+    db?close()
