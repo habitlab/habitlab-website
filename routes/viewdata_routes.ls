@@ -190,7 +190,7 @@ app.get '/get_user_to_install_times', auth, (ctx) ->>
       output[install_info.user_id] = install_info.timestamp
     ctx.body = JSON.stringify(output)
   catch err
-    console.log 'error in get_installs'
+    console.log 'error in get_user_to_install_times'
     console.log err
     ctx.body = JSON.stringify {response: 'error', error: 'error in get_user_to_install_times'}
   finally
