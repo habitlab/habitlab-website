@@ -47,8 +47,9 @@ app.get '/getactiveusers', auth, (ctx) ->>
     entry_parts = entry.split('_')
     userid = entry_parts[0]
     logname = entry_parts[1 to].join('_')
-    if logname.startsWith('facebook:')
+    if logname.startsWith('facebook:') or logname.startsWith('youtube:')
     #if entry.indexOf("logs/interventions") > -1 #filter to check if data gotten today
+    #if logname.startsWith('logs:') != -1
     #see if intervention latest timestamp was today
       collection = db.collection(entry)
       all_items = await n2p -> collection.find({}, ["timestamp"]).toArray(it)
