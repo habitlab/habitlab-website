@@ -47,12 +47,16 @@ app.get '/getactiveusers', auth, (ctx) ->>
     entry_parts = entry.split('_')
     userid = entry_parts[0]
     logname = entry_parts[1 to].join('_')
-    if logname.startsWith('facebook:') or logname.startsWith('youtube:')
+    if logname.startsWith('facebook:') or logname.startsWith('youtube:') #or logname.startsWith('logs:')
     #if entry.indexOf("logs/interventions") > -1 #filter to check if data gotten today
     #if logname.startsWith('logs:') != -1
     #see if intervention latest timestamp was today
       collection = db.collection(entry)
-      all_items = await n2p -> collection.find({}, ["timestamp"]).toArray(it)
+      #num_items = await n2p -> collection.count({}, it)
+      all_items = await n2p -> collection.find({}, {sort: {'timestamp': -1}, limit: 1, fields: {'timestamp': 1}}).toArray(it)
+      #all_items = await n2p -> collection.find({}, {sort: {'_id': -1}, limit: 1, fields: {'timestamp': 1}}).toArray(it)
+      #all_items = await n2p -> collection.find({}, {skip: num_items - 1, limit: 1, fields: {'timestamp': 1}}).toArray(it)
+      #all_items = await n2p -> collection.find({}, ["timestamp"]).toArray(it)
       timestamp = prelude.maximum all_items.map (.timestamp)
       if now - timestamp < secs_in_day
         if not users_set[userid]?
