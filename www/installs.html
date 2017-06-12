@@ -28,6 +28,22 @@
 #install_source {
   width: 100%;
 }
+
+#installed_duration {
+  width: 100%;
+}
+
+#days_until_uninstall {
+  width: 100%;
+}
+
+#hours_until_uninstall {
+  width: 100%;
+}
+
+#minutes_until_uninstall {
+  width: 100%;
+}
 </style>
 
 <google-chart id="days_ago_to_num_installs" cols='[{"label": "Data", "type": "string"},{"label": "Installs", "type": "number"}]' rows='[["Something", 1]]'></google-chart>
@@ -40,9 +56,19 @@
 
 <google-chart id="install_source" cols='[{"label": "Data", "type": "string"},{"label": "Installs", "type": "number"}]' rows='[["Something", 1]]'></google-chart>
 
+<google-chart id="installed_duration" cols='[{"label": "Data", "type": "string"},{"label": "Days kept installed for current active users", "type": "number"}]' rows='[["Something", 1]]'></google-chart>
+
+<google-chart id="days_until_uninstall" cols='[{"label": "Data", "type": "string"},{"label": "Days until uninstall", "type": "number"}]' rows='[["Something", 1]]'></google-chart>
+
+<google-chart id="hours_until_uninstall" cols='[{"label": "Data", "type": "string"},{"label": "Hours until uninstall", "type": "number"}]' rows='[["Something", 1]]'></google-chart>
+
+<google-chart id="minutes_until_uninstall" cols='[{"label": "Data", "type": "string"},{"label": "Minutes until uninstall", "type": "number"}]' rows='[["Something", 1]]'></google-chart>
+
 <script src="bower_components/moment/moment.js"></script>
 <script src="bower_components/jquery/dist/jquery.min.js"></script>
+<script src="bower_components/prelude-ls/browser/prelude-browser-min.js"></script>
 <script>
+window.prelude = require('prelude-ls')
 
 async function geolocate_ip(ip_addr) {
   let geolocate_info = {}
@@ -67,6 +93,22 @@ function dict_to_sorted(language_to_num_installs) {
   }
   language_and_num_installs.sort((a, b) => a[1] - b[1]).reverse()
   return language_and_num_installs
+}
+
+function dict_to_array_sorted_zeros(install_duration_to_num_users) {
+  console.log(Object.keys(install_duration_to_num_users))
+  console.log(Object.keys(install_duration_to_num_users).map(x => parseInt(x)))
+  let max_value = prelude.maximum(Object.keys(install_duration_to_num_users).map(x => parseInt(x)))
+  console.log('max_value is ' + max_value)
+  let output = new Array(max_value).fill(0)
+  for (let i = 0; i < max_value; ++i) {
+    if (install_duration_to_num_users[(i).toString()] == null) {
+      output[i] = [(i).toString(), 0]
+    } else {
+      output[i] = [(i).toString(), install_duration_to_num_users[i]]
+    }
+  }
+  return output
 }
 
 async function get_install_data() {
@@ -100,6 +142,21 @@ async function get_uninstall_data() {
     output.push(install_info)
   }
   return output
+}
+
+async function list_active_users() {
+  let active_users_list = await fetch('/getactiveusers').then(x => x.json())
+  return active_users_list
+}
+
+async function get_user_to_install_times() {
+  let user_to_install_times = await fetch('/get_user_to_install_times').then(x => x.json())
+  return user_to_install_times
+}
+
+async function get_user_to_uninstall_times() {
+  let user_to_uninstall_times = await fetch('/get_user_to_uninstall_times').then(x => x.json())
+  return user_to_uninstall_times
 }
 
 async function show_installs() {
@@ -193,12 +250,94 @@ async function show_install_country() {
   $('#install_country').prop('rows', country_and_num_installs)
 }
 
+async function show_install_duration_for_active_users() {
+  let active_users_list = await list_active_users()
+  let user_to_install_times = await get_user_to_install_times()
+  let active_users_to_duration_installed = {}
+  let current_time = Date.now()
+  let days_installed_to_num_users = {}
+  for (let user_id of active_users_list) {
+    let install_time = user_to_install_times[user_id]
+    if (install_time == null) {
+      continue
+    }
+    let days_installed = Math.round((current_time - install_time) / (1000 * 3600 * 24))
+    active_users_to_duration_installed[user_id] = days_installed
+    if (days_installed_to_num_users[days_installed] == null) {
+      days_installed_to_num_users[days_installed] = 1
+    } else {
+      days_installed_to_num_users[days_installed] += 1
+    }
+  }
+  let days_installed_and_num_users = dict_to_array_sorted_zeros(days_installed_to_num_users)
+  $('#installed_duration').prop('rows', days_installed_and_num_users)
+  /*
+  let max_value = prelude.maximum(Object.values(active_users_to_duration_installed))
+  let days_installed_to_num_users = new Array(max_value + 1).fill(0)
+  for (let user_id of Object.keys(active_users_to_duration_installed)) {
+    let days_installed = active_users_to_duration_installed[user_id]
+    days_installed_to_num_users[days_installed] += 1
+  }
+  $('#install_')
+  console.log(days_installed_to_num_users)
+  */
+}
+
+async function show_installed_duration_until_uninstalled() {
+  let user_to_install_times = await get_user_to_install_times()
+  let user_to_uninstall_times = await get_user_to_uninstall_times()
+  let user_id_list = []
+  for (let user_id of Object.keys(user_to_uninstall_times)) {
+    if (user_to_install_times[user_id]) {
+      user_id_list.push(user_id)
+    }
+  }
+  let days_installed_to_num_users = {}
+  let hours_installed_to_num_users = {}
+  let minutes_installed_to_num_users = {}
+  for (let user_id of user_id_list) {
+    let install_time = user_to_install_times[user_id]
+    let uninstall_time = user_to_uninstall_times[user_id]
+    let time_installed = uninstall_time - install_time
+    let days_installed = Math.round(time_installed / (3600*1000*24))
+    let hours_installed = Math.round(time_installed / (3600*1000))
+    let minutes_installed = Math.round(time_installed / (60*1000))
+    if (days_installed_to_num_users[days_installed] == null) {
+      days_installed_to_num_users[days_installed] = 1
+    } else {
+      days_installed_to_num_users[days_installed] += 1
+    }
+    if (hours_installed < 24) {
+      if (hours_installed_to_num_users[hours_installed] == null) {
+        hours_installed_to_num_users[hours_installed] = 1
+      } else {
+        hours_installed_to_num_users[hours_installed] += 1
+      }
+    }
+    if (minutes_installed < 60) {
+      if (minutes_installed_to_num_users[minutes_installed] == null) {
+        minutes_installed_to_num_users[minutes_installed] = 1
+      } else {
+        minutes_installed_to_num_users[minutes_installed] += 1
+      }
+    }
+  }
+  let days_installed_and_num_users = dict_to_array_sorted_zeros(days_installed_to_num_users)
+  let hours_installed_and_num_users = dict_to_array_sorted_zeros(hours_installed_to_num_users)
+  let minutes_installed_and_num_users = dict_to_array_sorted_zeros(minutes_installed_to_num_users)
+  $('#days_until_uninstall').prop('rows', days_installed_and_num_users)
+  $('#hours_until_uninstall').prop('rows', hours_installed_and_num_users)
+  $('#minutes_until_uninstall').prop('rows', minutes_installed_and_num_users)
+}
+
 async function main() {
   show_installs()
   show_uninstalls()
   show_install_primary_language()
   show_install_source()
   show_install_country()
+  show_install_duration_for_active_users()
+  show_installed_duration_until_uninstalled()
 }
 
 main();

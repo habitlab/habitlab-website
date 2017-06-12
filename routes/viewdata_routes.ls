@@ -200,3 +200,20 @@ app.get '/get_user_to_install_times', auth, (ctx) ->>
     ctx.body = JSON.stringify {response: 'error', error: 'error in get_user_to_install_times'}
   finally
     db?close()
+
+app.get '/get_user_to_uninstall_times', auth, (ctx) ->>
+  ctx.type = 'json'
+  try
+    [uninstalls, db] = await get_uninstalls()
+    all_results = await n2p -> uninstalls.find({}).toArray(it)
+    console.log all_results
+    output = {}
+    for uninstall_info in all_results
+      output[uninstall_info.u] = uninstall_info.timestamp
+    ctx.body = JSON.stringify(output)
+  catch err
+    console.log 'error in get_user_to_uninstall_times'
+    console.log err
+    ctx.body = JSON.stringify {response: 'error', error: 'error in get_user_to_uninstall_times'}
+  finally
+    db?close()
