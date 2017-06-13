@@ -131,7 +131,6 @@ app.get '/get_uninstall_feedback', auth, (ctx) ->>
   finally
     db?close()
 
-
 app.get '/getsignups', auth, (ctx) ->>
   ctx.type = 'json'
   try
@@ -206,7 +205,6 @@ app.get '/get_user_to_uninstall_times', auth, (ctx) ->>
   try
     [uninstalls, db] = await get_uninstalls()
     all_results = await n2p -> uninstalls.find({}).toArray(it)
-    console.log all_results
     output = {}
     for uninstall_info in all_results
       output[uninstall_info.u] = uninstall_info.timestamp
@@ -217,3 +215,35 @@ app.get '/get_user_to_uninstall_times', auth, (ctx) ->>
     ctx.body = JSON.stringify {response: 'error', error: 'error in get_user_to_uninstall_times'}
   finally
     db?close()
+
+app.get '/get_user_to_duration_kept_installed', auth, (ctx) ->>
+  ctx.type = 'json'
+  try
+    [uninstalls, db] = await get_uninstalls()
+    all_uninstalls = await n2p -> uninstalls.find({}).toArray(it)
+    [installs, db2] = await get_installs()
+    all_installs = await n2p -> installs.find({}).toArray(it)
+    output = {}
+    user_to_install_info = {}
+    user_to_uninstall_info = {}
+    for install_info in all_installs
+      user_to_install_info[install_info.user_id] = install_info
+    for uninstall_info in all_uninstalls
+      user_to_uninstall_info[uninstall_info.u] = uninstall_info
+    for user_id,install_info of user_to_install_info
+      install_time = install_info.timestamp
+      uninstall_info = user_to_uninstall_info[user_id]
+      time_installed_until = Date.now()
+      if uninstall_info?
+        time_installed_until = uninstall_info.timestamp
+      days_kept_installed = (time_installed_until - install_time) / (1000*3600*24)
+      output[user_id] = days_kept_installed
+    ctx.body = JSON.stringify(output)
+  catch err
+    console.log 'error in get_user_to_duration_kept_installed'
+    console.log err
+    ctx.body = JSON.stringify {response: 'error', error: 'error in get_user_to_duration_kept_installed'}
+  finally
+    db?close()
+    db2?close()
+  

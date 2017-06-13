@@ -52,9 +52,6 @@ kapp.use(app.routes())
 kapp.use(app.allowedMethods())
 
 if roles.viewdata?
-  app.get '/installs', auth, (ctx) ->>
-    index_contents = await fs.readFileAsync(__dirname + '/www/installs.html', 'utf-8')
-    ctx.body = index_contents
   kapp.use(require('koa-static')(__dirname + '/www'))
 
 port = process.env.PORT ? 5000

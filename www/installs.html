@@ -96,10 +96,7 @@ function dict_to_sorted(language_to_num_installs) {
 }
 
 function dict_to_array_sorted_zeros(install_duration_to_num_users) {
-  console.log(Object.keys(install_duration_to_num_users))
-  console.log(Object.keys(install_duration_to_num_users).map(x => parseInt(x)))
   let max_value = prelude.maximum(Object.keys(install_duration_to_num_users).map(x => parseInt(x)))
-  console.log('max_value is ' + max_value)
   let output = new Array(max_value).fill(0)
   for (let i = 0; i < max_value; ++i) {
     if (install_duration_to_num_users[(i).toString()] == null) {
@@ -239,7 +236,6 @@ async function show_install_country() {
       continue
     }
     let geolocate_info = await(geolocate_ip(ip_addr))
-    console.log(ip_addr)
     let country = geolocate_info.country
     if (country_to_num_installs[country] == null) {
       country_to_num_installs[country] = 0
@@ -279,7 +275,6 @@ async function show_install_duration_for_active_users() {
     days_installed_to_num_users[days_installed] += 1
   }
   $('#install_')
-  console.log(days_installed_to_num_users)
   */
 }
 
