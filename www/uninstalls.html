@@ -1,0 +1,29 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title></title>
+  <link rel="import" href="bower_components/polymer/polymer.html">
+  <link rel="import" href="bower_components/google-chart/google-chart.html">
+</head>
+
+<body>
+  <style>
+  </style>
+</body>
+
+<script src="bower_components/jquery/dist/jquery.min.js"></script>
+<script src="bower_components/prelude-ls/browser/prelude-browser-min.js"></script>
+<script src="libfrontend.js"></script>
+
+<script>
+
+async function main() {
+  let uninstall_data = await get_uninstall_data()
+  console.log(uninstall_data)
+  console.log('hello world')
+}
+
+main()
+</script>
+
+</html>
