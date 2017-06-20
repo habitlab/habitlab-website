@@ -308,8 +308,12 @@ async function show_attrition_stages() {
   $('#early_uninstall_attrition').prop('rows', data)
 }
 
-//async function show_last_intervention_before_uninstall() {
-//}
+async function show_last_intervention_before_uninstall() {
+  let user_to_uninstall_times = await get_user_to_uninstall_times()
+  for (let user_id of Object.keys(user_to_uninstall_times)) {
+    console.log(user_id)
+  }
+}
 
 async function main() {
   show_installs()
@@ -320,6 +324,7 @@ async function main() {
   show_install_duration_for_active_users()
   show_installed_duration_until_uninstalled()
   show_attrition_stages()
+  show_last_intervention_before_uninstall()
 }
 
 main();

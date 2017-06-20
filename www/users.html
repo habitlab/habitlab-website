@@ -30,6 +30,9 @@
 }
 </style>
 
+<div id="num_active_users"></div>
+<div id="user_list"></div>
+
 <!--
 <google-chart id="days_ago_to_num_installs" cols='[{"label": "Data", "type": "string"},{"label": "Installs", "type": "number"}]' rows='[["Something", 1]]'></google-chart>
 
@@ -53,8 +56,10 @@ async function get_user_ids() {
 
 async function main() {
   let user_ids = await get_user_ids()
+  $('#num_active_users').text('Num active users within past day who have logging enabled: ' + user_ids.length)
   for (let user_id of user_ids) {
-    console.log(user_id)
+    $('#user_list').append($('<a href="/viewuser.html?id=' + user_id + '">' + user_id + '</a>'))
+    $('#user_list').append($('<br>'))
   }
 }
 
