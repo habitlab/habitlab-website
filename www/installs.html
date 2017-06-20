@@ -44,6 +44,10 @@
 #minutes_until_uninstall {
   width: 100%;
 }
+
+#early_uninstall_attrition {
+  width: 100%;
+}
 </style>
 
 <google-chart id="days_ago_to_num_installs" cols='[{"label": "Data", "type": "string"},{"label": "Installs", "type": "number"}]' rows='[["Something", 1]]'></google-chart>
@@ -63,6 +67,8 @@
 <google-chart id="hours_until_uninstall" cols='[{"label": "Data", "type": "string"},{"label": "Hours until uninstall", "type": "number"}]' rows='[["Something", 1]]'></google-chart>
 
 <google-chart id="minutes_until_uninstall" cols='[{"label": "Data", "type": "string"},{"label": "Minutes until uninstall", "type": "number"}]' rows='[["Something", 1]]'></google-chart>
+
+<google-chart id="early_uninstall_attrition" options='{"vAxis": {"minValue": 0}}' cols='[{"label": "Data", "type": "string"},{"label": "Early attrition actions before uninstall", "type": "number"}]' rows='[["Something", 1]]'></google-chart>
 
 <script src="bower_components/moment/moment.js"></script>
 <script src="bower_components/jquery/dist/jquery.min.js"></script>
@@ -207,6 +213,10 @@ async function show_installed_duration_until_uninstalled() {
   let minutes_installed_to_num_users = {}
   for (let user_id of user_id_list) {
     let install_time = user_to_install_times[user_id]
+    if (install_time < Date.now() - 30*24*3600*1000) {
+      // install occurred more than 30 days ago
+      continue
+    }
     let uninstall_time = user_to_uninstall_times[user_id]
     let time_installed = uninstall_time - install_time
     let days_installed = Math.round(time_installed / (3600*1000*24))
@@ -240,6 +250,67 @@ async function show_installed_duration_until_uninstalled() {
   $('#minutes_until_uninstall').prop('rows', minutes_installed_and_num_users)
 }
 
+async function show_attrition_stages() {
+  let user_to_install_times = await get_user_to_install_times()
+  let user_to_uninstall_times = await get_user_to_uninstall_times()
+  let logging_info_list = await get_logging_states()
+  let user_to_logging_info_list = {}
+  for (let logging_info of logging_info_list) {
+    let user_id = logging_info.user_id
+    if (!user_to_logging_info_list[user_id]) {
+      user_to_logging_info_list[user_id] = []
+    }
+    user_to_logging_info_list[user_id].push(logging_info)
+  }
+  console.log('show_attrition_stages running')
+  //console.log(user_to_install_times)
+  //console.log(user_to_uninstall_times)
+  console.log(logging_info_list)
+  let total_early_uninstalls = 0
+  let total_uninstalls_after_completing_onboarding = 0
+  let user_id_list = []
+  for (let user_id of Object.keys(user_to_uninstall_times)) {
+    if (user_to_install_times[user_id]) {
+      let install_time = user_to_install_times[user_id]
+      let uninstall_time = user_to_uninstall_times[user_id]
+      if (install_time > uninstall_time) {
+        // illogical
+        continue
+      }
+      if (uninstall_time > install_time + 5*60*1000) {
+        // was uninstalled more than 5 minutes after install, not early attrition
+        continue
+      }
+      if (install_time < Date.now() - 30*24*3600*1000) {
+        // install occurred more than 30 days ago
+        continue
+      }
+      total_early_uninstalls += 1
+      let completed_onboarding_page = false
+      if (user_to_logging_info_list[user_id]) {
+        for (let logging_info of user_to_logging_info_list[user_id]) {
+          if (logging_info.page == 'onboarding') {
+            completed_onboarding_page = true
+          }
+        }
+      }
+      if (completed_onboarding_page) {
+        total_uninstalls_after_completing_onboarding += 1
+      } else {
+        //console.log(user_id)
+      }
+    }
+  }
+  let data = [
+    ['Total uninstalls within 5 minutes, in last 30 days', total_early_uninstalls],
+    ['Uninstalls after completing onboarding', total_uninstalls_after_completing_onboarding]
+  ]
+  $('#early_uninstall_attrition').prop('rows', data)
+}
+
+//async function show_last_intervention_before_uninstall() {
+//}
+
 async function main() {
   show_installs()
   show_uninstalls()
@@ -248,6 +319,7 @@ async function main() {
   show_install_country()
   show_install_duration_for_active_users()
   show_installed_duration_until_uninstalled()
+  show_attrition_stages()
 }
 
 main();

@@ -57,7 +57,7 @@ async function get_install_data() {
 async function get_uninstall_data() {
   let install_info_list = await fetch('/get_uninstalls').then(x => x.json())
   let output = []
-   for (let install_info of install_info_list) {
+  for (let install_info of install_info_list) {
     if (install_info.r != 0) { // not stable release
       continue
     }
@@ -67,6 +67,11 @@ async function get_uninstall_data() {
     output.push(install_info)
   }
   return output
+}
+
+async function get_logging_states() {
+  let logging_info_list = await fetch('/get_logging_states').then(x => x.json())
+  return logging_info_list
 }
 
 async function list_active_users() {

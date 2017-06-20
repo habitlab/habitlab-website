@@ -12,7 +12,7 @@
     ".bowerrc": true,
     "yarn.lock": true,
     "*.js": true,
-    "www/*.js": true,
+    "www/dashboard.js": true,
     "routes/*.js": true,
     "libs/*.js": true,
     "runserver": true,
