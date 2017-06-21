@@ -30,8 +30,9 @@
 }
 </style>
 
-<div id="num_active_users"></div>
-<div id="user_list"></div>
+<div>User ID: <span id="display_user_id"></span></div>
+<div>Install time: <span id="display_install_time"></span></div>
+<div>Uninstall time: <span id="display_uninstall_time"></span></div>
 
 <!--
 <google-chart id="days_ago_to_num_installs" cols='[{"label": "Data", "type": "string"},{"label": "Installs", "type": "number"}]' rows='[["Something", 1]]'></google-chart>
@@ -47,19 +48,30 @@
 
 <script src="bower_components/moment/moment.js"></script>
 <script src="bower_components/jquery/dist/jquery.min.js"></script>
+<script src="libfrontend.js"></script>
+<script src="npm_libs/geturlparameters.js"></script>
 <script>
 
-async function get_user_ids() {
-  let active_users = await fetch('/getactiveusers').then(x => x.json())
-  return active_users
-}
-
 async function main() {
-  let user_ids = await get_user_ids()
-  $('#num_active_users').text('Num active users within past day who have logging enabled: ' + user_ids.length)
-  for (let user_id of user_ids) {
-    $('#user_list').append($('<a href="/viewuser.html?userid=' + user_id + '">' + user_id + '</a>'))
-    $('#user_list').append($('<br>'))
+  let user_id = geturlparameters().userid
+  if (!user_id) {
+    console.log('need userid parameter')
+    return
+  }
+  $('#display_user_id').text(user_id)
+  let user_to_install_times = await get_user_to_install_times()
+  let user_to_uninstall_times = await get_user_to_uninstall_times()
+  let install_time = user_to_install_times[user_id]
+  let uninstall_time = user_to_uninstall_times[user_id]
+  if (install_time != null) {
+    $('#display_install_time').text(moment(install_time).toString())
+  } else {
+    $('#display_install_time').text('No install record')
+  }
+  if (uninstall_time != null) {
+    $('#display_uninstall_time').text(moment(uninstall_time).toString())
+  } else {
+    $('#display_uninstall_time').text('No uninstall record')
   }
 }
 

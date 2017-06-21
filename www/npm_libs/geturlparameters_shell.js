@@ -1,0 +1,1 @@
+geturlparameters = require('geturlparameters');
