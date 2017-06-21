@@ -33,7 +33,12 @@
 <div>User ID: <span id="display_user_id"></span></div>
 <div>Install time: <span id="display_install_time"></span></div>
 <div>Uninstall time: <span id="display_uninstall_time"></span></div>
-
+<div>Enabled goals: 
+  <div id="enabled_goals_list"></div>
+</div>
+<div>Enabled interventions:
+  <div id="enabled_interventions_list"></div>
+</div>
 <!--
 <google-chart id="days_ago_to_num_installs" cols='[{"label": "Data", "type": "string"},{"label": "Installs", "type": "number"}]' rows='[["Something", 1]]'></google-chart>
 
@@ -52,12 +57,9 @@
 <script src="npm_libs/geturlparameters.js"></script>
 <script>
 
-async function main() {
-  let user_id = geturlparameters().userid
-  if (!user_id) {
-    console.log('need userid parameter')
-    return
-  }
+let user_id = geturlparameters().userid
+
+async function show_basic_stats() {
   $('#display_user_id').text(user_id)
   let user_to_install_times = await get_user_to_install_times()
   let user_to_uninstall_times = await get_user_to_uninstall_times()
@@ -73,6 +75,27 @@ async function main() {
   } else {
     $('#display_uninstall_time').text('No uninstall record')
   }
+}
+
+async function show_enabled_goals() {
+  let enabled_goals = await get_enabled_goals_for_user(user_id)
+  $('#enabled_goals_list').text(JSON.stringify(enabled_goals))
+  //'http://localhost:5000/printcollection?userid=c0c064d1b0c94e04b57b451c&logname=logs:goals'
+}
+
+async function show_enabled_interventions() {
+  let enabled_interventions = await get_enabled_interventions_for_user(user_id)
+  $('#enabled_interventions_list').text(JSON.stringify(enabled_interventions))
+}
+
+async function main() {
+  if (!user_id) {
+    console.log('need userid parameter')
+    return
+  }
+  show_basic_stats()
+  show_enabled_goals()
+  show_enabled_interventions()
 }
 
 main();
