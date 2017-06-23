@@ -47,7 +47,7 @@ app.get '/getactiveusers', auth, (ctx) ->>
     entry_parts = entry.split('_')
     userid = entry_parts[0]
     logname = entry_parts[1 to].join('_')
-    if logname.startsWith('facebook:') or logname.startsWith('youtube:') #or logname.startsWith('logs:')
+    if logname.startsWith('facebook:') or logname.startsWith('youtube:') or logname.startsWith('logs:') or logname.startsWith('synced:')
     #if entry.indexOf("logs/interventions") > -1 #filter to check if data gotten today
     #if logname.startsWith('logs:') != -1
     #see if intervention latest timestamp was today
@@ -246,4 +246,41 @@ app.get '/get_user_to_duration_kept_installed', auth, (ctx) ->>
   finally
     db?close()
     db2?close()
-  
+
+/*
+app.get '/get_daily_active_counts', auth, (ctx) ->>
+  ctx.type = 'json'
+  users = []
+  users_set = {}
+  now = Date.now()
+  secs_in_day = 86400000
+  collections = await list_collections()
+  db = await get_mongo_db()
+  for entry in collections
+    if entry.indexOf('_') == -1
+      continue
+    entry_parts = entry.split('_')
+    userid = entry_parts[0]
+    logname = entry_parts[1 to].join('_')
+    if logname.startsWith('facebook:') or logname.startsWith('youtube:') or logname.startsWith('logs:') or logname.startsWith('synced:')
+    #if entry.indexOf("logs/interventions") > -1 #filter to check if data gotten today
+    #if logname.startsWith('logs:') != -1
+    #see if intervention latest timestamp was today
+      collection = db.collection(entry)
+      #num_items = await n2p -> collection.count({}, it)
+      all_items = await n2p -> collection.find({}, {fields: {'timestamp': 1}}).toArray(it)
+      #all_items = await n2p -> collection.find({}, {sort: {'_id': -1}, limit: 1, fields: {'timestamp': 1}}).toArray(it)
+      #all_items = await n2p -> collection.find({}, {skip: num_items - 1, limit: 1, fields: {'timestamp': 1}}).toArray(it)
+      #all_items = await n2p -> collection.find({}, ["timestamp"]).toArray(it)
+      timestamps = all_items.map (.timestamp)
+      for timestamp in timestamps
+        
+      timestamp = prelude.maximum all_items.map (.timestamp)
+      if now - timestamp < secs_in_day
+        if not users_set[userid]?
+          users.push userid
+          users_set[userid] = true
+  ctx.body = JSON.stringify users
+  db.close()
+  return
+*/

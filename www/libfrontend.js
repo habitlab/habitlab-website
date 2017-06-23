@@ -89,11 +89,29 @@ async function get_user_to_uninstall_times() {
   return user_to_uninstall_times
 }
 
+async function get_collection_for_user(userid, collection_name) {
+  return await fetch('/printcollection?userid=' + userid + '&logname=' + collection_name).then(x => x.json())
+}
+
 async function get_latest_goal_info_for_user(userid) {
-  let goal_logs = await fetch('/printcollection?userid=' + userid + '&logname=logs:goals').then(x => x.json())
+  let goal_logs = await get_collection_for_user(userid, 'logs:goals')
   let latest_timestamp = 0
   let latest_log_info = {}
   for (let log_info of goal_logs) {
+    let timestamp = log_info.timestamp
+    if (timestamp > latest_timestamp) {
+      latest_timestamp = timestamp
+      latest_log_info = log_info
+    }
+  }
+  return latest_log_info
+}
+
+async function get_latest_intervention_info_for_user(userid) {
+  let intervention_logs = await get_collection_for_user(userid, 'logs:interventions')
+  let latest_timestamp = 0
+  let latest_log_info = {}
+  for (let log_info of intervention_logs) {
     let timestamp = log_info.timestamp
     if (timestamp > latest_timestamp) {
       latest_timestamp = timestamp
@@ -117,6 +135,30 @@ async function get_enabled_goals_for_user(userid) {
   return output
 }
 
+async function get_goals_tried_by_user(userid) {
+  let goal_targets_logs = await get_collection_for_user(userid, 'synced:goal_targets')
+  let output_set = {}
+  for (let goal_target_info of goal_targets_logs) {
+    let goal_name = goal_target_info.key
+    output_set[goal_name] = true
+  }
+  let output = Object.keys(output_set)
+  output.sort()
+  return output
+}
+
+async function get_goal_targets_for_user(userid) {
+  let goal_targets_logs = await get_collection_for_user(userid, 'synced:goal_targets')
+  let output = {}
+  for (let goal_target_info of goal_targets_logs) {
+    let goal_name = goal_target_info.key
+    let goal_target = goal_target_info.val
+    output[goal_name] = goal_target
+  }
+  return output
+}
+
+/*
 async function get_enabled_interventions_for_user(userid) {
   let latest_log_info = await get_latest_goal_info_for_user(userid)
   let output = []
@@ -129,4 +171,37 @@ async function get_enabled_interventions_for_user(userid) {
   }
   output.sort()
   return output
+}
+*/
+
+async function get_enabled_interventions_for_user(userid) {
+  let latest_log_info = await get_latest_intervention_info_for_user(userid)
+  let output = {}
+  if (latest_log_info && latest_log_info.enabled_interventions) {
+    return latest_log_info.enabled_interventions
+  }
+  return output
+}
+
+async function get_enabled_goals_for_user(userid) {
+  let latest_log_info = await get_latest_intervention_info_for_user(userid)
+  let output = {}
+  if (latest_log_info && latest_log_info.enabled_goals) {
+    return latest_log_info.enabled_goals
+  }
+  return output
+}
+
+async function list_intervention_logs_for_user(userid) {
+  let all_logs = await fetch('/list_logs_for_user?userid=' + userid).then(x => x.json())
+  let output = []
+  for (let log_name of all_logs) {
+    let base_log_name = log_name.replace(userid + '_', '')
+    output.push(base_log_name)
+  }
+  return output
+}
+
+async function get_intervention_to_num_impressions_for_user(userid) {
+  //let interventions_with_data = await get_
 }

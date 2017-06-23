@@ -1,6 +1,300 @@
+<!DOCTYPE html>
 <html>
-  <body>
-    This is the dashboard
-  </body>
-  <script src="dashboard.js"></script>
+<head>
+  <title></title>
+  <link rel="import" href="bower_components/polymer/polymer.html">
+  <link rel="import" href="bower_components/google-chart/google-chart.html">
+</head>
+
+<body>
+
+<style>
+#days_ago_to_num_installs {
+  width: 100%;
+}
+
+#days_ago_to_num_uninstalls {
+  width: 100%;
+}
+
+#install_primary_language {
+  width: 100%;
+}
+
+#install_country {
+  width: 100%;
+}
+
+#install_source {
+  width: 100%;
+}
+</style>
+
+<div>Num active users within past day who have logging enabled:</div>
+<div id="num_active_users"></div>
+
+<br>
+
+<div>List of users with logging enabled:</div>
+<div id="user_list"></div>
+
+<br>
+
+<div>Goal to number of users who have tried it:</div>
+<div id="goals_tried"></div>
+
+<br>
+
+<div>Goal to number of users who have it enabled:</div>
+<div id="goals_enabled"></div>
+
+
+<br>
+
+<div>Interventions to number of users who have it enabled:</div>
+<div id="interventions_enabled"></div>
+
+<br>
+
+<div>Interventions to number of users who have it disabled:</div>
+<div id="interventions_disabled"></div>
+
+<br>
+
+
+<div>Number of users who have tried at least one non-default goal:</div>
+<div id="users_who_tried_a_nondefault_goal"></div>
+
+<br>
+
+<div>Number of users who have tried at least one custom goal:</div>
+<div id="users_who_tried_a_custom_goal"></div>
+
+<br>
+
+<div>Number of users who have at least one non-default goal target:</div>
+<div id="users_who_changed_a_goal_target"></div>
+
+<!--
+<google-chart id="days_ago_to_num_installs" cols='[{"label": "Data", "type": "string"},{"label": "Installs", "type": "number"}]' rows='[["Something", 1]]'></google-chart>
+
+<google-chart id="days_ago_to_num_uninstalls" cols='[{"label": "Data", "type": "string"},{"label": "Uninstalls", "type": "number"}]' rows='[["Something", 1]]'></google-chart>
+
+<google-chart id="install_primary_language" cols='[{"label": "Data", "type": "string"},{"label": "Languages", "type": "number"}]' rows='[["Something", 1]]'></google-chart>
+
+<google-chart id="install_country" cols='[{"label": "Data", "type": "string"},{"label": "Country", "type": "number"}]' rows='[["Something", 1]]'></google-chart>
+
+<google-chart id="install_source" cols='[{"label": "Data", "type": "string"},{"label": "Installs", "type": "number"}]' rows='[["Something", 1]]'></google-chart>
+-->
+
+<script src="bower_components/moment/moment.js"></script>
+<script src="bower_components/jquery/dist/jquery.min.js"></script>
+<script src="libfrontend.js"></script>
+<script>
+
+let user_ids = null
+
+async function get_user_ids() {
+  let active_users = await fetch('/getactiveusers').then(x => x.json())
+  return active_users
+}
+
+async function get_goal_popularity() {
+  let goal_to_num_users = {}
+  for (let user_id of user_ids) {
+    let enabled_goals = await get_enabled_goals_for_user(user_id)
+    for (let goal_name of enabled_goals) {
+      if (goal_to_num_users[goal_name] == null) {
+        goal_to_num_users[goal_name] = 0
+      }
+      goal_to_num_users[goal_name] += 1
+    }
+  }
+  console.log(goal_to_num_users)
+  return goal_to_num_users
+}
+
+async function get_goals_tried_by_all_users() {
+  let goal_to_num_users = {}
+  for (let user_id of user_ids) {
+    let enabled_goals = await get_goals_tried_by_user(user_id)
+    for (let goal_name of enabled_goals) {
+      if (goal_to_num_users[goal_name] == null) {
+        goal_to_num_users[goal_name] = 0
+      }
+      goal_to_num_users[goal_name] += 1
+    }
+  }
+  console.log(goal_to_num_users)
+  return goal_to_num_users
+}
+
+async function get_num_users_who_have_tried_nondefault_goal() {
+  let output = 0
+  for (let user_id of user_ids) {
+    let enabled_goals = await get_goals_tried_by_user(user_id)
+    let tried_nondefault_goal = false
+    for (let goal_name of enabled_goals) {
+      if (goal_name != 'facebook/spend_less_time' && goal_name != 'youtube/spend_less_time') {
+        tried_nondefault_goal = true
+      }
+    }
+    if (tried_nondefault_goal) {
+      output += 1
+    }
+  }
+  return output
+}
+
+async function get_num_users_who_have_tried_custom_goal() {
+  let output = 0
+  for (let user_id of user_ids) {
+    let enabled_goals = await get_goals_tried_by_user(user_id)
+    let tried_nondefault_goal = false
+    for (let goal_name of enabled_goals) {
+      if (goal_name.startsWith('custom/')) {
+        tried_nondefault_goal = true
+      }
+    }
+    if (tried_nondefault_goal) {
+      output += 1
+    }
+  }
+  return output  
+}
+
+async function get_num_users_who_have_set_nondefault_target() {
+  let output = 0
+  for (let user_id of user_ids) {
+    let goal_targets = await get_goal_targets_for_user(user_id)
+    let have_nondefault_target = false
+    for (let goal_name of Object.keys(goal_targets)) {
+      let target_value = goal_targets[goal_name]
+      if (target_value != 20) {
+        have_nondefault_target = true
+      }
+    }
+    if (have_nondefault_target) {
+      output += 1
+    }
+  }
+  return output
+}
+
+async function show_user_list() {
+  $('#num_active_users').text(user_ids.length)
+  for (let user_id of user_ids) {
+    $('#user_list').append($('<a href="/viewuser.html?userid=' + user_id + '">' + user_id + '</a>'))
+    $('#user_list').append($('<br>'))
+  }
+}
+
+function display_dictionary_as_table(dict, selector) {
+  let keys_and_values = []
+  for (let key of Object.keys(dict)) {
+    let value = dict[key]
+    keys_and_values.push([key, value])
+  }
+  keys_and_values.sort(function(a, b) {
+    return a[1] - b[1]
+  })
+  keys_and_values.reverse()
+  for (let [key,val] of keys_and_values) {
+    $(selector).append($('<div>').text(key + ': ' + val))
+  }
+}
+
+async function display_goals_tried_by_users() {
+  let goal_to_num_users = await get_goals_tried_by_all_users()
+  display_dictionary_as_table(goal_to_num_users, '#goals_tried')
+}
+
+async function get_interventions_enabled_by_users() {
+  let intervention_to_num_users = {}
+  for (let user_id of user_ids) {
+    let enabled_interventions = await get_enabled_interventions_for_user(user_id)
+    for (let intervention_name of Object.keys(enabled_interventions)) {
+      let is_enabled = enabled_interventions[intervention_name]
+      if (is_enabled) {
+        if (intervention_to_num_users[intervention_name] == null) {
+          intervention_to_num_users[intervention_name] = 0
+        }
+        intervention_to_num_users[intervention_name] += 1
+      }
+    }
+  }
+  console.log(intervention_to_num_users)
+  return intervention_to_num_users
+}
+
+async function get_interventions_disabled_by_users() {
+  let intervention_to_num_users = {}
+  for (let user_id of user_ids) {
+    let enabled_interventions = await get_enabled_interventions_for_user(user_id)
+    for (let intervention_name of Object.keys(enabled_interventions)) {
+      let is_enabled = enabled_interventions[intervention_name]
+      if (!is_enabled) {
+        if (intervention_to_num_users[intervention_name] == null) {
+          intervention_to_num_users[intervention_name] = 0
+        }
+        intervention_to_num_users[intervention_name] += 1
+      }
+    }
+  }
+  console.log(intervention_to_num_users)
+  return intervention_to_num_users
+}
+
+async function get_goals_enabled_by_users() {
+  let goal_to_num_users = {}
+  for (let user_id of user_ids) {
+    let enabled_goals = await get_enabled_goals_for_user(user_id)
+    for (let goal_name of Object.keys(enabled_goals)) {
+      let is_enabled = enabled_goals[goal_name]
+      if (is_enabled) {
+        if (goal_to_num_users[goal_name] == null) {
+          goal_to_num_users[goal_name] = 0
+        }
+        goal_to_num_users[goal_name] += 1
+      }
+    }
+  }
+  console.log(goal_to_num_users)
+  return goal_to_num_users
+}
+
+async function display_goals_enabled_by_users() {
+  let goal_to_num_users = await get_goals_enabled_by_users()
+  display_dictionary_as_table(goal_to_num_users, '#goals_enabled')
+}
+
+async function display_interventions_enabled_by_users() {
+  let intervention_to_num_users = await get_interventions_enabled_by_users()
+  display_dictionary_as_table(intervention_to_num_users, '#interventions_enabled')
+}
+
+async function display_interventions_disabled_by_users() {
+  let intervention_to_num_users = await get_interventions_disabled_by_users()
+  display_dictionary_as_table(intervention_to_num_users, '#interventions_disabled')
+}
+
+async function main() {
+  user_ids = await get_user_ids()
+  show_user_list()
+  display_goals_tried_by_users()
+  display_goals_enabled_by_users()
+  display_interventions_enabled_by_users()
+  display_interventions_disabled_by_users()
+  let num_users_who_have_tried_nondefault_goal = await get_num_users_who_have_tried_nondefault_goal()
+  let num_users_who_have_tried_custom_goal = await get_num_users_who_have_tried_custom_goal()
+  let num_users_who_have_set_nondefault_target = await get_num_users_who_have_set_nondefault_target()
+  $('#users_who_tried_a_nondefault_goal').text(num_users_who_have_tried_nondefault_goal)
+  $('#users_who_tried_a_custom_goal').text(num_users_who_have_tried_custom_goal)
+  $('#users_who_changed_a_goal_target').text(num_users_who_have_set_nondefault_target)
+}
+
+main();
+</script>
+
+</body>
 </html>
