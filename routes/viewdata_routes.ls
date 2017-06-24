@@ -249,7 +249,7 @@ app.get '/get_user_to_duration_kept_installed', auth, (ctx) ->>
     db?close()
     db2?close()
 
-app.get '/get_user_to_active_dates', auth, (ctx) ->>
+app.get '/get_user_to_dates_active', auth, (ctx) ->>
   ctx.type = 'json'
   try
     [user_active_dates, db] = await get_user_active_dates()
