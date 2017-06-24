@@ -14,10 +14,12 @@
   list_log_collections_for_user
   list_log_collections_for_logname
   get_collection_for_user_and_logname
+  get_user_active_dates
 } = require 'libs/server_common'
 
 require! {
   n2p
+  moment
 }
 
 app.get '/feedback', auth, (ctx) ->>
@@ -247,7 +249,40 @@ app.get '/get_user_to_duration_kept_installed', auth, (ctx) ->>
     db?close()
     db2?close()
 
-/*
+app.get '/get_user_to_active_dates', auth, (ctx) ->>
+  ctx.type = 'json'
+  try
+    [user_active_dates, db] = await get_user_active_dates()
+    all_results = await n2p -> user_active_dates.find({}).toArray(it)
+    output = {}
+    for {day, user} in all_results
+      if not output[user]?
+        output[user] = []
+      output[user].push day
+    ctx.body = JSON.stringify output
+  catch err
+    console.log 'error in get_user_active_dates'
+    console.log err
+  finally
+    db?close()
+
+app.get '/get_dates_to_users_active', auth, (ctx) ->>
+  ctx.type = 'json'
+  try
+    [user_active_dates, db] = await get_user_active_dates()
+    all_results = await n2p -> user_active_dates.find({}).toArray(it)
+    output = {}
+    for {day, user} in all_results
+      if not output[day]?
+        output[day] = []
+      output[day].push user
+    ctx.body = JSON.stringify output
+  catch err
+    console.log 'error in get_user_active_dates'
+    console.log err
+  finally
+    db?close()
+
 app.get '/get_daily_active_counts', auth, (ctx) ->>
   ctx.type = 'json'
   users = []
@@ -256,11 +291,14 @@ app.get '/get_daily_active_counts', auth, (ctx) ->>
   secs_in_day = 86400000
   collections = await list_collections()
   db = await get_mongo_db()
+  user_to_days_active = {}
   for entry in collections
     if entry.indexOf('_') == -1
       continue
     entry_parts = entry.split('_')
     userid = entry_parts[0]
+    if not user_to_days_active[userid]?
+      user_to_days_active[userid] = {}
     logname = entry_parts[1 to].join('_')
     if logname.startsWith('facebook:') or logname.startsWith('youtube:') or logname.startsWith('logs:') or logname.startsWith('synced:')
     #if entry.indexOf("logs/interventions") > -1 #filter to check if data gotten today
@@ -274,13 +312,19 @@ app.get '/get_daily_active_counts', auth, (ctx) ->>
       #all_items = await n2p -> collection.find({}, ["timestamp"]).toArray(it)
       timestamps = all_items.map (.timestamp)
       for timestamp in timestamps
-        
-      timestamp = prelude.maximum all_items.map (.timestamp)
-      if now - timestamp < secs_in_day
-        if not users_set[userid]?
-          users.push userid
-          users_set[userid] = true
-  ctx.body = JSON.stringify users
+        date = moment(timestamp).format('YYYYMMDD')
+        user_to_days_active[userid][date] = true
+      #timestamp = prelude.maximum all_items.map (.timestamp)
+      #if now - timestamp < secs_in_day
+      #  if not users_set[userid]?
+      #    users.push userid
+      #    users_set[userid] = true
+  day_to_users_active = {}
+  for userid,days_active of user_to_days_active
+    for date in Object.keys(days_active)
+      if not day_to_users_active[date]?
+        day_to_users_active[date] = 0
+      day_to_users_active[date] += 1
+  ctx.body = JSON.stringify day_to_users_active
   db.close()
   return
-*/

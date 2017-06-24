@@ -27,6 +27,7 @@
     "koa-static": "3.0.0",
     "levn": "^0.3.0",
     "livescript-async": "^1.5.2",
+    "moment": "^2.18.1",
     "mongodb": "^2.2.27",
     "muri": "^1.2.1",
     "n2p": "^0.0.2",

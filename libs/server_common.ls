@@ -87,6 +87,9 @@ export get_proposed_goals = ->>
 export get_contributed_interventions = ->>
   return await get_collection2('contributed_interventions')
 
+export get_user_active_dates = ->>
+  return await get_collection('user_active_dates')
+
 export list_collections = ->>
   ndb = await get_mongo_db()
   collections_list = await n2p -> ndb.listCollections().toArray(it)

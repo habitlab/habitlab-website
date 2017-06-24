@@ -1,10 +1,12 @@
 {
   app
+  get_user_active_dates
 } = require 'libs/server_common'
 
 require! {
   'chrome-web-store-item-property'
   semver
+  moment
 }
 
 app.get '/ping', (ctx) ->>
@@ -16,7 +18,7 @@ appid_to_last_version = {}
 
 app.get '/app_version', (ctx) ->>
   ctx.type = 'json'
-  {appid} = ctx.request.query
+  {appid, userid} = ctx.request.query
   if not appid?
     ctx.body = {response: 'error', error: 'need appid'}
     return
@@ -25,6 +27,11 @@ app.get '/app_version', (ctx) ->>
     return
   time_checked = appid_to_time_checked[appid] ? 0
   current_time = Date.now()
+  if userid?
+    current_date = moment().format('YYYYMMDD')
+    [user_active_dates, db] = await get_user_active_dates()
+    user_active_dates.update({day: current_date, user: userid}, {day: current_date, user: userid}, {upsert: true}).then ->
+      db.close()
   if time_checked + 1000*60*20 > current_time # within the past 20 minutes
     ctx.body = {response: 'success', version: appid_to_last_version[appid]}
     return
