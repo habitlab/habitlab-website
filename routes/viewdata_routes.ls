@@ -20,6 +20,7 @@
 require! {
   n2p
   moment
+  semver
 }
 
 app.get '/feedback', auth, (ctx) ->>
@@ -36,7 +37,76 @@ app.get '/feedback', auth, (ctx) ->>
   db.close()
   return
 
+app.get '/getactiveusers_withversion', auth, (ctx) ->>
+  ctx.type = 'json'
+  user_to_version = {}
+  now = Date.now()
+  secs_in_day = 86400000
+  collections = await list_collections()
+  db = await get_mongo_db()
+  for entry in collections
+    if entry.indexOf('_') == -1
+      continue
+    entry_parts = entry.split('_')
+    userid = entry_parts[0]
+    logname = entry_parts[1 to].join('_')
+    if logname.startsWith('facebook:') or logname.startsWith('youtube:') or logname.startsWith('logs:') or logname.startsWith('synced:')
+    #if entry.indexOf("logs/interventions") > -1 #filter to check if data gotten today
+    #if logname.startsWith('logs:') != -1
+    #see if intervention latest timestamp was today
+      collection = db.collection(entry)
+      #num_items = await n2p -> collection.count({}, it)
+      all_items = await n2p -> collection.find({}, {sort: {'timestamp': -1}, limit: 1, fields: {'timestamp': 1, 'habitlab_version': 1}}).toArray(it)
+      #all_items = await n2p -> collection.find({}, {sort: {'_id': -1}, limit: 1, fields: {'timestamp': 1}}).toArray(it)
+      #all_items = await n2p -> collection.find({}, {skip: num_items - 1, limit: 1, fields: {'timestamp': 1}}).toArray(it)
+      #all_items = await n2p -> collection.find({}, ["timestamp"]).toArray(it)
+      for item in all_items
+        timestamp = item.timestamp
+        if timestamp > now - secs_in_day
+          if item.habitlab_version?
+            version = item.habitlab_version
+            if not user_to_version[userid]?
+              user_to_version[userid] = version
+            if semver.gt version, user_to_version[userid]
+              user_to_version[userid] = version
+  ctx.body = JSON.stringify user_to_version
+  db.close()
+  return
+
+app.get '/get_version_for_user', auth, (ctx) ->>
+  ctx.type = 'json'
+  {userid} = ctx.request.query
+  if not userid?
+    ctx.body = JSON.stringify {response: 'error', error: 'need parameter userid'}
+    return
+  user_to_version = {}
+  now = Date.now()
+  secs_in_day = 86400000
+  user_collections = await list_log_collections_for_user(userid)
+  db = await get_mongo_db()
+  for entry in user_collections
+    if entry.indexOf('_') == -1
+      continue
+    entry_parts = entry.split('_')
+    userid = entry_parts[0]
+    logname = entry_parts[1 to].join('_')
+    if logname.startsWith('facebook:') or logname.startsWith('youtube:') or logname.startsWith('logs:') or logname.startsWith('synced:')
+      collection = db.collection(entry)
+      all_items = await n2p -> collection.find({}, {sort: {'timestamp': -1}, limit: 1, fields: {'timestamp': 1, 'habitlab_version': 1}}).toArray(it)
+      for item in all_items
+        timestamp = item.timestamp
+        if timestamp > now - secs_in_day
+          if item.habitlab_version?
+            version = item.habitlab_version
+            if not user_to_version[userid]?
+              user_to_version[userid] = version
+            if semver.gt version, user_to_version[userid]
+              user_to_version[userid] = version
+  ctx.body = user_to_version[userid]
+  db.close()
+
 app.get '/getactiveusers', auth, (ctx) ->>
+  ctx.type = 'json'
   users = []
   users_set = {}
   now = Date.now()

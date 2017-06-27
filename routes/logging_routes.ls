@@ -150,6 +150,9 @@ app.post '/addtolog', (ctx) ->>
   try
     [collection,db] = await get_collection_for_user_and_logname(userid, logname)
     #ctx.request.body._id = mongodb.ObjectId.createFromHexString(itemid)
+    if ctx.request.body.timestamp?
+      ctx.request.body.timestamp_local = ctx.request.body.timestamp
+    ctx.request.body.timestamp = Date.now()
     await n2p -> collection.insert(ctx.request.body, it)
   catch err
     console.error 'error in addtolog'
@@ -171,6 +174,9 @@ app.post '/sync_collection_item', (ctx) ->>
     return
   try
     [collection,db] = await get_collection_for_user_and_logname(userid, 'synced:' + collection_name)
+    if ctx.request.body.timestamp?
+      ctx.request.body.timestamp_local = ctx.request.body.timestamp
+    ctx.request.body.timestamp = Date.now()
     await n2p -> collection.insert(ctx.request.body, it)
   catch err
     console.error 'error in sync_collection_item'
