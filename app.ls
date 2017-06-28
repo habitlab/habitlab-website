@@ -20,6 +20,8 @@ for role in roles_list
 
 if roles.debug?
   require('libs/globals').enable_globals()
+else
+  require('libs/globals').disable_globals()
 
 {
   kapp
