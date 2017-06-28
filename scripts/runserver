@@ -7,7 +7,7 @@
   path = require('path');
   getsecret = require('getsecret');
   ref$ = require('shelljs'), exec = ref$.exec, which = ref$.which;
-  for (i$ = 0, len$ = (ref$ = ['gulp', 'node-dev', 'mongosrv']).length; i$ < len$; ++i$) {
+  for (i$ = 0, len$ = (ref$ = ['node-dev', 'mongosrv']).length; i$ < len$; ++i$) {
     command = ref$[i$];
     if (!which(command)) {
       console.log("missing " + command + " command. please run the following command:");
@@ -15,15 +15,12 @@
       process.exit();
     }
   }
-  exec('gulp', {
-    async: true
-  });
   if (getsecret('MONGODB_URI') == null) {
     exec('mongosrv', {
       async: true
     });
   }
-  exec('node-dev --inspect app.js', {
+  exec('node-dev --inspect server.js', {
     async: true
   });
 }).call(this);
