@@ -90,6 +90,18 @@ export get_contributed_interventions = ->>
 export get_user_active_dates = ->>
   return await get_collection('user_active_dates')
 
+export get_intervention_upvotes = ->>
+  return await get_collection2('intervention_upvotes')
+
+export get_intervention_upvotes_total = ->>
+  return await get_collection2('intervention_upvotes_total')
+
+export get_intervention_downvotes = ->>
+  return await get_collection2('intervention_downvotes')
+
+export get_intervention_downvotes_total = ->>
+  return await get_collection2('intervention_downvotes_total')
+
 export list_collections = ->>
   ndb = await get_mongo_db()
   collections_list = await n2p -> ndb.listCollections().toArray(it)

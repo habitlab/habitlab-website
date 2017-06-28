@@ -4,6 +4,8 @@
   mongodb
   need_query_properties
   need_query_property
+  get_intervention_upvotes
+  get_intervention_downvotes
 } = require 'libs/server_common'
 
 require! {
@@ -60,7 +62,7 @@ do ->
 
 app.get '/add_contributed_intervention', (ctx) ->>
   {name, goal, description, numusers, stars, comments} = ctx.request.query
-  if need_query_properties this, ['name', 'goal', 'description']
+  if need_query_properties ctx, ['name', 'goal', 'description']
     return
   numusers ?= 0
   stars ?= 0
@@ -117,6 +119,31 @@ proposed_goals_list = [
     downvotes: 1
   }
 ]
+
+app.get '/upvote_intervention', (ctx) ->>
+  {intervention_name, userid} = ctx.request.query
+  if need_query_properties ctx, ['intervention_name', 'user_id']
+    return
+  intervention_upvotes = await get_intervention_upvotes()
+  intervention_upvotes_total = await get_intervention_upvotes_total()
+  #intervention_upvotes.update {intervention_name, user_id}, {$increment}
+  return
+
+app.get '/downvote_intervention', (ctx) ->>
+  {intervention_name, userid} = ctx.request.query
+  if need_query_properties ctx, ['intervention_name', 'user_id']
+    return
+  intervention_downvotes = await get_intervention_downvotes()
+  intervention_downvotes_total = await get_intervention_downvotes_total()
+  return
+
+app.get '/get_intervention_upvotes', (ctx) ->>
+  {intervention_name} = ctx.request.query
+  ctx.body = 0
+
+app.get '/get_intervention_downvotes', (ctx) ->>
+  {intervention_name} = ctx.request.query
+  ctx.body = 0
 
 app.get '/delete_proposed_goal', (ctx) ->>
   {goal_id} = ctx.request.query
