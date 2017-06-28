@@ -186,4 +186,4 @@ app.get '/send_test_email', (ctx) ->>
   ctx.body = JSON.stringify(response)
 */
 
-require('../libs/globals').add_globals(module.exports)
+require('libs/globals').add_globals(module.exports)

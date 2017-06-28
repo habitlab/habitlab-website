@@ -126,4 +126,4 @@ export need_query_property = (ctx, property) ->>
     return true
   return false
 
-require('./globals').add_globals(module.exports)
+require('libs/globals').add_globals(module.exports)

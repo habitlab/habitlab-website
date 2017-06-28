@@ -3,12 +3,6 @@ process.on 'unhandledRejection', (reason, p) ->
 
 require('app-module-path').addPath(__dirname)
 
-{
-  kapp
-  app
-  auth
-} = require 'libs/server_common'
-
 require! {
   levn
   getsecret
@@ -26,6 +20,12 @@ for role in roles_list
 
 if roles.debug?
   require('libs/globals').enable_globals()
+
+{
+  kapp
+  app
+  auth
+} = require 'libs/server_common'
 
 app.use (ctx, next) ->>
   ip_addr = ctx.request.headers["x-forwarded-for"]
@@ -57,7 +57,10 @@ if roles.debug?
     # https://medium.com/@paul_irish/debugging-node-js-nightlies-with-chrome-devtools-7c4a1b95ae27
     for k,v of require('libs/globals').get_globals()
       global[k] = v
-    global.printcb = (x) -> console.log(x)
+    global.printcb = (err, x) ->
+      console.log err
+      if x?
+        console.log(x)
     setInterval ->
       # seems to be necessary so that async calls resolve in the inspector
     , 100

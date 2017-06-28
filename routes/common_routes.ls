@@ -69,4 +69,4 @@ app.get '/throw_error', (ctx) ->>
   ctx.body = 'hi'
   return
 
-require('../libs/globals').add_globals(module.exports)
+require('libs/globals').add_globals(module.exports)

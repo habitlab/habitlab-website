@@ -218,4 +218,4 @@ app.get '/addsignup', (ctx) ->>
     db?close()
   ctx.body = JSON.stringify {response: 'done', success: true}
 
-require('../libs/globals').add_globals(module.exports)
+require('libs/globals').add_globals(module.exports)

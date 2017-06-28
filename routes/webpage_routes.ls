@@ -31,4 +31,4 @@ do ->
 #  index_contents = await fs.readFileAsync(__dirname + '/www/installs.html', 'utf-8')
 #  ctx.body = index_contents
 
-require('../libs/globals').add_globals(module.exports)
+require('libs/globals').add_globals(module.exports)

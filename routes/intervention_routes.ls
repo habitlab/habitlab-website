@@ -4,8 +4,8 @@
   mongodb
   need_query_properties
   need_query_property
-  get_intervention_upvotes
-  get_intervention_downvotes
+  get_intervention_votes
+  get_intervention_votes_total
 } = require 'libs/server_common'
 
 require! {
@@ -121,12 +121,15 @@ proposed_goals_list = [
 ]
 
 export upvote_intervention = (intervention_name, userid) ->>
-  intervention_votes = await get_intervention_votes()
-  intervention_votes_total = await get_intervention_votes_total()
-  await n2p -> intervention_upvotes.update {intervention_name, user_id}, {$inc: {upvotes: 1}}
-  await n2p -> intervention_votes_total.update {intervention_name}, {$inc: {upvotes: 1}}
+  [intervention_votes, db] = await get_intervention_votes()
+  [intervention_votes_total, db2] = await get_intervention_votes_total()
+  await n2p -> intervention_votes.update({intervention_name, userid}, {$inc: {upvotes: 1}}, {upsert: true}, it)
+  await n2p -> intervention_votes_total.update({intervention_name}, {$inc: {upvotes: 1}}, {upsert: true}, it)
+  db.close()
+  db2.close()
   return
 
+/*
 app.get '/upvote_intervention', (ctx) ->>
   {intervention_name, userid} = ctx.request.query
   if need_query_properties ctx, ['intervention_name', 'user_id']
@@ -141,11 +144,25 @@ app.get '/downvote_intervention', (ctx) ->>
   intervention_downvotes = await get_intervention_votes()
   intervention_downvotes_total = await get_intervention_votes_total()
   return
+*/
 
-# TODO finish implementing these
+export clear_intervention_upvotes_total = ->>
+  [intervention_votes_total, db] = await get_intervention_votes_total()
+  intervention_votes_total.deleteMany()
+  db.close()
+  return
+
 export get_intervention_upvotes_total = (intervention_name) ->>
-  return 0
+  [intervention_votes_total, db] = await get_intervention_votes_total()
+  results = await n2p -> intervention_votes_total.find({intervention_name}).toArray(it)
+  db.close()
+  if results.length < 1
+    return 0
+  if not results[0].upvotes?
+    return 0
+  return results[0].upvotes
 
+/*
 app.get '/get_intervention_upvotes', (ctx) ->>
   {intervention_name} = ctx.request.query
   ctx.body = 0
@@ -153,6 +170,7 @@ app.get '/get_intervention_upvotes', (ctx) ->>
 app.get '/get_intervention_downvotes', (ctx) ->>
   {intervention_name} = ctx.request.query
   ctx.body = 0
+*/
 
 app.get '/delete_proposed_goal', (ctx) ->>
   {goal_id} = ctx.request.query
@@ -208,4 +226,4 @@ app.get '/downvote_proposed_goal', (ctx) ->>
   ctx.body = JSON.stringify {response: 'done', success: true}
   db?close()
 
-require('../libs/globals').add_globals(module.exports)
+require('libs/globals').add_globals(module.exports)
