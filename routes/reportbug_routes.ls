@@ -185,3 +185,5 @@ app.get '/send_test_email', (ctx) ->>
   response = await n2p -> sg.API request, it
   ctx.body = JSON.stringify(response)
 */
+
+require('../libs/globals').add_globals(module.exports)

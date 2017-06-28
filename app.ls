@@ -12,10 +12,10 @@ require('app-module-path').addPath(__dirname)
 require! {
   levn
   getsecret
-  bluebird
+  #bluebird
 }
 
-fs = bluebird.promisifyAll(require('fs'))
+#fs = bluebird.promisifyAll(require('fs'))
 
 roles_list = ['logging', 'viewdata']
 if getsecret('roles')?
@@ -23,6 +23,9 @@ if getsecret('roles')?
 roles = {}
 for role in roles_list
   roles[role] = true
+
+if roles.debug?
+  require('libs/globals').enable_globals()
 
 app.use (ctx, next) ->>
   ip_addr = ctx.request.headers["x-forwarded-for"]
@@ -48,6 +51,17 @@ if roles.viewdata?
   require('routes/viewdata_routes')
   require('routes/webpage_routes')
 
+if roles.debug?
+  do ->
+    console.log 'go to chrome://inspect to debug'
+    # https://medium.com/@paul_irish/debugging-node-js-nightlies-with-chrome-devtools-7c4a1b95ae27
+    for k,v of require('libs/globals').get_globals()
+      global[k] = v
+    global.printcb = (x) -> console.log(x)
+    setInterval ->
+      # seems to be necessary so that async calls resolve in the inspector
+    , 100
+
 kapp.use(app.routes())
 kapp.use(app.allowedMethods())
 
@@ -57,3 +71,4 @@ if roles.viewdata?
 port = process.env.PORT ? 5000
 kapp.listen(port)
 console.log "listening to port #{port} visit http://localhost:#{port}"
+

@@ -68,3 +68,5 @@ app.get '/throw_error', (ctx) ->>
   throw new Error('stuff is broken')
   ctx.body = 'hi'
   return
+
+require('../libs/globals').add_globals(module.exports)

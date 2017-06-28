@@ -120,22 +120,31 @@ proposed_goals_list = [
   }
 ]
 
+export upvote_intervention = (intervention_name, userid) ->>
+  intervention_votes = await get_intervention_votes()
+  intervention_votes_total = await get_intervention_votes_total()
+  await n2p -> intervention_upvotes.update {intervention_name, user_id}, {$inc: {upvotes: 1}}
+  await n2p -> intervention_votes_total.update {intervention_name}, {$inc: {upvotes: 1}}
+  return
+
 app.get '/upvote_intervention', (ctx) ->>
   {intervention_name, userid} = ctx.request.query
   if need_query_properties ctx, ['intervention_name', 'user_id']
     return
-  intervention_upvotes = await get_intervention_upvotes()
-  intervention_upvotes_total = await get_intervention_upvotes_total()
-  #intervention_upvotes.update {intervention_name, user_id}, {$increment}
+  await upvote_intervention(intervention_name, userid)
   return
 
 app.get '/downvote_intervention', (ctx) ->>
   {intervention_name, userid} = ctx.request.query
   if need_query_properties ctx, ['intervention_name', 'user_id']
     return
-  intervention_downvotes = await get_intervention_downvotes()
-  intervention_downvotes_total = await get_intervention_downvotes_total()
+  intervention_downvotes = await get_intervention_votes()
+  intervention_downvotes_total = await get_intervention_votes_total()
   return
+
+# TODO finish implementing these
+export get_intervention_upvotes_total = (intervention_name) ->>
+  return 0
 
 app.get '/get_intervention_upvotes', (ctx) ->>
   {intervention_name} = ctx.request.query
@@ -198,3 +207,5 @@ app.get '/downvote_proposed_goal', (ctx) ->>
   await n2p -> proposed_goals.update({_id: mongodb.ObjectID(goal_id)}, {$inc: {downvotes: 1}}, it)
   ctx.body = JSON.stringify {response: 'done', success: true}
   db?close()
+
+require('../libs/globals').add_globals(module.exports)

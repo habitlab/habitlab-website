@@ -30,3 +30,5 @@ do ->
 #app.get '/installs', auth, (ctx) ->>
 #  index_contents = await fs.readFileAsync(__dirname + '/www/installs.html', 'utf-8')
 #  ctx.body = index_contents
+
+require('../libs/globals').add_globals(module.exports)
