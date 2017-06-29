@@ -25,8 +25,8 @@ function dict_to_sorted(language_to_num_installs) {
 
 function dict_to_array_sorted_zeros(install_duration_to_num_users) {
   let max_value = prelude.maximum(Object.keys(install_duration_to_num_users).map(x => parseInt(x)))
-  let output = new Array(max_value).fill(0)
-  for (let i = 0; i < max_value; ++i) {
+  let output = new Array(max_value + 1).fill(0)
+  for (let i = 0; i <= max_value; ++i) {
     if (install_duration_to_num_users[(i).toString()] == null) {
       output[i] = [(i).toString(), 0]
     } else {

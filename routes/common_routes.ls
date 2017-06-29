@@ -6,8 +6,9 @@
 require! {
   'chrome-web-store-item-property'
   semver
-  moment
 }
+
+moment = require 'moment-timezone'
 
 app.get '/ping', (ctx) ->>
   ctx.body = 'hi'
@@ -28,7 +29,7 @@ app.get '/app_version', (ctx) ->>
   time_checked = appid_to_time_checked[appid] ? 0
   current_time = Date.now()
   if userid?
-    current_date = moment().format('YYYYMMDD')
+    current_date = moment().tz("America/Los_Angeles").format('YYYYMMDD')
     [user_active_dates, db] = await get_user_active_dates()
     user_active_dates.update({day: current_date, user: userid}, {day: current_date, user: userid}, {upsert: true}).then ->
       db.close()

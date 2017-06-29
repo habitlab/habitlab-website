@@ -218,10 +218,14 @@ async function show_installed_duration_until_uninstalled() {
       continue
     }
     let uninstall_time = user_to_uninstall_times[user_id]
+    if (uninstall_time < install_time) {
+      // uninstall occurred before install - can happen if different devices share userid and install happened very early
+      continue
+    }
     let time_installed = uninstall_time - install_time
-    let days_installed = Math.round(time_installed / (3600*1000*24))
-    let hours_installed = Math.round(time_installed / (3600*1000))
-    let minutes_installed = Math.round(time_installed / (60*1000))
+    let days_installed = Math.floor(time_installed / (3600*1000*24))
+    let hours_installed = Math.floor(time_installed / (3600*1000))
+    let minutes_installed = Math.floor(time_installed / (60*1000))
     if (days_installed_to_num_users[days_installed] == null) {
       days_installed_to_num_users[days_installed] = 1
     } else {
@@ -262,10 +266,10 @@ async function show_attrition_stages() {
     }
     user_to_logging_info_list[user_id].push(logging_info)
   }
-  console.log('show_attrition_stages running')
+  //console.log('show_attrition_stages running')
   //console.log(user_to_install_times)
   //console.log(user_to_uninstall_times)
-  console.log(logging_info_list)
+  //console.log(logging_info_list)
   let total_early_uninstalls = 0
   let total_uninstalls_after_completing_onboarding = 0
   let user_id_list = []
