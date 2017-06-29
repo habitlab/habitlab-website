@@ -113,14 +113,14 @@ export list_log_collections_for_logname = (logname) ->>
 export get_collection_for_user_and_logname = (userid, logname) ->>
   return await get_collection("#{userid}_#{logname}")
 
-export need_query_properties = (ctx, properties_list) ->>
+export need_query_properties = (ctx, properties_list) ->
   for property in properties_list
     if not ctx.request.query[property]?
       ctx.body = JSON.stringify {response: 'error', error: 'Need ' + property}
       return true
   return false
 
-export need_query_property = (ctx, property) ->>
+export need_query_property = (ctx, property) ->
   if not ctx.request.query[property]?
     ctx.body = JSON.stringify {response: 'error', error: 'Need ' + property}
     return true

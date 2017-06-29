@@ -15,6 +15,8 @@
   list_log_collections_for_logname
   get_collection_for_user_and_logname
   get_user_active_dates
+  need_query_property
+  need_query_properties
 } = require 'libs/server_common'
 
 require! {
@@ -329,6 +331,26 @@ app.get '/get_user_to_dates_active', auth, (ctx) ->>
       if not output[user]?
         output[user] = []
       output[user].push day
+    ctx.body = JSON.stringify output
+  catch err
+    console.log 'error in get_user_active_dates'
+    console.log err
+  finally
+    db?close()
+
+console.log 'viewdata_routes'
+
+app.get '/get_dates_active_for_user', auth, (ctx) ->>
+  ctx.type = 'json'
+  {userid} = ctx.request.query
+  if need_query_property(ctx, 'userid')
+    return
+  try
+    [user_active_dates, db] = await get_user_active_dates()
+    all_results = await n2p -> user_active_dates.find({user: userid}).toArray(it)
+    output = []
+    for {day} in all_results
+      output.push(day)
     ctx.body = JSON.stringify output
   catch err
     console.log 'error in get_user_active_dates'

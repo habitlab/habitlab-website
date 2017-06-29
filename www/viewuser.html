@@ -39,6 +39,9 @@
 <div>Enabled interventions:
   <div id="enabled_interventions_list"></div>
 </div>
+<div>Dates active:
+  <div id="dates_active_list"></div>
+</div>
 <!--
 <google-chart id="days_ago_to_num_installs" cols='[{"label": "Data", "type": "string"},{"label": "Installs", "type": "number"}]' rows='[["Something", 1]]'></google-chart>
 
@@ -88,6 +91,11 @@ async function show_enabled_interventions() {
   $('#enabled_interventions_list').text(JSON.stringify(enabled_interventions))
 }
 
+async function show_dates_active() {
+  let dates_active = await get_dates_active(user_id)
+  $('#dates_active_list').text(JSON.stringify(dates_active))
+}
+
 async function main() {
   if (!user_id) {
     console.log('need userid parameter')
@@ -96,6 +104,7 @@ async function main() {
   show_basic_stats()
   show_enabled_goals()
   show_enabled_interventions()
+  show_dates_active()
 }
 
 main();

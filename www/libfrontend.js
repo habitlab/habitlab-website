@@ -202,6 +202,11 @@ async function list_intervention_logs_for_user(userid) {
   return output
 }
 
-async function get_intervention_to_num_impressions_for_user(userid) {
+//async function get_intervention_to_num_impressions_for_user(userid) {
   //let interventions_with_data = await get_
+//}
+
+async function get_dates_active(userid) {
+  let dates_active = await fetch('/get_dates_active_for_user?userid=' + userid).then(x => x.json())
+  return dates_active
 }
