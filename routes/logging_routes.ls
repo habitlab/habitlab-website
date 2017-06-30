@@ -13,6 +13,7 @@
   get_collection_for_user_and_logname
   mongodb
   need_query_properties
+  get_webvisits
 } = require 'libs/server_common'
 
 require! {
@@ -227,7 +228,7 @@ app.get '/logwebvisit', (ctx) ->>
   try
     [webvisits, db] = await get_webvisits()
     timestamp = Date.now()
-    await n2p -> webvisits.insert({userid, domain, timestamp}, it)
+    await n2p -> webvisits.insert({userid, domain, action, timestamp}, it)
   catch err
     console.error 'error in logwebvisit'
     console.error err
