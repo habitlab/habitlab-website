@@ -96,6 +96,9 @@ export get_intervention_votes = ->>
 export get_intervention_votes_total = ->>
   return await get_collection2('intervention_votes_total')
 
+export get_webvisits = ->>
+  return await get_collection('webvisits')
+
 export list_collections = ->>
   ndb = await get_mongo_db()
   collections_list = await n2p -> ndb.listCollections().toArray(it)

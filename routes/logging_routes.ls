@@ -12,6 +12,7 @@
   list_log_collections_for_logname
   get_collection_for_user_and_logname
   mongodb
+  need_query_properties
 } = require 'libs/server_common'
 
 require! {
@@ -213,6 +214,22 @@ app.get '/addsignup', (ctx) ->>
     await n2p -> signups.insert(ctx.request.query, it)
   catch err
     console.error 'error in addsignup'
+    console.error err
+  finally
+    db?close()
+  ctx.body = JSON.stringify {response: 'done', success: true}
+
+app.get '/logwebvisit', (ctx) ->>
+  ctx.type = 'json'
+  {userid, domain, action} = ctx.request.query
+  if need_query_properties ctx, ['userid', 'domain', 'action']
+    return
+  try
+    [webvisits, db] = await get_webvisits()
+    timestamp = Date.now()
+    await n2p -> webvisits.insert({userid, domain, timestamp}, it)
+  catch err
+    console.error 'error in logwebvisit'
     console.error err
   finally
     db?close()
