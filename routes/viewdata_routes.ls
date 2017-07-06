@@ -140,6 +140,93 @@ app.get '/getactiveusers', auth, (ctx) ->>
   db.close()
   return
 
+app.get '/get_time_last_log_was_sent_for_user', auth, (ctx) ->>
+  ctx.type = 'json'
+  {userid} = ctx.request.query
+  if not userid?
+    ctx.body = JSON.stringify {response: 'error', error: 'need parameter userid'}
+    return
+  user_to_version = {}
+  now = Date.now()
+  user_collections = await list_log_collections_for_user(userid)
+  db = await get_mongo_db()
+  latest_timestamp = -1
+  for entry in user_collections
+    if entry.indexOf('_') == -1
+      continue
+    entry_parts = entry.split('_')
+    userid = entry_parts[0]
+    logname = entry_parts[1 to].join('_')
+    if logname.startsWith('facebook:') or logname.startsWith('youtube:') or logname.startsWith('logs:') or logname.startsWith('synced:')
+      collection = db.collection(entry)
+      all_items = await n2p -> collection.find({}, {sort: {'timestamp': -1}, limit: 1, fields: {'timestamp': 1, 'habitlab_version': 1}}).toArray(it)
+      for item in all_items
+        timestamp = item.timestamp
+        if timestamp > latest_timestamp
+          latest_timestamp = timestamp
+  ctx.body = latest_timestamp
+  db.close()
+
+app.get '/get_intervention_to_time_most_recently_seen', auth, (ctx) ->>
+  ctx.type = 'json'
+  {userid} = ctx.request.query
+  if need_query_property(ctx, 'userid')
+    return
+  results = await get_intervention_to_time_most_recently_seen(userid)
+  ctx.body = JSON.stringify results
+  return
+
+app.get '/get_last_intervention_seen', auth, (ctx) ->>
+  ctx.type = 'json'
+  {userid} = ctx.request.query
+  if need_query_property(ctx, 'userid')
+    return
+  results = await get_last_intervention_seen(userid)
+  ctx.body = JSON.stringify results
+  return
+
+export get_intervention_to_time_most_recently_seen = (user_id) ->>
+  collections = await list_collections()
+  db = await get_mongo_db()
+  output = {}
+  for entry in collections
+    if not entry.startsWith(user_id + '_')
+      continue
+    collection = db.collection(entry)
+    all_items = await n2p -> collection.find({}, {fields: {'timestamp': 1}}).toArray(it)
+    timestamp = prelude.maximum all_items.map (.timestamp)
+    entry_key = entry.replace(user_id + '_', '')
+    if entry_key.startsWith('synced:') or entry_key.startsWith('logs:')
+      continue
+    output[entry_key] = timestamp
+  db.close()
+  return output
+
+export get_last_intervention_seen = (user_id) ->>
+  intervention_to_time_seen = await get_intervention_to_time_most_recently_seen(user_id)
+  last_intervention_seen = null
+  time_last_intervention_seen = null
+  for intervention_name,time_seen of intervention_to_time_seen
+    if not last_intervention_seen?
+      last_intervention_seen = intervention_name
+      time_last_intervention_seen = time_seen
+    else
+      if time_seen > time_last_intervention_seen
+        last_intervention_seen = intervention_name
+        time_last_intervention_seen = time_seen
+  return last_intervention_seen
+
+export get_time_intervention_was_most_recently_seen = (user_id, intervention_name) ->>
+  [collection, db] = await get_collection_for_user_and_logname(user_id, intervention_name)
+  all_items = await n2p -> collection.find({}).toArray(it)
+  highest_timestamp = -1
+  for item in all_items
+    if item.timestamp > highest_timestamp
+      highest_timestamp = item.timestamp
+  #ctx.body = JSON.stringify all_items
+  db.close()
+  return highest_timestamp
+
 app.get '/get_secrets', auth, (ctx) ->>
   ctx.type = 'json'
   try
@@ -338,8 +425,6 @@ app.get '/get_user_to_dates_active', auth, (ctx) ->>
   finally
     db?close()
 
-console.log 'viewdata_routes'
-
 app.get '/get_dates_active_for_user', auth, (ctx) ->>
   ctx.type = 'json'
   {userid} = ctx.request.query
@@ -371,6 +456,28 @@ app.get '/get_dates_to_users_active', auth, (ctx) ->>
     ctx.body = JSON.stringify output
   catch err
     console.log 'error in get_user_active_dates'
+    console.log err
+  finally
+    db?close()
+
+app.get '/getactiveusers_week', auth, (ctx) ->>
+  ctx.type = 'json'
+  try
+    [user_active_dates, db] = await get_user_active_dates()
+    all_results = await n2p -> user_active_dates.find({}).toArray(it)
+    active_users_set = {}
+    active_users_list = []
+    past_seven_days = [moment().subtract(daynum, 'days').format('YYYYMMDD') for daynum from 0 til 7]
+    for {day, user} in all_results
+      if active_users_set[user]?
+        continue
+      if not past_seven_days.includes(day)
+        continue
+      active_users_set[user] = true
+      active_users_list.push(user)
+    ctx.body = JSON.stringify active_users_list
+  catch err
+    console.log 'error in getactiveusers_week'
     console.log err
   finally
     db?close()
@@ -420,3 +527,5 @@ app.get '/get_daily_active_counts', auth, (ctx) ->>
   ctx.body = JSON.stringify day_to_users_active
   db.close()
   return
+
+require('libs/globals').add_globals(module.exports)

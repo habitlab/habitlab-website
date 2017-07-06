@@ -36,6 +36,23 @@ function dict_to_array_sorted_zeros(install_duration_to_num_users) {
   return output
 }
 
+async function getjson(path, data) {
+  if (typeof(data) != 'object') {
+    data = {}
+  }
+  let querystring = ''
+  let is_first = true
+  for (let key of Object.keys(data)) {
+    if (is_first) {
+      is_first = false
+      querystring += '?' + key + '=' + data[key]
+    } else {
+      querystring += '&' + key + '=' + data[key]
+    }
+  }
+  return await fetch(path + querystring).then(x => x.json())
+}
+
 async function get_install_data() {
   let install_info_list = await fetch('/get_installs').then(x => x.json())
   let output = []
@@ -55,7 +72,7 @@ async function get_install_data() {
 }
 
 async function get_uninstall_data() {
-  let install_info_list = await fetch('/get_uninstalls').then(x => x.json())
+  let install_info_list = await getjson('/get_uninstalls')
   let output = []
   for (let install_info of install_info_list) {
     if (install_info.r != 0) { // not stable release
@@ -70,27 +87,27 @@ async function get_uninstall_data() {
 }
 
 async function get_logging_states() {
-  let logging_info_list = await fetch('/get_logging_states').then(x => x.json())
+  let logging_info_list = await getjson('/get_logging_states')
   return logging_info_list
 }
 
 async function list_active_users() {
-  let active_users_list = await fetch('/getactiveusers').then(x => x.json())
+  let active_users_list = await getjson('/getactiveusers')
   return active_users_list
 }
 
 async function get_user_to_install_times() {
-  let user_to_install_times = await fetch('/get_user_to_install_times').then(x => x.json())
+  let user_to_install_times = await getjson('/get_user_to_install_times')
   return user_to_install_times
 }
 
 async function get_user_to_uninstall_times() {
-  let user_to_uninstall_times = await fetch('/get_user_to_uninstall_times').then(x => x.json())
+  let user_to_uninstall_times = await getjson('/get_user_to_uninstall_times')
   return user_to_uninstall_times
 }
 
 async function get_collection_for_user(userid, collection_name) {
-  return await fetch('/printcollection?userid=' + userid + '&logname=' + collection_name).then(x => x.json())
+  return await getjson('/printcollection', {userid: userid, logname: collection_name})
 }
 
 async function get_latest_goal_info_for_user(userid) {
@@ -193,7 +210,7 @@ async function get_enabled_goals_for_user(userid) {
 }
 
 async function list_intervention_logs_for_user(userid) {
-  let all_logs = await fetch('/list_logs_for_user?userid=' + userid).then(x => x.json())
+  let all_logs = await getjson('/list_logs_for_user' , {userid: userid})
   let output = []
   for (let log_name of all_logs) {
     let base_log_name = log_name.replace(userid + '_', '')
@@ -207,6 +224,27 @@ async function list_intervention_logs_for_user(userid) {
 //}
 
 async function get_dates_active(userid) {
-  let dates_active = await fetch('/get_dates_active_for_user?userid=' + userid).then(x => x.json())
+  let dates_active = await getjson('/get_dates_active_for_user', {userid: userid})
   return dates_active
+}
+
+async function list_logs_for_user(userid) {
+  let collection_list = await getjson('/list_logs_for_user', {userid: userid})
+  return collection_list
+}
+
+async function get_last_intervention_seen(userid) {
+  let last_intervention_seen = await getjson('/get_last_intervention_seen', {userid: userid})
+  return last_intervention_seen
+}
+
+async function get_time_last_log_was_sent_for_user(userid) {
+  return await getjson('/get_time_last_log_was_sent_for_user', {userid: userid})
+}
+
+function printcb(err, result) {
+  console.log(err)
+  if (result !== undefined) {
+    console.log(result)
+  }
 }

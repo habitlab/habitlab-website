@@ -33,15 +33,25 @@
 <div>User ID: <span id="display_user_id"></span></div>
 <div>Install time: <span id="display_install_time"></span></div>
 <div>Uninstall time: <span id="display_uninstall_time"></span></div>
-<div>Enabled goals: 
+<div>Last intervention seen: <span id="display_last_intervention_seen"></span></div>
+<div>Last log sent: <span id="display_last_log_sent_time"></span></div>
+<br>
+<div>Enabled goals:
   <div id="enabled_goals_list"></div>
 </div>
+<br>
 <div>Enabled interventions:
   <div id="enabled_interventions_list"></div>
 </div>
+<br>
 <div>Dates active:
   <div id="dates_active_list"></div>
 </div>
+<br>
+<div>Logs available:
+  <div id="collections_list"></div>
+</div>
+
 <!--
 <google-chart id="days_ago_to_num_installs" cols='[{"label": "Data", "type": "string"},{"label": "Installs", "type": "number"}]' rows='[["Something", 1]]'></google-chart>
 
@@ -96,6 +106,25 @@ async function show_dates_active() {
   $('#dates_active_list').text(JSON.stringify(dates_active))
 }
 
+async function show_collections_list() {
+  let collections_list = await list_logs_for_user(user_id)
+  for (let collection_name of collections_list) {
+    let collection_name_short = collection_name.replace(user_id + '_', '')
+    let link_entry = $('<a>').text(collection_name_short).attr('href', '/printcollection?collection=' + collection_name)
+    $('#collections_list').append($('<div>').append(link_entry))
+  }
+}
+
+async function show_last_intervention_seen() {
+  let last_intervention_seen = await get_last_intervention_seen(user_id)
+  $('#display_last_intervention_seen').text(last_intervention_seen)
+}
+
+async function show_last_log_sent_time() {
+  let last_log_sent_time = await get_time_last_log_was_sent_for_user(user_id)
+  $('#display_last_log_sent_time').text(moment(last_log_sent_time).toString())
+}
+
 async function main() {
   if (!user_id) {
     console.log('need userid parameter')
@@ -105,6 +134,9 @@ async function main() {
   show_enabled_goals()
   show_enabled_interventions()
   show_dates_active()
+  show_collections_list()
+  show_last_intervention_seen()
+  show_last_log_sent_time()
 }
 
 main();

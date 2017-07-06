@@ -30,13 +30,33 @@
 }
 </style>
 
-<div>Num active users within past day who have logging enabled:</div>
+<div>Num active users within past week:</div>
 <div id="num_active_users"></div>
 
 <br>
 
-<div>List of users with logging enabled:</div>
+<div>Num active users within past week who have logging enabled:</div>
+<div id="num_active_users_logging_enabled"></div>
+
+<br>
+
+<div>Num active users within past week who have logging disabled:</div>
+<div id="num_active_users_logging_disabled"></div>
+
+<br>
+
+<div>List of users active in the past week:</div>
 <div id="user_list"></div>
+
+<br>
+
+<div>List of users with logging enabled:</div>
+<div id="user_list_logging_enabled"></div>
+
+<br>
+
+<div>List of users with logging disabled:</div>
+<div id="user_list_logging_disabled"></div>
 
 <br>
 
@@ -95,7 +115,7 @@
 let user_ids = null
 
 async function get_user_ids() {
-  let active_users = await fetch('/getactiveusers').then(x => x.json())
+  let active_users = await getjson('/getactiveusers_week')
   return active_users
 }
 
