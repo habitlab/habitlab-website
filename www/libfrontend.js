@@ -220,6 +220,20 @@ async function get_enabled_interventions_for_user(userid) {
   return output
 }
 
+async function get_disabled_interventions_for_user(userid) {
+  let results = await get_collection_for_user(user_id, 'synced:interventions_currently_disabled')
+  let output = {}
+  for (let info of results) {
+    let name = info.key
+    if (info.val == true) {
+      output[name] = true
+    } else if (info.val == false) {
+      output[name] = false
+    }
+  }
+  return output
+}
+
 async function get_enabled_goals_for_user(userid) {
   let latest_log_info = await get_latest_intervention_info_for_user(userid)
   let output = {}

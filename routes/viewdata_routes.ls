@@ -266,6 +266,19 @@ export get_user_to_is_logging_enabled = ->>
 
 expose_get_auth get_user_to_is_logging_enabled
 
+export get_interventions_disabled_for_user = (user_id) ->>
+  [collection, db] = await get_collection_for_user_and_logname(user_id, 'synced:interventions_currently_disabled')
+  output = {}
+  results = await n2p -> collection.find({}).toArray(it)
+  # we assume that results is chronologically ordered, will need to sort by .timestamp if not
+  for item in results
+    intervention_name = item.key
+    is_disabled = item.val
+    output[intervention_name] = is_disabled
+  return output
+
+expose_get_auth get_interventions_disabled_for_user, 'userid'
+
 app.get '/get_secrets', auth, (ctx) ->>
   ctx.type = 'json'
   try

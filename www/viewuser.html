@@ -46,8 +46,8 @@
   <div id="enabled_goals_list"></div>
 </div>
 <br>
-<div>Enabled interventions:
-  <div id="enabled_interventions_list"></div>
+<div>Disabled interventions:
+  <div id="disabled_interventions_list"></div>
 </div>
 <br>
 <div>Dates active:
@@ -102,9 +102,9 @@ async function show_enabled_goals() {
   //'http://localhost:5000/printcollection?userid=c0c064d1b0c94e04b57b451c&logname=logs:goals'
 }
 
-async function show_enabled_interventions() {
-  let enabled_interventions = await get_enabled_interventions_for_user(user_id)
-  $('#enabled_interventions_list').text(JSON.stringify(enabled_interventions))
+async function show_disabled_interventions() {
+  let disabled_interventions = await get_disabled_interventions_for_user(user_id)
+  $('#disabled_interventions_list').text(JSON.stringify(disabled_interventions))
 }
 
 async function show_dates_active() {
@@ -148,7 +148,7 @@ async function main() {
   }
   show_basic_stats()
   show_enabled_goals()
-  show_enabled_interventions()
+  show_disabled_interventions()
   show_dates_active()
   show_collections_list()
   show_last_intervention_seen()
