@@ -95,6 +95,11 @@
 <div>Number of users who have at least one non-default goal target:</div>
 <div id="users_who_changed_a_goal_target"></div>
 
+<br>
+
+<div>Last interventions seen before user stops using habitlab:</div>
+<div id="last_intervention_before_stop"></div>
+
 <!--
 <google-chart id="days_ago_to_num_installs" cols='[{"label": "Data", "type": "string"},{"label": "Installs", "type": "number"}]' rows='[["Something", 1]]'></google-chart>
 
@@ -209,21 +214,6 @@ async function show_user_list() {
   }
 }
 
-function display_dictionary_as_table(dict, selector) {
-  let keys_and_values = []
-  for (let key of Object.keys(dict)) {
-    let value = dict[key]
-    keys_and_values.push([key, value])
-  }
-  keys_and_values.sort(function(a, b) {
-    return a[1] - b[1]
-  })
-  keys_and_values.reverse()
-  for (let [key,val] of keys_and_values) {
-    $(selector).append($('<div>').text(key + ': ' + val))
-  }
-}
-
 async function display_goals_tried_by_users() {
   let goal_to_num_users = await get_goals_tried_by_all_users()
   display_dictionary_as_table(goal_to_num_users, '#goals_tried')
@@ -298,13 +288,51 @@ async function display_interventions_disabled_by_users() {
   display_dictionary_as_table(intervention_to_num_users, '#interventions_disabled')
 }
 
+async function display_users_with_logging_enabled() {
+  let user_to_is_logging_enabled = await get_user_to_is_logging_enabled()
+  let user_ids_with_logging_enabled = []
+  for (let user_id of user_ids) {
+    if (user_to_is_logging_enabled[user_id]) {
+      user_ids_with_logging_enabled.push(user_id)
+    }
+  }
+  for (let user_id of user_ids_with_logging_enabled) {
+    $('#user_list_logging_enabled').append($('<a href="/viewuser.html?userid=' + user_id + '">' + user_id + '</a>'))
+    $('#user_list_logging_enabled').append('<br>')
+  }
+  $('#num_active_users_logging_enabled').text(user_ids_with_logging_enabled.length)
+}
+
+async function display_users_with_logging_disabled() {
+  let user_to_is_logging_enabled = await get_user_to_is_logging_enabled()
+  let user_ids_with_logging_disabled = []
+  for (let user_id of user_ids) {
+    if (!user_to_is_logging_enabled[user_id]) {
+      user_ids_with_logging_disabled.push(user_id)
+    }
+  }
+  for (let user_id of user_ids_with_logging_disabled) {
+    $('#user_list_logging_disabled').append($('<a href="/viewuser.html?userid=' + user_id + '">' + user_id + '</a>'))
+    $('#user_list_logging_disabled').append('<br>')
+  }
+  $('#num_active_users_logging_disabled').text(user_ids_with_logging_disabled.length)
+}
+
+async function display_last_intervention_before_stop_using() {
+  let intervention_to_num_users = await get_last_interventions_for_former_users()
+  display_dictionary_as_table(intervention_to_num_users, '#last_intervention_before_stop')
+}
+
 async function main() {
   user_ids = await get_user_ids()
   show_user_list()
+  display_users_with_logging_enabled()
+  display_users_with_logging_disabled()
   display_goals_tried_by_users()
   display_goals_enabled_by_users()
   display_interventions_enabled_by_users()
   display_interventions_disabled_by_users()
+  display_last_intervention_before_stop_using()
   let num_users_who_have_tried_nondefault_goal = await get_num_users_who_have_tried_nondefault_goal()
   let num_users_who_have_tried_custom_goal = await get_num_users_who_have_tried_custom_goal()
   let num_users_who_have_set_nondefault_target = await get_num_users_who_have_set_nondefault_target()

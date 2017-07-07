@@ -35,6 +35,12 @@
 <div>Uninstall time: <span id="display_uninstall_time"></span></div>
 <div>Last intervention seen: <span id="display_last_intervention_seen"></span></div>
 <div>Last log sent: <span id="display_last_log_sent_time"></span></div>
+<div>Is logging enabled: <span id="display_is_logging_enabled"></span></div>
+<br>
+<div>Number of times interventions seen:
+  <div id="num_times_interventions_seen"></div>
+</div>
+<br>
 <br>
 <div>Enabled goals:
   <div id="enabled_goals_list"></div>
@@ -102,7 +108,7 @@ async function show_enabled_interventions() {
 }
 
 async function show_dates_active() {
-  let dates_active = await get_dates_active(user_id)
+  let dates_active = await get_dates_active_for_user(user_id)
   $('#dates_active_list').text(JSON.stringify(dates_active))
 }
 
@@ -116,13 +122,23 @@ async function show_collections_list() {
 }
 
 async function show_last_intervention_seen() {
-  let last_intervention_seen = await get_last_intervention_seen(user_id)
-  $('#display_last_intervention_seen').text(last_intervention_seen)
+  let {intervention, time} = await get_last_intervention_seen_and_time(user_id)
+  $('#display_last_intervention_seen').text(intervention + ' ' + moment(time).toString())
 }
 
 async function show_last_log_sent_time() {
   let last_log_sent_time = await get_time_last_log_was_sent_for_user(user_id)
   $('#display_last_log_sent_time').text(moment(last_log_sent_time).toString())
+}
+
+async function show_is_logging_enabled() {
+  let is_logging_enabled_info = await get_is_logging_enabled_for_user(user_id)
+  $('#display_is_logging_enabled').text(is_logging_enabled_info.logging_enabled + ' ' + moment(is_logging_enabled_info.timestamp).toString())
+}
+
+async function show_num_times_interventions_seen() {
+  let num_times_interventions_seen = await get_intervention_to_num_times_seen(user_id)
+  display_dictionary_as_table(num_times_interventions_seen, '#num_times_interventions_seen')
 }
 
 async function main() {
@@ -137,6 +153,8 @@ async function main() {
   show_collections_list()
   show_last_intervention_seen()
   show_last_log_sent_time()
+  show_is_logging_enabled()
+  show_num_times_interventions_seen()
 }
 
 main();

@@ -109,6 +109,13 @@ export list_log_collections_for_user = (userid) ->>
   all_collections = await list_collections()
   return all_collections.filter -> it.startsWith("#{userid}_")
 
+export list_intervention_collections_for_user = (userid) ->>
+  all_collections = await list_collections()
+  return all_collections.filter(-> it.startsWith("#{userid}_")).filter(->
+    entry_key = it.replace("#{userid}_", '')
+    return !it.startsWith('synced:') and !it.startsWith('logs:')
+  )
+
 export list_log_collections_for_logname = (logname) ->>
   all_collections = await list_collections()
   return all_collections.filter -> it.endsWith("_#{logname}")
@@ -128,5 +135,17 @@ export need_query_property = (ctx, property) ->
     ctx.body = JSON.stringify {response: 'error', error: 'Need ' + property}
     return true
   return false
+
+export expose_get_auth = (func, ...params) ->
+  request_path = '/' + func.name
+  app.get request_path, auth, (ctx) ->>
+    ctx.type = 'json'
+    data = ctx.request.query
+    for param in params
+      if need_query_property(ctx, param)
+        return
+    data_array = [data[param] for param in params]
+    results = await func(...data_array)
+    ctx.body = JSON.stringify results
 
 require('libs/globals').add_globals(module.exports)

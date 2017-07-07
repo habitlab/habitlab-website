@@ -13,6 +13,21 @@ async function geolocate_ip(ip_addr) {
   return geolocate_info
 }
 
+function display_dictionary_as_table(dict, selector) {
+  let keys_and_values = []
+  for (let key of Object.keys(dict)) {
+    let value = dict[key]
+    keys_and_values.push([key, value])
+  }
+  keys_and_values.sort(function(a, b) {
+    return a[1] - b[1]
+  })
+  keys_and_values.reverse()
+  for (let [key,val] of keys_and_values) {
+    $(selector).append($('<div>').text(key + ': ' + val))
+  }
+}
+
 function dict_to_sorted(language_to_num_installs) {
   let language_and_num_installs = []
   for (let language of Object.keys(language_to_num_installs)) {
@@ -93,6 +108,11 @@ async function get_logging_states() {
 
 async function list_active_users() {
   let active_users_list = await getjson('/getactiveusers')
+  return active_users_list
+}
+
+async function list_active_users_week() {
+  let active_users_list = await getjson('/getactiveusers_week')
   return active_users_list
 }
 
@@ -223,24 +243,71 @@ async function list_intervention_logs_for_user(userid) {
   //let interventions_with_data = await get_
 //}
 
-async function get_dates_active(userid) {
-  let dates_active = await getjson('/get_dates_active_for_user', {userid: userid})
-  return dates_active
+async function get_users_with_logs_who_are_no_longer_active() {
+  let user_to_is_logging_enabled = await get_user_to_is_logging_enabled()
+  let active_users = await list_active_users_week()
+  let active_users_set = {}
+  for (let user_id of active_users) {
+    active_users_set[user_id] = true
+  }
+  let output = []
+  for (let user_id of Object.keys(user_to_is_logging_enabled)) {
+    let logging_enabled = user_to_is_logging_enabled[user_id]
+    if (!logging_enabled) {
+      continue
+    }
+    if (active_users_set[user_id]) {
+      continue
+    }
+    output.push(user_id)
+  }
+  output.sort()
+  return output
 }
 
-async function list_logs_for_user(userid) {
-  let collection_list = await getjson('/list_logs_for_user', {userid: userid})
-  return collection_list
+async function get_last_interventions_for_former_users() {
+  let output = {}
+  let former_users = await get_users_with_logs_who_are_no_longer_active()
+  for (let user_id of former_users) {
+    let last_intervention = await get_last_intervention_seen(user_id)
+    if (output[last_intervention] == null) {
+      output[last_intervention] = 1
+    } else {
+      output[last_intervention] += 1
+    }
+  }
+  return output
 }
 
-async function get_last_intervention_seen(userid) {
-  let last_intervention_seen = await getjson('/get_last_intervention_seen', {userid: userid})
-  return last_intervention_seen
+function expose_getjson(func_name, ...params) {
+  let func_body = null
+  let request_path = '/' + func_name
+  window[func_name] = async function(...args) {
+    let data = {}
+    for (let i = 0; i < params.length; ++i) {
+      let param = params[i]
+      let value = args[i]
+      data[param] = value
+    }
+    return await getjson(request_path, data)
+  }
 }
 
-async function get_time_last_log_was_sent_for_user(userid) {
-  return await getjson('/get_time_last_log_was_sent_for_user', {userid: userid})
-}
+expose_getjson('get_time_last_log_was_sent_for_user', 'userid')
+
+expose_getjson('get_last_intervention_seen_and_time', 'userid')
+
+expose_getjson('get_last_intervention_seen', 'userid')
+
+expose_getjson('list_logs_for_user', 'userid')
+
+expose_getjson('get_dates_active_for_user', 'userid')
+
+expose_getjson('get_is_logging_enabled_for_user', 'userid')
+
+expose_getjson('get_user_to_is_logging_enabled')
+
+expose_getjson('get_intervention_to_num_times_seen', 'userid')
 
 function printcb(err, result) {
   console.log(err)

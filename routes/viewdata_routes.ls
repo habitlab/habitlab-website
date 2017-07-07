@@ -12,11 +12,13 @@
   get_uninstall_feedback
   list_collections
   list_log_collections_for_user
+  list_intervention_collections_for_user
   list_log_collections_for_logname
   get_collection_for_user_and_logname
   get_user_active_dates
   need_query_property
   need_query_properties
+  expose_get_auth
 } = require 'libs/server_common'
 
 require! {
@@ -167,40 +169,20 @@ app.get '/get_time_last_log_was_sent_for_user', auth, (ctx) ->>
   ctx.body = latest_timestamp
   db.close()
 
-app.get '/get_intervention_to_time_most_recently_seen', auth, (ctx) ->>
-  ctx.type = 'json'
-  {userid} = ctx.request.query
-  if need_query_property(ctx, 'userid')
-    return
-  results = await get_intervention_to_time_most_recently_seen(userid)
-  ctx.body = JSON.stringify results
-  return
-
-app.get '/get_last_intervention_seen', auth, (ctx) ->>
-  ctx.type = 'json'
-  {userid} = ctx.request.query
-  if need_query_property(ctx, 'userid')
-    return
-  results = await get_last_intervention_seen(userid)
-  ctx.body = JSON.stringify results
-  return
-
 export get_intervention_to_time_most_recently_seen = (user_id) ->>
-  collections = await list_collections()
+  collections = await list_intervention_collections_for_user(user_id)
   db = await get_mongo_db()
   output = {}
   for entry in collections
-    if not entry.startsWith(user_id + '_')
-      continue
+    entry_key = entry.replace(user_id + '_', '')
     collection = db.collection(entry)
     all_items = await n2p -> collection.find({}, {fields: {'timestamp': 1}}).toArray(it)
     timestamp = prelude.maximum all_items.map (.timestamp)
-    entry_key = entry.replace(user_id + '_', '')
-    if entry_key.startsWith('synced:') or entry_key.startsWith('logs:')
-      continue
     output[entry_key] = timestamp
   db.close()
   return output
+
+expose_get_auth get_intervention_to_time_most_recently_seen, 'userid'
 
 export get_last_intervention_seen = (user_id) ->>
   intervention_to_time_seen = await get_intervention_to_time_most_recently_seen(user_id)
@@ -216,6 +198,37 @@ export get_last_intervention_seen = (user_id) ->>
         time_last_intervention_seen = time_seen
   return last_intervention_seen
 
+expose_get_auth get_last_intervention_seen, 'userid'
+
+export get_intervention_to_num_times_seen = (user_id) ->>
+  collections = await list_intervention_collections_for_user(user_id)
+  db = await get_mongo_db()
+  output = {}
+  for entry in collections
+    entry_key = entry.replace(user_id + '_', '')
+    collection = db.collection(entry)
+    num_items = await n2p -> collection.find({type: 'impression'}).count(it)
+    output[entry_key] = num_items
+  return output
+
+expose_get_auth get_intervention_to_num_times_seen, 'userid'
+
+export get_last_intervention_seen_and_time = (user_id) ->>
+  intervention_to_time_seen = await get_intervention_to_time_most_recently_seen(user_id)
+  last_intervention_seen = null
+  time_last_intervention_seen = null
+  for intervention_name,time_seen of intervention_to_time_seen
+    if not last_intervention_seen?
+      last_intervention_seen = intervention_name
+      time_last_intervention_seen = time_seen
+    else
+      if time_seen > time_last_intervention_seen
+        last_intervention_seen = intervention_name
+        time_last_intervention_seen = time_seen
+  return {time: time_last_intervention_seen, intervention: last_intervention_seen}
+
+expose_get_auth get_last_intervention_seen_and_time, 'userid'
+
 export get_time_intervention_was_most_recently_seen = (user_id, intervention_name) ->>
   [collection, db] = await get_collection_for_user_and_logname(user_id, intervention_name)
   all_items = await n2p -> collection.find({}).toArray(it)
@@ -226,6 +239,32 @@ export get_time_intervention_was_most_recently_seen = (user_id, intervention_nam
   #ctx.body = JSON.stringify all_items
   db.close()
   return highest_timestamp
+
+export get_is_logging_enabled_for_user = (user_id) ->>
+  [collection, db] = await get_logging_states()
+  results = await n2p -> collection.find({user_id}, {sort: {timestamp: -1}}).toArray(it)
+  db.close()
+  return results[0]
+
+expose_get_auth get_is_logging_enabled_for_user, 'userid'
+
+export get_user_to_is_logging_enabled = ->>
+  [collection, db] = await get_logging_states()
+  results = await n2p -> collection.find({}).toArray(it)
+  db.close()
+  user_to_is_logging_enabled = {}
+  user_to_latest_timestamp = {}
+  for item in results
+    {user_id, timestamp, logging_enabled} = item
+    if not user_to_latest_timestamp[user_id]?
+      user_to_latest_timestamp[user_id] = timestamp
+      user_to_is_logging_enabled[user_id] = logging_enabled
+    if timestamp > user_to_latest_timestamp[user_id]
+      user_to_latest_timestamp[user_id] = timestamp
+      user_to_is_logging_enabled[user_id] = logging_enabled
+  return user_to_is_logging_enabled
+
+expose_get_auth get_user_to_is_logging_enabled
 
 app.get '/get_secrets', auth, (ctx) ->>
   ctx.type = 'json'
