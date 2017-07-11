@@ -342,6 +342,14 @@ export get_last_interventions_and_num_impressions_for_former_users = ->>
 
 expose_get_auth get_last_interventions_and_num_impressions_for_former_users
 
+export get_web_visit_actions = ->>
+  [webvisits, db] = await get_webvisits()
+  all_results = await n2p -> webvisits.find({}).toArray(it)
+  db.close()
+  return all_results
+
+expose_get_auth get_web_visit_actions
+
 app.get '/get_secrets', auth, (ctx) ->>
   ctx.type = 'json'
   try
