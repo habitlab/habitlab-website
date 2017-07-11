@@ -29,6 +29,10 @@
   width: 100%;
 }
 
+#install_source_new {
+  width: 100%;
+}
+
 #installed_duration {
   width: 100%;
 }
@@ -59,6 +63,8 @@
 <google-chart id="install_country" cols='[{"label": "Data", "type": "string"},{"label": "Country", "type": "number"}]' rows='[["Something", 1]]'></google-chart>
 
 <google-chart id="install_source" cols='[{"label": "Data", "type": "string"},{"label": "Installs", "type": "number"}]' rows='[["Something", 1]]'></google-chart>
+
+<google-chart id="install_source_new" cols='[{"label": "Data", "type": "string"},{"label": "Installs", "type": "number"}]' rows='[["Something", 1]]'></google-chart>
 
 <google-chart id="installed_duration" cols='[{"label": "Data", "type": "string"},{"label": "Days kept installed for current active users", "type": "number"}]' rows='[["Something", 1]]'></google-chart>
 
@@ -319,11 +325,58 @@ async function show_last_intervention_before_uninstall() {
   }
 }
 
+async function show_install_source_new() {
+  let install_info_list = await get_install_data()
+  let current_time = moment()
+  let install_source_to_num_installs = {
+    'visited neither chrome store nor website': 0,
+    'visited website followed by chrome store': 0,
+    'visited chrome store followed by website': 0,
+    'visited website but not chrome store': 0,
+    'visited chrome store but not website': 0,
+  }
+  for (let install_info of install_info_list) {
+    if (install_info.last_visit_to_chrome_store == null || install_info.last_visit_to_website == null) {
+      continue
+    }
+    if (install_info.last_visit_to_chrome_store == -1 && install_info.last_visit_to_website == -1) {
+      install_source_to_num_installs['visited neither chrome store nor website'] += 1
+      continue
+    }
+    if (install_info.last_visit_to_chrome_store == -1 && install_info.last_visit_to_website != -1) {
+      install_source_to_num_installs['visited website but not chrome store'] += 1
+      continue
+    }
+    if (install_info.last_visit_to_chrome_store != -1 && install_info.last_visit_to_website == -1) {
+      install_source_to_num_installs['visited chrome store but not website'] += 1
+      continue
+    }
+    if (install_info.last_visit_to_chrome_store > install_info.last_visit_to_website) {
+      install_source_to_num_installs['visited website followed by chrome store'] += 1
+      continue
+    }
+    if (install_info.last_visit_to_chrome_store > install_info.last_visit_to_website) {
+      install_source_to_num_installs['visited chrome store followed by website'] += 1
+      continue
+    }
+    /*
+    let install_source = install_info.install_source
+    if (install_source_to_num_installs[install_source] == null) {
+      install_source_to_num_installs[install_source] = 0
+    }
+    install_source_to_num_installs[install_source] += 1
+    */
+  }
+  let install_source_and_num_installs = dict_to_sorted(install_source_to_num_installs)
+  $('#install_source_new').prop('rows', install_source_and_num_installs)
+}
+
 async function main() {
   show_installs()
   show_uninstalls()
   show_install_primary_language()
   show_install_source()
+  show_install_source_new()
   show_install_country()
   show_install_duration_for_active_users()
   show_installed_duration_until_uninstalled()
