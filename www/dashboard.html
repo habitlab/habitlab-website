@@ -100,6 +100,13 @@
 <div>Last interventions seen before user stops using habitlab:</div>
 <div id="last_intervention_before_stop"></div>
 
+<br>
+
+<div>Last interventions seen before user stops using habitlab, with total impressions:</div>
+<div id="last_intervention_before_stop_with_total_impressions"></div>
+
+<br>
+
 <!--
 <google-chart id="days_ago_to_num_installs" cols='[{"label": "Data", "type": "string"},{"label": "Installs", "type": "number"}]' rows='[["Something", 1]]'></google-chart>
 
@@ -323,6 +330,21 @@ async function display_last_intervention_before_stop_using() {
   display_dictionary_as_table(intervention_to_num_users, '#last_intervention_before_stop')
 }
 
+async function display_last_intervention_before_stop_using_with_total_impressions() {
+  let intervention_to_last_info = await get_last_interventions_and_num_impressions_for_former_users()
+  let display_list = []
+  for (let intervention_name of Object.keys(intervention_to_last_info)) {
+    let display_info = intervention_to_last_info[intervention_name]
+    display_info.name = intervention_name
+    display_list.push(display_info)
+  }
+  display_list.sort(function(a, b) {
+    return a.uninstall_fraction - b.uninstall_fraction
+  })
+  display_list.reverse()
+  display_list_as_table(display_list, '#last_intervention_before_stop_with_total_impressions')
+}
+
 async function main() {
   user_ids = await get_user_ids()
   show_user_list()
@@ -333,6 +355,7 @@ async function main() {
   display_interventions_enabled_by_users()
   display_interventions_disabled_by_users()
   display_last_intervention_before_stop_using()
+  display_last_intervention_before_stop_using_with_total_impressions()
   let num_users_who_have_tried_nondefault_goal = await get_num_users_who_have_tried_nondefault_goal()
   let num_users_who_have_tried_custom_goal = await get_num_users_who_have_tried_custom_goal()
   let num_users_who_have_set_nondefault_target = await get_num_users_who_have_set_nondefault_target()

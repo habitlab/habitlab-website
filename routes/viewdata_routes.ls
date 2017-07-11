@@ -279,6 +279,38 @@ export get_interventions_disabled_for_user = (user_id) ->>
 
 expose_get_auth get_interventions_disabled_for_user, 'userid'
 
+export get_last_interventions_for_former_users = ->>
+  output = {}
+  former_users = await get_users_with_logs_who_are_no_longer_active()
+  for user_id in former_users
+    last_intervention = await get_last_intervention_seen(user_id)
+    if not output[last_intervention]?
+      output[last_intervention] = 1
+    else
+      output[last_intervention] += 1
+  return output
+
+expose_get_auth get_last_interventions_for_former_users
+
+export get_users_with_logs_who_are_no_longer_active = ->>
+  user_to_is_logging_enabled = await get_user_to_is_logging_enabled()
+  active_users = await list_active_users_week()
+  active_users_set = {}
+  for user_id in active_users
+    active_users_set[user_id] = true
+  output = []
+  for user_id in Object.keys(user_to_is_logging_enabled)
+    logging_enabled = user_to_is_logging_enabled[user_id]
+    if not logging_enabled
+      continue
+    if active_users_set[user_id]
+      continue
+    output.push(user_id)
+  output.sort()
+  return output
+
+expose_get_auth get_users_with_logs_who_are_no_longer_active
+
 app.get '/get_secrets', auth, (ctx) ->>
   ctx.type = 'json'
   try
@@ -512,27 +544,26 @@ app.get '/get_dates_to_users_active', auth, (ctx) ->>
   finally
     db?close()
 
+export list_active_users_week = ->>
+  [user_active_dates, db] = await get_user_active_dates()
+  all_results = await n2p -> user_active_dates.find({}).toArray(it)
+  db.close()
+  active_users_set = {}
+  active_users_list = []
+  past_seven_days = [moment().subtract(daynum, 'days').format('YYYYMMDD') for daynum from 0 til 7]
+  for {day, user} in all_results
+    if active_users_set[user]?
+      continue
+    if not past_seven_days.includes(day)
+      continue
+    active_users_set[user] = true
+    active_users_list.push(user)
+  return active_users_list
+
 app.get '/getactiveusers_week', auth, (ctx) ->>
   ctx.type = 'json'
-  try
-    [user_active_dates, db] = await get_user_active_dates()
-    all_results = await n2p -> user_active_dates.find({}).toArray(it)
-    active_users_set = {}
-    active_users_list = []
-    past_seven_days = [moment().subtract(daynum, 'days').format('YYYYMMDD') for daynum from 0 til 7]
-    for {day, user} in all_results
-      if active_users_set[user]?
-        continue
-      if not past_seven_days.includes(day)
-        continue
-      active_users_set[user] = true
-      active_users_list.push(user)
-    ctx.body = JSON.stringify active_users_list
-  catch err
-    console.log 'error in getactiveusers_week'
-    console.log err
-  finally
-    db?close()
+  output = await list_active_users_week()
+  ctx.body = JSON.stringify output
 
 app.get '/get_daily_active_counts', auth, (ctx) ->>
   ctx.type = 'json'

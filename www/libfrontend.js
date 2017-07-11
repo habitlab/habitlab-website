@@ -28,6 +28,13 @@ function display_dictionary_as_table(dict, selector) {
   }
 }
 
+function display_list_as_table(list, selector) {
+  target = $(selector)
+  for (let item of list) {
+    target.append($('<div>').text(JSON.stringify(item)))
+  }
+}
+
 function dict_to_sorted(language_to_num_installs) {
   let language_and_num_installs = []
   for (let language of Object.keys(language_to_num_installs)) {
@@ -257,37 +264,37 @@ async function list_intervention_logs_for_user(userid) {
   //let interventions_with_data = await get_
 //}
 
-async function get_users_with_logs_who_are_no_longer_active() {
-  let user_to_is_logging_enabled = await get_user_to_is_logging_enabled()
-  let active_users = await list_active_users_week()
-  let active_users_set = {}
-  for (let user_id of active_users) {
-    active_users_set[user_id] = true
-  }
-  let output = []
-  for (let user_id of Object.keys(user_to_is_logging_enabled)) {
-    let logging_enabled = user_to_is_logging_enabled[user_id]
-    if (!logging_enabled) {
-      continue
-    }
-    if (active_users_set[user_id]) {
-      continue
-    }
-    output.push(user_id)
-  }
-  output.sort()
-  return output
-}
-
-async function get_last_interventions_for_former_users() {
-  let output = {}
+async function get_last_interventions_and_num_impressions_for_former_users() {
+  let intervention_to_num_last = {}
+  let intervention_to_total_impressions = {}
   let former_users = await get_users_with_logs_who_are_no_longer_active()
   for (let user_id of former_users) {
     let last_intervention = await get_last_intervention_seen(user_id)
-    if (output[last_intervention] == null) {
-      output[last_intervention] = 1
+    let intervention_to_num_impressions = await get_intervention_to_num_times_seen(user_id)
+    for (let intervention_name of Object.keys(intervention_to_num_impressions)) {
+      if (intervention_to_total_impressions[intervention_name] == null) {
+        intervention_to_total_impressions[intervention_name] = 0
+      }
+      intervention_to_total_impressions[intervention_name] += intervention_to_num_impressions[intervention_name]
+    }
+    if (intervention_to_num_last[last_intervention] == null) {
+      intervention_to_num_last[last_intervention] = 1
     } else {
-      output[last_intervention] += 1
+      intervention_to_num_last[last_intervention] += 1
+    }
+  }
+  let output = {}
+  for (let intervention_name of Object.keys(intervention_to_total_impressions)) {
+    let num_last = intervention_to_num_last[intervention_name]
+    if (num_last == null) {
+      num_last = 0
+    }
+    let total_impressions = intervention_to_total_impressions[intervention_name]
+    let uninstall_fraction = num_last / total_impressions
+    output[intervention_name] = {
+      num_last: num_last,
+      total_impressions: total_impressions,
+      uninstall_fraction: uninstall_fraction
     }
   }
   return output
@@ -322,6 +329,10 @@ expose_getjson('get_is_logging_enabled_for_user', 'userid')
 expose_getjson('get_user_to_is_logging_enabled')
 
 expose_getjson('get_intervention_to_num_times_seen', 'userid')
+
+expose_getjson('get_users_with_logs_who_are_no_longer_active')
+
+expose_getjson('get_last_interventions_for_former_users')
 
 function printcb(err, result) {
   console.log(err)

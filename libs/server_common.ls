@@ -113,7 +113,7 @@ export list_intervention_collections_for_user = (userid) ->>
   all_collections = await list_collections()
   return all_collections.filter(-> it.startsWith("#{userid}_")).filter(->
     entry_key = it.replace("#{userid}_", '')
-    return !it.startsWith('synced:') and !it.startsWith('logs:')
+    return !entry_key.startsWith('synced:') and !entry_key.startsWith('logs:')
   )
 
 export list_log_collections_for_logname = (logname) ->>
