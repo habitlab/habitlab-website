@@ -264,42 +264,6 @@ async function list_intervention_logs_for_user(userid) {
   //let interventions_with_data = await get_
 //}
 
-async function get_last_interventions_and_num_impressions_for_former_users() {
-  let intervention_to_num_last = {}
-  let intervention_to_total_impressions = {}
-  let former_users = await get_users_with_logs_who_are_no_longer_active()
-  for (let user_id of former_users) {
-    let last_intervention = await get_last_intervention_seen(user_id)
-    let intervention_to_num_impressions = await get_intervention_to_num_times_seen(user_id)
-    for (let intervention_name of Object.keys(intervention_to_num_impressions)) {
-      if (intervention_to_total_impressions[intervention_name] == null) {
-        intervention_to_total_impressions[intervention_name] = 0
-      }
-      intervention_to_total_impressions[intervention_name] += intervention_to_num_impressions[intervention_name]
-    }
-    if (intervention_to_num_last[last_intervention] == null) {
-      intervention_to_num_last[last_intervention] = 1
-    } else {
-      intervention_to_num_last[last_intervention] += 1
-    }
-  }
-  let output = {}
-  for (let intervention_name of Object.keys(intervention_to_total_impressions)) {
-    let num_last = intervention_to_num_last[intervention_name]
-    if (num_last == null) {
-      num_last = 0
-    }
-    let total_impressions = intervention_to_total_impressions[intervention_name]
-    let uninstall_fraction = num_last / total_impressions
-    output[intervention_name] = {
-      num_last: num_last,
-      total_impressions: total_impressions,
-      uninstall_fraction: uninstall_fraction
-    }
-  }
-  return output
-}
-
 function expose_getjson(func_name, ...params) {
   let func_body = null
   let request_path = '/' + func_name
@@ -333,6 +297,8 @@ expose_getjson('get_intervention_to_num_times_seen', 'userid')
 expose_getjson('get_users_with_logs_who_are_no_longer_active')
 
 expose_getjson('get_last_interventions_for_former_users')
+
+expose_getjson('get_last_interventions_and_num_impressions_for_former_users')
 
 function printcb(err, result) {
   console.log(err)

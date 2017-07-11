@@ -311,6 +311,37 @@ export get_users_with_logs_who_are_no_longer_active = ->>
 
 expose_get_auth get_users_with_logs_who_are_no_longer_active
 
+export get_last_interventions_and_num_impressions_for_former_users = ->>
+  intervention_to_num_last = {}
+  intervention_to_total_impressions = {}
+  former_users = await get_users_with_logs_who_are_no_longer_active()
+  for user_id in former_users
+    last_intervention = await get_last_intervention_seen(user_id)
+    intervention_to_num_impressions = await get_intervention_to_num_times_seen(user_id)
+    for intervention_name in Object.keys(intervention_to_num_impressions)
+      if not intervention_to_total_impressions[intervention_name]?
+        intervention_to_total_impressions[intervention_name] = 0
+      intervention_to_total_impressions[intervention_name] += intervention_to_num_impressions[intervention_name]
+    if not intervention_to_num_last[last_intervention]?
+      intervention_to_num_last[last_intervention] = 1
+    else
+      intervention_to_num_last[last_intervention] += 1
+  output = {}
+  for intervention_name in Object.keys(intervention_to_total_impressions)
+    num_last = intervention_to_num_last[intervention_name]
+    if not num_last?
+      num_last = 0
+    total_impressions = intervention_to_total_impressions[intervention_name]
+    uninstall_fraction = num_last / total_impressions
+    output[intervention_name] = {
+      num_last: num_last,
+      total_impressions: total_impressions,
+      uninstall_fraction: uninstall_fraction
+    }
+  return output
+
+expose_get_auth get_last_interventions_and_num_impressions_for_former_users
+
 app.get '/get_secrets', auth, (ctx) ->>
   ctx.type = 'json'
   try
