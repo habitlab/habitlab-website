@@ -27,6 +27,8 @@ require! {
   semver
 }
 
+prelude = require 'prelude-ls'
+
 app.get '/feedback', auth, (ctx) ->>
   feedback = []
   collections = await list_collections()
@@ -566,6 +568,122 @@ app.get '/get_dates_active_for_user', auth, (ctx) ->>
   finally
     db?close()
 
+export get_users_to_days_active = ->>
+  [user_active_dates, db] = await get_user_active_dates()
+  all_results = await n2p -> user_active_dates.find({}).toArray(it)
+  db.close()
+  user_to_days_active = {}
+  for {day, user} in all_results
+    if not user_to_days_active[user]?
+      user_to_days_active[user] = []
+    user_to_days_active[user].push day
+  return user_to_days_active
+
+days_retained_count_to_retention_values = (days_retained_counts) ->
+  output = [0] * (highest_day + 1)
+  keys_sorted = prelude.sort Object.keys(days_retained_counts).map(-> parseInt(it))
+  highest_day = prelude.maximum keys_sorted
+  total_users = prelude.sum Object.values(days_retained_counts)
+  prev_day_num = -1
+  for day_num in keys_sorted
+    for cur_day from prev_day_num+1 til day_num+1
+      output[cur_day] = total_users
+    #total_users -=  
+    # TODO in progress
+  return output
+
+export get_retention_curve = ->>
+  retention_curve_rawdata = await get_retention_curve_rawdata()
+  return days_retained_count_to_retention_values(retention_curve_rawdata)
+
+expose_get_auth get_retention_curve
+
+app.get '/get_user_to_install_times', auth, (ctx) ->>
+  ctx.type = 'json'
+  try
+    [installs, db] = await get_installs()
+    all_results = await n2p -> installs.find({}).toArray(it)
+    output = {}
+    for install_info in all_results
+      output[install_info.user_id] = install_info.timestamp
+    ctx.body = JSON.stringify(output)
+  catch err
+    console.log 'error in get_user_to_install_times'
+    console.log err
+    ctx.body = JSON.stringify {response: 'error', error: 'error in get_user_to_install_times'}
+  finally
+    db?close()
+
+export get_user_to_day_installed = ->>
+  [installs, db] = await get_installs()
+  all_results = await n2p -> installs.find({}).toArray(it)
+  db.close()
+  output = {}
+  for install_info in all_results
+    output[install_info.user_id] = moment(install_info.timestamp).format('YYYYMMDD')
+  return output
+
+expose_get_auth get_user_to_day_installed
+
+export get_user_to_day_first_seen = ->>
+  user_to_days_active = await get_users_to_days_active()
+  output = {}
+  for user,days_active of user_to_days_active
+    first_day_active = null
+    for day_active_string in days_active
+      day_active = moment(day_active_string)
+      if not first_day_active?
+        first_day_active = day_active
+      if day_active < first_day_active
+        first_day_active = day_active
+    output[user] = first_day_active.format('YYYYMMDD')
+  return output
+
+expose_get_auth get_user_to_day_first_seen
+
+export get_user_to_day_last_seen = ->>
+  user_to_days_active = await get_users_to_days_active()
+  output = {}
+  for user,days_active of user_to_days_active
+    last_day_active = null
+    for day_active_string in days_active
+      day_active = moment(day_active_string)
+      if not last_day_active?
+        last_day_active = day_active
+      if day_active > last_day_active
+        last_day_active = day_active
+    output[user] = last_day_active.format('YYYYMMDD')
+  return output
+
+expose_get_auth get_user_to_day_last_seen
+
+export get_retention_curve_rawdata = ->>
+  user_to_days_active = await get_users_to_days_active()
+  cutoff_start_time = moment().subtract(7, 'days')
+  days_retained_counts = {}
+  for user,days_active of user_to_days_active
+    first_day_active = null
+    last_day_active = null
+    for day_active_string in days_active
+      day_active = moment(day_active_string)
+      if not first_day_active?
+        first_day_active = day_active
+      if not last_day_active?
+        last_day_active = day_active
+      if day_active < first_day_active
+        first_day_active = day_active
+      if day_active > last_day_active
+        last_day_active = day_active
+    if first_day_active > cutoff_start_time
+      continue
+    days_retained = last_day_active.diff(first_day_active, 'days')
+    if not days_retained_counts[days_retained]?
+      days_retained_counts[days_retained] = 0
+    days_retained_counts[days_retained] += 1
+  return days_retained_counts
+
+expose_get_auth get_retention_curve_rawdata
+
 app.get '/get_dates_to_users_active', auth, (ctx) ->>
   ctx.type = 'json'
   try
@@ -604,8 +722,7 @@ app.get '/getactiveusers_week', auth, (ctx) ->>
   output = await list_active_users_week()
   ctx.body = JSON.stringify output
 
-app.get '/get_daily_active_counts', auth, (ctx) ->>
-  ctx.type = 'json'
+export get_user_to_dates_active_oldlogs = ->>
   users = []
   users_set = {}
   now = Date.now()
@@ -640,6 +757,14 @@ app.get '/get_daily_active_counts', auth, (ctx) ->>
       #  if not users_set[userid]?
       #    users.push userid
       #    users_set[userid] = true
+  db.close()
+  return user_to_days_active
+
+expose_get_auth get_user_to_dates_active_oldlogs
+
+app.get '/get_daily_active_counts', auth, (ctx) ->>
+  ctx.type = 'json'
+  user_to_days_active = await get_user_to_dates_active_oldlogs()
   day_to_users_active = {}
   for userid,days_active of user_to_days_active
     for date in Object.keys(days_active)

@@ -9,6 +9,22 @@
 <body>
 
 <style>
+#days_ago_to_num_visits {
+  width: 100%;
+}
+
+#days_ago_to_num_web_install_clicks {
+  width: 100%;
+}
+
+#days_ago_to_num_web_install_accepts {
+  width: 100%;
+}
+
+#days_ago_to_num_web_install_rejects {
+  width: 100%;
+}
+
 #days_ago_to_num_installs {
   width: 100%;
 }
@@ -53,6 +69,18 @@
   width: 100%;
 }
 </style>
+
+<!--
+<google-chart id="retention_curve" cols='[{"label": "Data", "type": "string"},{"label": "Users still sending data", "type": "number"}]' rows='[["Something", 1]]'></google-chart>
+-->
+
+<google-chart id="days_ago_to_num_visits" cols='[{"label": "Data", "type": "string"},{"label": "Visits", "type": "number"}]' rows='[["Something", 1]]'></google-chart>
+
+<google-chart id="days_ago_to_num_web_install_clicks" cols='[{"label": "Data", "type": "string"},{"label": "Install Clicks", "type": "number"}]' rows='[["Something", 1]]'></google-chart>
+
+<google-chart id="days_ago_to_num_web_install_accepts" cols='[{"label": "Data", "type": "string"},{"label": "Install Accepts", "type": "number"}]' rows='[["Something", 1]]'></google-chart>
+
+<google-chart id="days_ago_to_num_web_install_rejects" cols='[{"label": "Data", "type": "string"},{"label": "Install Rejects", "type": "number"}]' rows='[["Something", 1]]'></google-chart>
 
 <google-chart id="days_ago_to_num_installs" cols='[{"label": "Data", "type": "string"},{"label": "Installs", "type": "number"}]' rows='[["Something", 1]]'></google-chart>
 
@@ -101,6 +129,92 @@ async function show_installs() {
   }
   days_ago_to_num_installs_data.reverse()
   $('#days_ago_to_num_installs').prop('rows', days_ago_to_num_installs_data)
+}
+
+async function show_visits() {
+  let web_visits = await get_web_visits()
+  let current_time = moment()
+  let days_ago_to_num_visits = {}
+  for (let visit_info of web_visits) {
+    let timestamp = moment(visit_info.timestamp)
+    let days_ago = current_time.diff(timestamp, 'days')
+    if (days_ago_to_num_visits[days_ago] == null) {
+      days_ago_to_num_visits[days_ago] = 0
+    }
+    days_ago_to_num_visits[days_ago] += 1
+  }
+  let days_ago_to_num_visits_data = []
+  for (let i = 0; i < 14; ++i) {
+    days_ago_to_num_visits_data.push([i + ' days ago', days_ago_to_num_visits[i]])
+  }
+  days_ago_to_num_visits_data.reverse()
+  $('#days_ago_to_num_visits').prop('rows', days_ago_to_num_visits_data)
+}
+
+async function show_web_install_clicks() {
+  let web_visits = await get_web_install_clicks()
+  let current_time = moment()
+  let days_ago_to_num_visits = {}
+  for (let visit_info of web_visits) {
+    let timestamp = moment(visit_info.timestamp)
+    let days_ago = current_time.diff(timestamp, 'days')
+    if (days_ago_to_num_visits[days_ago] == null) {
+      days_ago_to_num_visits[days_ago] = 0
+    }
+    days_ago_to_num_visits[days_ago] += 1
+  }
+  let days_ago_to_num_visits_data = []
+  for (let i = 0; i < 14; ++i) {
+    days_ago_to_num_visits_data.push([i + ' days ago', days_ago_to_num_visits[i]])
+  }
+  days_ago_to_num_visits_data.reverse()
+  $('#days_ago_to_num_web_install_clicks').prop('rows', days_ago_to_num_visits_data)
+}
+
+async function show_web_install_accepts() {
+  let web_visits = await get_web_install_accepts()
+  let current_time = moment()
+  let days_ago_to_num_visits = {}
+  for (let visit_info of web_visits) {
+    let timestamp = moment(visit_info.timestamp)
+    let days_ago = current_time.diff(timestamp, 'days')
+    if (days_ago_to_num_visits[days_ago] == null) {
+      days_ago_to_num_visits[days_ago] = 0
+    }
+    days_ago_to_num_visits[days_ago] += 1
+  }
+  let days_ago_to_num_visits_data = []
+  for (let i = 0; i < 14; ++i) {
+    days_ago_to_num_visits_data.push([i + ' days ago', days_ago_to_num_visits[i]])
+  }
+  days_ago_to_num_visits_data.reverse()
+  $('#days_ago_to_num_web_install_accepts').prop('rows', days_ago_to_num_visits_data)
+}
+
+async function show_web_install_rejects() {
+  let web_visits = await get_web_install_rejects()
+  let current_time = moment()
+  let days_ago_to_num_visits = {}
+  for (let visit_info of web_visits) {
+    let timestamp = moment(visit_info.timestamp)
+    let days_ago = current_time.diff(timestamp, 'days')
+    if (days_ago_to_num_visits[days_ago] == null) {
+      days_ago_to_num_visits[days_ago] = 0
+    }
+    days_ago_to_num_visits[days_ago] += 1
+  }
+  let days_ago_to_num_visits_data = []
+  for (let i = 0; i < 14; ++i) {
+    days_ago_to_num_visits_data.push([i + ' days ago', days_ago_to_num_visits[i]])
+  }
+  days_ago_to_num_visits_data.reverse()
+  $('#days_ago_to_num_web_install_rejects').prop('rows', days_ago_to_num_visits_data)
+}
+
+async function show_retention_curve() {
+  //let retention_curve = await ()
+  // TODO
+
 }
 
 async function show_uninstalls() {
@@ -373,6 +487,10 @@ async function show_install_source_new() {
 
 async function main() {
   show_installs()
+  show_visits()
+  show_web_install_clicks()
+  show_web_install_accepts()
+  show_web_install_rejects()
   show_uninstalls()
   show_install_primary_language()
   show_install_source()

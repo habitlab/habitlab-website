@@ -300,6 +300,68 @@ expose_getjson('get_last_interventions_for_former_users')
 
 expose_getjson('get_last_interventions_and_num_impressions_for_former_users')
 
+expose_getjson('get_web_visit_actions')
+
+async function get_all_web_visit_actions() {
+  let visit_info_list = await get_web_visit_actions()
+  let output = []
+  for (let visit_info of visit_info_list) {
+    if (visit_info.domain != 'habitlab.stanford.edu') {
+      continue
+    }
+    output.push(visit_info)
+  }
+  return output
+}
+
+async function get_web_visits() {
+  let visit_info_list = await get_all_web_visit_actions()
+  let output = []
+  for (let visit_info of visit_info_list) {
+    if (visit_info.action != 'visit') {
+      continue
+    }
+    output.push(visit_info)
+  }
+  return output
+}
+
+async function get_web_install_clicks() {
+  let visit_info_list = await get_all_web_visit_actions()
+  let output = []
+  for (let visit_info of visit_info_list) {
+    if (visit_info.action != 'install_clicked') {
+      continue
+    }
+    output.push(visit_info)
+  }
+  return output
+}
+
+async function get_web_install_accepts() {
+  let visit_info_list = await get_all_web_visit_actions()
+  let output = []
+  for (let visit_info of visit_info_list) {
+    if (visit_info.action != 'install_accept') {
+      continue
+    }
+    output.push(visit_info)
+  }
+  return output
+}
+
+async function get_web_install_rejects() {
+  let visit_info_list = await get_all_web_visit_actions()
+  let output = []
+  for (let visit_info of visit_info_list) {
+    if (visit_info.action != 'install_reject') {
+      continue
+    }
+    output.push(visit_info)
+  }
+  return output
+}
+
 function printcb(err, result) {
   console.log(err)
   if (result !== undefined) {
