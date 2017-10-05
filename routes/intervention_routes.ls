@@ -75,7 +75,8 @@ app.get '/add_contributed_intervention', (ctx) ->>
     stars
     comments
   }
-  result = await n2p -> proposed_goals.insert(new_contributed_intervention, it)
+  [contributed_interventions, db] = await get_contributed_interventions()
+  result = await n2p -> contributed_interventions.insert(new_contributed_intervention, it)
   ctx.body = JSON.stringify {response: 'done', success: true}
   db?close()
 
