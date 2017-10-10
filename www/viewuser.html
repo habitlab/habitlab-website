@@ -141,6 +141,13 @@ async function show_num_times_interventions_seen() {
   display_dictionary_as_table(num_times_interventions_seen, '#num_times_interventions_seen')
 }
 
+async function get_session_lengths_with_intervention() {
+  seconds_on_domain_per_session = await get_collection_for_user(user_id, 'synced:seconds_on_domain_per_session')
+  interventions_active_for_domain_and_session = await get_collection_for_user(user_id, 'synced:seconds_on_domain_per_session')
+  console.log(seconds_on_domain_per_session)
+  console.log(interventions_active_for_domain_and_session)
+}
+
 async function main() {
   if (!user_id) {
     console.log('need userid parameter')
