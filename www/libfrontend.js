@@ -362,6 +362,62 @@ async function get_web_install_rejects() {
   return output
 }
 
+async function get_session_lengths_with_intervention(user_id) {
+  seconds_on_domain_per_session = await get_collection_for_user(user_id, 'synced:seconds_on_domain_per_session')
+  interventions_active_for_domain_and_session = await get_collection_for_user(user_id, 'synced:interventions_active_for_domain_and_session')
+  let domain_to_intervention_to_session_lengths = {}
+  let domain_to_session_to_intervention = {}
+  for (let x of interventions_active_for_domain_and_session) {
+    let interventions_active = JSON.parse(x.val)
+    if (interventions_active.length == 0) {
+      continue
+    }
+    let intervention_name = interventions_active[0]
+    let domain = x.key
+    let session_id = x.key2
+    if (!domain_to_session_to_intervention[domain]) {
+      domain_to_session_to_intervention[domain] = {}
+    }
+    domain_to_session_to_intervention[domain][session_id] = intervention_name
+  }
+  for (let x of seconds_on_domain_per_session) {
+    let domain = x.key
+    let session_id = x.key2
+    let time_spent = x.val
+    if (!domain_to_session_to_intervention[domain]) {
+      continue
+    }
+    intervention_name = domain_to_session_to_intervention[domain][session_id]
+    if (!intervention_name) {
+      continue
+    }
+    if (!domain_to_intervention_to_session_lengths[domain]) {
+      domain_to_intervention_to_session_lengths[domain] = {}
+    }
+    if (!domain_to_intervention_to_session_lengths[domain][intervention_name]) {
+      domain_to_intervention_to_session_lengths[domain][intervention_name] = []
+    }
+    domain_to_intervention_to_session_lengths[domain][intervention_name].push(time_spent)
+  }
+  return domain_to_intervention_to_session_lengths
+  /*
+  let domain_to_intervention_to_average_session_length = {}
+  for (let domain of Object.keys(domain_to_intervention_to_session_lengths)) {
+    for (let intervention_name of Object.keys(domain_to_intervention_to_session_lengths[domain])) {
+      let session_lengths = domain_to_intervention_to_session_lengths[domain][intervention_name]
+      let average_session_length = prelude.average(session_lengths)
+      if (!domain_to_intervention_to_average_session_length[domain]) {
+        domain_to_intervention_to_average_session_length[domain] = {}
+      }
+      domain_to_intervention_to_average_session_length[domain][intervention_name] = average_session_length
+    }
+  }
+  */
+  //console.log(domain_to_intervention_to_session_lengths)
+  //console.log(seconds_on_domain_per_session)
+  //console.log(interventions_active_for_domain_and_session)
+}
+
 function printcb(err, result) {
   console.log(err)
   if (result !== undefined) {

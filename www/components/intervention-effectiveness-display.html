@@ -1,0 +1,67 @@
+<link rel="import" href="../bower_components/polymer/polymer.html">
+<link rel="import" href="bower_components/google-chart/google-chart.html">
+
+<dom-module id="intervention-effectiveness-display">
+  <template>
+    <style>
+      :root {
+        width: 100%;
+      }
+
+      google-chart {
+        width: 100%;
+      }
+    </style>
+    <div>Hello world</div>
+    <template is="dom-repeat" items="{{domain_and_intervention_effectiveness_list}}" as="domain_and_intervention_effectiveness">
+      <div>hello world again</div>
+      <div>{{domain_and_intervention_effectiveness.domain}}</div>
+      <template is="dom-repeat" items="{{domain_and_intervention_effectiveness.intervention_info_list}}" as="intervention_effectiveness_info">
+        <div>{{intervention_effectiveness_info.intervention_name}}</div>
+        <div>{{intervention_effectiveness_info.average_session_length}}</div>
+      </template>
+      <!--<google-chart id="effectiveness_display" cols='[{"label": "Data", "type": "string"},{"label": "Seconds", "type": "number"}]' rows='[["Something", 1]]'></google-chart>-->
+    </template>
+  </template>
+  <script src="../libfrontend.js"></script>
+  <script>
+    Polymer({
+      is: 'intervention-effectiveness-display',
+      properties: {
+        userid: {
+          type: 'String',
+          observer: 'userid_changed'
+        },
+        domain_and_intervention_effectiveness_list: {
+          type: Array,
+        }
+      },
+      userid_changed: async function() {
+        let userid = this.userid
+        if (!userid) {
+          return
+        }
+        let domain_to_intervention_to_session_lengths = await get_session_lengths_with_intervention(userid)
+        let domain_and_intervention_effectiveness_list = []
+        for (let domain of Object.keys(domain_to_intervention_to_session_lengths)) {
+          let intervention_info_list = []
+          let intervention_to_session_lengths = domain_to_intervention_to_session_lengths[domain]
+          for (let intervention_name of Object.keys(intervention_to_session_lengths)) {
+            let session_lengths = intervention_to_session_lengths[intervention_name]
+            intervention_info_list.push({
+              intervention_name: intervention_name,
+              average_session_length: prelude.mean(session_lengths)
+            })
+          }
+          domain_and_intervention_effectiveness_list.push({
+            domain: domain,
+            intervention_info_list: intervention_info_list
+          })
+        }
+        console.log(domain_and_intervention_effectiveness_list)
+        this.domain_and_intervention_effectiveness_list = domain_and_intervention_effectiveness_list
+      }
+    });
+  </script>
+
+</dom-module>
