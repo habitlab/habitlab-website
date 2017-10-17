@@ -12,15 +12,9 @@
         width: 100%;
       }
     </style>
-    <div>Hello world</div>
     <template is="dom-repeat" items="{{domain_and_intervention_effectiveness_list}}" as="domain_and_intervention_effectiveness">
-      <div>hello world again</div>
       <div>{{domain_and_intervention_effectiveness.domain}}</div>
-      <template is="dom-repeat" items="{{domain_and_intervention_effectiveness.intervention_info_list}}" as="intervention_effectiveness_info">
-        <div>{{intervention_effectiveness_info.intervention_name}}</div>
-        <div>{{intervention_effectiveness_info.average_session_length}}</div>
-      </template>
-      <!--<google-chart id="effectiveness_display" cols='[{"label": "Data", "type": "string"},{"label": "Seconds", "type": "number"}]' rows='[["Something", 1]]'></google-chart>-->
+      <google-chart id="effectiveness_display" cols='[{"label": "Data", "type": "string"},{"label": "Seconds", "type": "number"}]' rows="{{domain_and_intervention_effectiveness.intervention_info_list}}"></google-chart>
     </template>
   </template>
   <script src="../libfrontend.js"></script>
@@ -48,10 +42,10 @@
           let intervention_to_session_lengths = domain_to_intervention_to_session_lengths[domain]
           for (let intervention_name of Object.keys(intervention_to_session_lengths)) {
             let session_lengths = intervention_to_session_lengths[intervention_name]
-            intervention_info_list.push({
-              intervention_name: intervention_name,
-              average_session_length: prelude.mean(session_lengths)
-            })
+            intervention_info_list.push([
+              intervention_name,
+              prelude.mean(session_lengths)
+            ])
           }
           domain_and_intervention_effectiveness_list.push({
             domain: domain,
