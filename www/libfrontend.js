@@ -362,14 +362,14 @@ async function get_web_install_rejects() {
   return output
 }
 
-let store_cache = {}
+let get_store_cached = {}
 
 function get_store(name) {
-  if (store_cache[name]) {
-    return store_cache[name]
+  if (get_store_cached[name]) {
+    return get_store_cached[name]
   }
   let store = localforage.createInstance({name: name})
-  store_cache[name] = store
+  get_store_cached[name] = store
   return store
 }
 
@@ -427,6 +427,30 @@ async function get_user_to_session_lengths_with_intervention() {
   }
   console.log('done with computation')
   */
+  return output
+}
+
+async function get_session_lengths_with_intervention_all_users() {
+  username_to_session_lengths_with_intervention = await get_user_to_session_lengths_with_intervention()
+  let output = {}
+  for (let username of Object.keys(username_to_session_lengths_with_intervention)) {
+    let domain_to_intervention_to_session_lengths = username_to_session_lengths_with_intervention[username]
+    for (let domain of Object.keys(domain_to_intervention_to_session_lengths)) {
+      let intervention_to_session_lengths = domain_to_intervention_to_session_lengths[domain]
+      for (let intervention_name of Object.keys(intervention_to_session_lengths)) {
+        let session_lengths = intervention_to_session_lengths[intervention_name]
+        if (output[domain] == null) {
+          output[domain] = {}
+        }
+        if (output[domain][intervention_name] == null) {
+          output[domain][intervention_name] = []
+        }
+        for (let session_length of session_lengths) {
+          output[domain][intervention_name].push(session_length)
+        }
+      }
+    }
+  }
   return output
 }
 

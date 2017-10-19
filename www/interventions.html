@@ -1,0 +1,35 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Dashboard</title>
+
+  <script src="bower_components/moment/moment.js"></script>
+  <script src="bower_components/jquery/dist/jquery.min.js"></script>
+  <script src="bower_components/prelude-ls/browser/prelude-browser-min.js"></script>
+  <script src="bower_components/localforage/dist/localforage.min.js"></script>
+  <script src="bower_components/mathjs/dist/math.min.js"></script>
+  <script>
+    window.prelude = require('prelude-ls');
+  </script>
+  <script src="libfrontend.js"></script>
+  <script src="npm_libs/geturlparameters.js"></script>
+
+  <link rel="import" href="bower_components/polymer/polymer.html">
+  <link rel="import" href="components/intervention-effectiveness-display.html">
+  
+</head>
+
+<body>
+
+<style>
+</style>
+
+<div>Intervention effectiveness across domains:</div>
+<intervention-effectiveness-display userid="all" id="effectiveness_display"></intervention-effectiveness-display>
+
+<script>
+
+</script>
+
+</body>
+</html>

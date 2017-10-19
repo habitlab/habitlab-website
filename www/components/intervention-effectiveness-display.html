@@ -1,5 +1,5 @@
 <link rel="import" href="../bower_components/polymer/polymer.html">
-<link rel="import" href="bower_components/google-chart/google-chart.html">
+<link rel="import" href="../bower_components/google-chart/google-chart.html">
 
 <dom-module id="intervention-effectiveness-display">
   <template>
@@ -14,10 +14,9 @@
     </style>
     <template is="dom-repeat" items="{{domain_and_intervention_effectiveness_list}}" as="domain_and_intervention_effectiveness">
       <div>{{domain_and_intervention_effectiveness.domain}}</div>
-      <google-chart id="effectiveness_display" cols='[{"label": "Data", "type": "string"},{"label": "Seconds", "type": "number"}]' rows="{{domain_and_intervention_effectiveness.intervention_info_list}}"></google-chart>
+      <google-chart type="column" id="effectiveness_display" cols='[{"label": "Data", "type": "string"},{"label": "Seconds", "type": "number"},{"label": "Num Samples", "type": "string", "role": "tooltip", "p": {"html": true}}, {"label": "90% confidence interval top", "type": "number", "role": "interval"}, {"label": "90% confidence interval bottom", "type": "number", "role": "interval"}]' rows="{{domain_and_intervention_effectiveness.intervention_info_list}}" options='{"tooltip": {"isHtml": true}, "legend": "none"}'></google-chart>
     </template>
   </template>
-  <script src="../libfrontend.js"></script>
   <script>
     Polymer({
       is: 'intervention-effectiveness-display',
@@ -35,16 +34,35 @@
         if (!userid) {
           return
         }
-        let domain_to_intervention_to_session_lengths = await get_session_lengths_with_intervention(userid)
+        let domain_to_intervention_to_session_lengths;
+        if (userid == 'all') {
+          domain_to_intervention_to_session_lengths = await get_session_lengths_with_intervention_all_users()
+        } else {
+          domain_to_intervention_to_session_lengths = await get_session_lengths_with_intervention(userid)
+        }
         let domain_and_intervention_effectiveness_list = []
         for (let domain of Object.keys(domain_to_intervention_to_session_lengths)) {
           let intervention_info_list = []
           let intervention_to_session_lengths = domain_to_intervention_to_session_lengths[domain]
           for (let intervention_name of Object.keys(intervention_to_session_lengths)) {
             let session_lengths = intervention_to_session_lengths[intervention_name]
+            let mean_session_length = prelude.mean(session_lengths)
+            let standard_deviation = math.std(session_lengths)
+            let confidence_interval = 1.645 * standard_deviation / Math.sqrt(session_lengths.length) // 90% confidence is 1.645, 95% confidence is 1.96
+            let tooltip = `
+            Intervention: ${intervention_name}<br>
+            Mean: ${mean_session_length}<br>
+            Samples: ${session_lengths.length}<br>
+            Standard deviation: ${standard_deviation}<br>
+            Upper 90% confidence interval: ${mean_session_length + confidence_interval}<br>
+            Lower 90% confidence interval: ${mean_session_length - confidence_interval}<br>
+            `
             intervention_info_list.push([
               intervention_name,
-              prelude.mean(session_lengths)
+              mean_session_length,
+              tooltip,
+              mean_session_length + confidence_interval,
+              mean_session_length - confidence_interval,
             ])
           }
           domain_and_intervention_effectiveness_list.push({
