@@ -362,12 +362,83 @@ async function get_web_install_rejects() {
   return output
 }
 
+let store_cache = {}
+
+function get_store(name) {
+  if (store_cache[name]) {
+    return store_cache[name]
+  }
+  let store = localforage.createInstance({name: name})
+  store_cache[name] = store
+  return store
+}
+
+function memoize_to_disk(f) {
+  if (f.length == 1) {
+    return memoize_to_disk_1arg(f)
+  }
+  throw new Exception('memoize_to_disk provided with function with inappropriate number of arguments: ' + f.name + ' with num arguments ' + f.length)
+}
+
+function memoize_to_disk_1arg(f) {
+  let func_name = f.name
+  let store = get_store('memoizedisk|' + func_name)
+  return async function(arg) {
+    let cached_value = await store.getItem(arg)
+    if (cached_value != null) {
+      return cached_value
+    }
+    cached_value = await f(arg)
+    await store.setItem(arg, cached_value)
+    return cached_value
+  }
+}
+
+async function get_user_to_session_lengths_with_intervention() {
+  let user_to_is_logging_enabled = await get_user_to_is_logging_enabled()
+  let user_list = []
+  for (let username of Object.keys(user_to_is_logging_enabled)) {
+    if (user_to_is_logging_enabled[username]) {
+      user_list.push(username)
+    }
+  }
+  let output = {}
+  for (let username of user_list) {
+    console.log(username)
+    output[username] = await get_session_lengths_with_intervention(username)
+  }
+  return output
+  /*
+  console.log(user_list)
+  console.log(user_list.length)
+  let output_list_promises = []
+  for (let username of user_list) {
+    console.log(username)
+    session_lengths_with_intervention_promise = get_session_lengths_with_intervention(username)
+    output_list_promises.push(session_lengths_with_intervention_promise)
+  }
+  console.log('starting promise wait')
+  output_list = await Promise.all(output_list_promises)
+  let output = {}
+  for (let i = 0; i < user_list.length; ++i) {
+    let username = user_list[i]
+    let session_lengths_with_intervention = output_list[i]
+    output[username] = session_lengths_with_intervention
+  }
+  console.log('done with computation')
+  */
+  return output
+}
+
 async function get_session_lengths_with_intervention(user_id) {
   seconds_on_domain_per_session = await get_collection_for_user(user_id, 'synced:seconds_on_domain_per_session')
   interventions_active_for_domain_and_session = await get_collection_for_user(user_id, 'synced:interventions_active_for_domain_and_session')
   let domain_to_intervention_to_session_lengths = {}
   let domain_to_session_to_intervention = {}
   for (let x of interventions_active_for_domain_and_session) {
+    if (x.val == null) {
+      continue
+    }
     let interventions_active = JSON.parse(x.val)
     if (interventions_active.length == 0) {
       continue
@@ -417,6 +488,8 @@ async function get_session_lengths_with_intervention(user_id) {
   //console.log(seconds_on_domain_per_session)
   //console.log(interventions_active_for_domain_and_session)
 }
+
+get_session_lengths_with_intervention = memoize_to_disk(get_session_lengths_with_intervention)
 
 function printcb(err, result) {
   console.log(err)
