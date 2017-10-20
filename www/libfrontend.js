@@ -264,6 +264,59 @@ async function list_intervention_logs_for_user(userid) {
   //let interventions_with_data = await get_
 //}
 
+let get_store_cached = {}
+
+function get_store(name) {
+  if (get_store_cached[name]) {
+    return get_store_cached[name]
+  }
+  let store = localforage.createInstance({name: name})
+  get_store_cached[name] = store
+  return store
+}
+
+function memoize_to_disk(f, func_name) {
+  if (f.length == 1) {
+    return memoize_to_disk_1arg(f, func_name)
+  }
+  if (f.length == 0) {
+    return memoize_to_disk_0arg(f, func_name)
+  }
+  throw new Exception('memoize_to_disk provided with function with inappropriate number of arguments: ' + f.name + ' with num arguments ' + f.length)
+}
+
+function memoize_to_disk_0arg(f, func_name) {
+  if (func_name == null) {
+    func_name = f.name
+  }
+  let store = get_store('memoizedisk|' + func_name)
+  return async function() {
+    let cached_value = await store.getItem('default')
+    if (cached_value != null) {
+      return cached_value
+    }
+    cached_value = await f(arg)
+    await store.setItem('default', cached_value)
+    return cached_value
+  }
+}
+
+function memoize_to_disk_1arg(f, func_name) {
+  if (func_name == null) {
+    func_name = f.name
+  }
+  let store = get_store('memoizedisk|' + func_name)
+  return async function(arg) {
+    let cached_value = await store.getItem(arg)
+    if (cached_value != null) {
+      return cached_value
+    }
+    cached_value = await f(arg)
+    await store.setItem(arg, cached_value)
+    return cached_value
+  }
+}
+
 function expose_getjson(func_name, ...params) {
   let func_body = null
   let request_path = '/' + func_name
@@ -278,11 +331,35 @@ function expose_getjson(func_name, ...params) {
   }
 }
 
+function expose_getjson_cached(func_name, param) {
+  let func_body = null
+  let request_path = '/' + func_name
+  window[func_name] = memoize_to_disk_1arg(async function(arg) {
+    let data = {}
+    data[param] = arg
+    return await getjson(request_path, data)
+  }, func_name)
+}
+
+function make_getjson(func_name, ...params) {
+  let func_body = null
+  let request_path = '/' + func_name
+  return async function(...args) {
+    let data = {}
+    for (let i = 0; i < params.length; ++i) {
+      let param = params[i]
+      let value = args[i]
+      data[param] = value
+    }
+    return await getjson(request_path, data)
+  }
+}
+
 expose_getjson('get_time_last_log_was_sent_for_user', 'userid')
 
 expose_getjson('get_last_intervention_seen_and_time', 'userid')
 
-expose_getjson('get_last_intervention_seen', 'userid')
+expose_getjson_cached('get_last_intervention_seen', 'userid')
 
 expose_getjson('list_logs_for_user', 'userid')
 
@@ -298,9 +375,24 @@ expose_getjson('get_users_with_logs_who_are_no_longer_active')
 
 expose_getjson('get_last_interventions_for_former_users')
 
-expose_getjson('get_last_interventions_and_num_impressions_for_former_users')
+//expose_getjson('get_last_interventions_and_num_impressions_for_former_users')
 
 expose_getjson('get_web_visit_actions')
+
+async function get_intervention_to_num_times_seen_last() {
+  let intervention_to_num_times_seen_last = {}
+  let former_user_list = await get_users_with_logs_who_are_no_longer_active()
+  for (let userid of former_user_list) {
+    let intervention_name = await get_last_intervention_seen(userid)
+    if (intervention_to_num_times_seen_last[intervention_name] == null) {
+      intervention_to_num_times_seen_last[intervention_name] = 0
+    }
+    intervention_to_num_times_seen_last[intervention_name] += 1
+  }
+  return intervention_to_num_times_seen_last
+}
+
+
 
 async function get_all_web_visit_actions() {
   let visit_info_list = await get_web_visit_actions()
@@ -360,38 +452,6 @@ async function get_web_install_rejects() {
     output.push(visit_info)
   }
   return output
-}
-
-let get_store_cached = {}
-
-function get_store(name) {
-  if (get_store_cached[name]) {
-    return get_store_cached[name]
-  }
-  let store = localforage.createInstance({name: name})
-  get_store_cached[name] = store
-  return store
-}
-
-function memoize_to_disk(f) {
-  if (f.length == 1) {
-    return memoize_to_disk_1arg(f)
-  }
-  throw new Exception('memoize_to_disk provided with function with inappropriate number of arguments: ' + f.name + ' with num arguments ' + f.length)
-}
-
-function memoize_to_disk_1arg(f) {
-  let func_name = f.name
-  let store = get_store('memoizedisk|' + func_name)
-  return async function(arg) {
-    let cached_value = await store.getItem(arg)
-    if (cached_value != null) {
-      return cached_value
-    }
-    cached_value = await f(arg)
-    await store.setItem(arg, cached_value)
-    return cached_value
-  }
 }
 
 async function get_user_to_session_lengths_with_intervention() {
