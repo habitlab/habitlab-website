@@ -275,6 +275,11 @@ function get_store(name) {
   return store
 }
 
+function clear_cache_for_func(name) {
+  let store = get_store(name)
+  store.clear()
+}
+
 function memoize_to_disk(f, func_name) {
   if (f.length == 1) {
     return memoize_to_disk_1arg(f, func_name)
@@ -295,8 +300,10 @@ function memoize_to_disk_0arg(f, func_name) {
     if (cached_value != null) {
       return cached_value
     }
-    cached_value = await f(arg)
-    await store.setItem('default', cached_value)
+    cached_value = await f()
+    if (cached_value != null) {
+      await store.setItem('default', cached_value)
+    }
     return cached_value
   }
 }
@@ -311,8 +318,12 @@ function memoize_to_disk_1arg(f, func_name) {
     if (cached_value != null) {
       return cached_value
     }
+    console.log('not cached: ' + arg + ' for function ' + func_name)
     cached_value = await f(arg)
-    await store.setItem(arg, cached_value)
+    console.log('cached_value: ' + cached_value)
+    if (cached_value != null) {
+      await store.setItem(arg, cached_value)
+    }
     return cached_value
   }
 }
@@ -358,6 +369,8 @@ function make_getjson(func_name, ...params) {
 expose_getjson('get_time_last_log_was_sent_for_user', 'userid')
 
 expose_getjson('get_last_intervention_seen_and_time', 'userid')
+
+expose_getjson('get_intervention_to_time_most_recently_seen', 'userid')
 
 expose_getjson_cached('get_last_intervention_seen', 'userid')
 
@@ -581,3 +594,7 @@ function printcb(err, result) {
     console.log(result)
   }
 }
+
+navigator.storage.persist().then(function(x) {
+  console.log(x)
+})
