@@ -1,7 +1,15 @@
 <!DOCTYPE html>
 <html>
 <head>
-  <title></title>
+  <title>Installs</title>
+
+  <script src="bower_components/moment/moment.js"></script>
+  <script src="bower_components/jquery/dist/jquery.min.js"></script>
+  <script src="bower_components/localforage/dist/localforage.min.js"></script>
+  <script src="bower_components/mathjs/dist/math.min.js"></script>
+  <script src="bower_components/prelude-ls/browser/prelude-browser-min.js"></script>
+  <script src="libfrontend.js"></script>
+
   <link rel="import" href="bower_components/polymer/polymer.html">
   <link rel="import" href="bower_components/google-chart/google-chart.html">
 </head>
@@ -104,10 +112,6 @@
 
 <google-chart id="early_uninstall_attrition" options='{"vAxis": {"minValue": 0}}' cols='[{"label": "Data", "type": "string"},{"label": "Early attrition actions before uninstall", "type": "number"}]' rows='[["Something", 1]]'></google-chart>
 
-<script src="bower_components/moment/moment.js"></script>
-<script src="bower_components/jquery/dist/jquery.min.js"></script>
-<script src="bower_components/prelude-ls/browser/prelude-browser-min.js"></script>
-<script src="libfrontend.js"></script>
 <script>
 window.prelude = require('prelude-ls')
 
