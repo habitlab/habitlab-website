@@ -16,7 +16,7 @@ MONGODB_URI: mongodb://localhost:27017/default
 roles: viewdata,logging,reportbug,intervention,debug
 ```
 
-Install [Node.js](https://nodejs.org/en/) version 8, [MongoDB](https://docs.mongodb.com/manual/administration/install-community/), then install dependencies and run the server:
+Install [Node.js](https://nodejs.org/en/) version 8, [MongoDB](https://docs.mongodb.com/manual/administration/install-community/), extract the mongodb database to the directory `mongodata` if you have a database dump you want to work with, then install dependencies and run the server:
 
 ```
 yarn
