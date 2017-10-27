@@ -9,9 +9,17 @@ git clone git@github.com:habitlab/habitlab-website.git
 cd habitlab-website
 ```
 
-Install dependencies and run the server
+Edit the file `.getsecret.yaml` and add in the following contents:
 
 ```
-npm install
+MONGODB_URI: mongodb://localhost:27017/default
+roles: viewdata,logging,reportbug,intervention,debug
+```
+
+Install [Node.js](https://nodejs.org/en/) version 8, [MongoDB](https://docs.mongodb.com/manual/administration/install-community/), then install dependencies and run the server:
+
+```
+yarn
+sudo npm install -g mongosrv node-dev
 ./runserver
 ```
