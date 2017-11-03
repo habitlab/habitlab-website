@@ -17,11 +17,12 @@
 require! {
   n2p
 }
-
+//Interventions for testing//
 all_contributed_interventions = [
   {
-    "name": "reddit/block_gif_links",
-    "goal": "reddit/spend_less_time",
+    "name": "block_gif_links",
+    "website":"www.reddit.com"
+    "goal": "spend_less_time",
     "description": "Blocks links to gifs",
     "numusers": 200,
     "stars": 4.5,
@@ -37,8 +38,9 @@ all_contributed_interventions = [
     ]
   },
   {
-    "name": "reddit/remove_comments",
-    "goal": "reddit/spend_less_time",
+    "name": "remove_comments",
+    "goal": "spend_less_time",
+    "website":"www.reddit.com"
     "description": "Removes comments",
     "numusers": 300,
     "stars": 4,
@@ -68,7 +70,7 @@ do ->
 
 app.get '/add_contributed_intervention', (ctx) ->>
   {name, goal, description, numusers, stars, comments} = ctx.request.query
-  if need_query_properties ctx, ['name', 'goal', 'description']
+  if need_query_properties ctx, ['name', 'goal','website', 'description']
     return
   numusers ?= 0
   stars ?= 0
@@ -76,6 +78,7 @@ app.get '/add_contributed_intervention', (ctx) ->>
   new_contributed_intervention = {
     name
     goal
+    website
     description
     numusers
     stars
@@ -107,7 +110,7 @@ app.get '/get_contributed_interventions_for_goal', (ctx) ->>
   {goal} = ctx.request.query
   if need_query_property ctx, 'goal'
     return
-  [contributed_interventions, db] = await get_contributed_interventions()
+  [contributed_interventions, db] = await get_contributed_interventions()//Find these functions//
   all_results = await n2p -> contributed_interventions.find({goal: goal}).toArray(it)
   ctx.body = JSON.stringify(all_results)
   db?close()
