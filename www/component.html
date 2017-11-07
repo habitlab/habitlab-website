@@ -1,0 +1,65 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Dashboard</title>
+
+  <script src="bower_components/moment/moment.js"></script>
+  <script src="bower_components/jquery/dist/jquery.min.js"></script>
+  <script src="bower_components/prelude-ls/browser/prelude-browser-min.js"></script>
+  <script src="bower_components/localforage/dist/localforage.min.js"></script>
+  <script src="bower_components/mathjs/dist/math.min.js"></script>
+  <script>
+    window.prelude = require('prelude-ls');
+  </script>
+  <script src="libfrontend.js"></script>
+  <script src="npm_libs/geturlparameters.js"></script>
+
+  <link rel="import" href="bower_components/polymer/polymer.html">
+  
+</head>
+
+<body>
+
+<style>
+</style>
+
+<div id="container"></div>
+
+<!--
+<div>Intervention effectiveness across domains:</div>
+<intervention-effectiveness-display userid="all" id="effectiveness_display"></intervention-effectiveness-display>
+-->
+
+<script>
+function import_component(component_name) {
+  return new Promise(function(resolve, reject) {
+    let link = document.createElement('link')
+    link.setAttribute('rel', 'import')
+    link.setAttribute('href', 'components/' + component_name + '.html')
+    link.onload = resolve
+    document.body.appendChild(link)
+  })
+}
+
+var params = geturlparameters()
+var component_name = 'intervention-effectiveness-display'
+if (params.tag) {
+  component_name = params.tag
+  delete params.tag
+}
+import_component(component_name).then(function() {
+  console.log('import component finished')
+  if (Object.keys(params).length == 0) {
+    params.isdemo = true
+  }
+  let new_elem = $('<' + component_name + '>')
+  for (let key of Object.keys(params)) {
+    let value = params[key]
+    new_elem.attr(key, value)
+  }
+  $('#container').append(new_elem)
+})
+</script>
+
+</body>
+</html>

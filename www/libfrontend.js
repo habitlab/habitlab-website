@@ -320,7 +320,8 @@ function memoize_to_disk_1arg(f, func_name) {
     }
     console.log('not cached: ' + arg + ' for function ' + func_name)
     cached_value = await f(arg)
-    console.log('cached_value: ' + cached_value)
+    console.log('cached_value:')
+    console.log(cached_value)
     if (cached_value != null) {
       await store.setItem(arg, cached_value)
     }
@@ -382,7 +383,7 @@ expose_getjson('get_is_logging_enabled_for_user', 'userid')
 
 expose_getjson('get_user_to_is_logging_enabled')
 
-expose_getjson('get_intervention_to_num_times_seen', 'userid')
+expose_getjson_cached('get_intervention_to_num_times_seen', 'userid')
 
 expose_getjson('get_users_with_logs_who_are_no_longer_active')
 
@@ -392,11 +393,43 @@ expose_getjson('get_last_interventions_for_former_users')
 
 expose_getjson('get_web_visit_actions')
 
+async function get_intervention_to_attrition_probability() {
+  let intervention_to_num_times_seen_last = await get_intervention_to_num_times_seen_last()
+  let intervention_to_num_times_seen_total = await get_intervention_to_num_times_seen_total()
+
+}
+
+async function get_intervention_to_num_times_seen_total() {
+  let user_to_is_logging_enabled = await get_user_to_is_logging_enabled()
+  let user_list = []
+  for (let user_id of Object.keys(user_to_is_logging_enabled)) {
+    if (user_to_is_logging_enabled[user_id]) {
+      user_list.push(user_id)
+    }
+  }
+  let output = {}
+  for (let user_id of user_list) {
+    let intervention_to_num_times_seen = await get_intervention_to_num_times_seen(user_id)
+    for (let intervention of Object.keys(intervention_to_num_times_seen)) {
+      let num_times_seen = intervention_to_num_times_seen[intervention]
+      if (output[intervention] == null) {
+        output[intervention] = 0
+      }
+      output[intervention] += num_times_seen
+    }
+  }
+  return output
+}
+
 async function get_intervention_to_num_times_seen_last() {
   let intervention_to_num_times_seen_last = {}
   let former_user_list = await get_users_with_logs_who_are_no_longer_active()
   for (let userid of former_user_list) {
     let intervention_name = await get_last_intervention_seen(userid)
+    //if (intervention_name == null) {
+    //  console.log('last intervention not seen')
+    //  console.log(userid)
+    //}
     if (intervention_to_num_times_seen_last[intervention_name] == null) {
       intervention_to_num_times_seen_last[intervention_name] = 0
     }
@@ -404,8 +437,6 @@ async function get_intervention_to_num_times_seen_last() {
   }
   return intervention_to_num_times_seen_last
 }
-
-
 
 async function get_all_web_visit_actions() {
   let visit_info_list = await get_web_visit_actions()
