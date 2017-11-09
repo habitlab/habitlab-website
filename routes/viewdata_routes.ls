@@ -579,6 +579,72 @@ export get_users_to_days_active = ->>
     user_to_days_active[user].push day
   return user_to_days_active
 
+export get_users_active_at_least_7_days = ->>
+  [user_active_dates, db] = await get_user_active_dates()
+  all_results = await n2p -> user_active_dates.find({}).toArray(it)
+  db.close()
+  users_seen_last_month = {}
+  users_seen_recently = {}
+  recently = moment().subtract(3, 'day')
+  month_ago = moment().subtract(7, 'day')
+  for {day, user} in all_results
+    mday = moment(day)
+    if mday >= recently
+      users_seen_recently[user] = true
+    if mday <= month_ago
+      users_seen_last_month[user] = true
+  output = []
+  for user in Object.keys(users_seen_recently)
+    if users_seen_last_month[user]?
+      output.push user
+  return output
+
+expose_get_auth get_users_active_at_least_7_days
+
+export get_users_active_at_least_30_days = ->>
+  [user_active_dates, db] = await get_user_active_dates()
+  all_results = await n2p -> user_active_dates.find({}).toArray(it)
+  db.close()
+  users_seen_last_month = {}
+  users_seen_recently = {}
+  recently = moment().subtract(3, 'day')
+  month_ago = moment().subtract(30, 'day')
+  for {day, user} in all_results
+    mday = moment(day)
+    if mday >= recently
+      users_seen_recently[user] = true
+    if mday <= month_ago
+      users_seen_last_month[user] = true
+  output = []
+  for user in Object.keys(users_seen_recently)
+    if users_seen_last_month[user]?
+      output.push user
+  return output
+
+expose_get_auth get_users_active_at_least_30_days
+
+export get_users_active_at_least_90_days = ->>
+  [user_active_dates, db] = await get_user_active_dates()
+  all_results = await n2p -> user_active_dates.find({}).toArray(it)
+  db.close()
+  users_seen_last_month = {}
+  users_seen_recently = {}
+  recently = moment().subtract(3, 'day')
+  month_ago = moment().subtract(90, 'day')
+  for {day, user} in all_results
+    mday = moment(day)
+    if mday > recently
+      users_seen_recently[user] = true
+    if mday < month_ago
+      users_seen_last_month[user] = true
+  output = []
+  for user in Object.keys(users_seen_recently)
+    if users_seen_last_month[user]?
+      output.push user
+  return output
+
+expose_get_auth get_users_active_at_least_90_days
+
 days_retained_count_to_retention_values = (days_retained_counts) ->
   output = [0] * (highest_day + 1)
   keys_sorted = prelude.sort Object.keys(days_retained_counts).map(-> parseInt(it))
