@@ -17,7 +17,7 @@
 require! {
   n2p
 }
-//Interventions for testing//
+#Testing Structures
 all_contributed_interventions = [
   {
     "name": "block_gif_links",
@@ -56,6 +56,20 @@ all_contributed_interventions = [
     ]
   }
 ]
+proposed_goals_list = [
+  {
+    id: 0
+    description: 'Sleep more'
+    upvotes: 3
+    downvotes: 1
+  }
+  {
+    id: 1
+    description: 'Read more'
+    upvotes: 2
+    downvotes: 1
+  }
+]
 
 intervention_name_to_data = {}
 goal_name_to_interventions = {}
@@ -68,6 +82,7 @@ do ->
       goal_name_to_interventions[goal_name] = []
     goal_name_to_interventions[goal_name].push intervention_name
 
+#Add
 app.get '/add_contributed_intervention', (ctx) ->>
   {name, goal, description, numusers, stars, comments} = ctx.request.query
   if need_query_properties ctx, ['name', 'goal','website', 'description']
@@ -89,6 +104,7 @@ app.get '/add_contributed_intervention', (ctx) ->>
   ctx.body = JSON.stringify {response: 'done', success: true}
   db?close()
 
+#delete
 app.get '/delete_contributed_intervention', (ctx) ->>
   {intervention_id} = ctx.request.query
   if need_query_property ctx, 'intervention_id'
@@ -98,6 +114,7 @@ app.get '/delete_contributed_intervention', (ctx) ->>
   ctx.body = JSON.stringify {response: 'done', success: true}
   db?close()
 
+#Data Queries
 app.get '/get_all_contributed_interventions', (ctx) ->>
   ctx.type = 'json'
   [contributed_interventions, db] = await get_contributed_interventions()
@@ -115,20 +132,27 @@ app.get '/get_contributed_interventions_for_goal', (ctx) ->>
   ctx.body = JSON.stringify(all_results)
   db?close()
 
-proposed_goals_list = [
-  {
-    id: 0
-    description: 'Sleep more'
-    upvotes: 3
-    downvotes: 1
-  }
-  {
-    id: 1
-    description: 'Read more'
-    upvotes: 2
-    downvotes: 1
-  }
-]
+app.get '/get_goals_by_params', (ctx) ->>
+  ctx.type = 'json'
+  {goal_id} = ctx.request.query
+  if need_query_property ctx, 'goal_id'
+    return
+  [proposed_goals, db] = await get_proposed_goals()
+  await n2p -> proposed_goals.update({_id: mongodb.ObjectID(goal_id)}, {$inc: {downvotes: 1}}, it)
+  ctx.body = JSON.stringify {response: 'done', success: true}
+  db?close()
+
+app.get '/get_contributed_interventions_for_params', (ctx) ->>
+  ctx.type = 'json'
+  query = {count, sortType}
+  query = ctx.request.query
+  if need_query_property ctx, 'goal' #?
+    return # ?
+  [contributed_interventions, db] = await get_contributed_interventions(query.count, query.sortType) #where is function defined (want to add alternate)
+  all_results = await n2p -> contributed_interventions.find({goal: goal}).toArray(it)  #what does this do?
+  ctx.body = JSON.stringify(all_results)
+  db?close()
+
 
 export upvote_intervention = (intervention_name, userid) ->>
   [intervention_votes, db] = await get_intervention_votes()
@@ -182,6 +206,7 @@ app.get '/get_intervention_downvotes', (ctx) ->>
   ctx.body = 0
 */
 
+# Goals, not really sure about their use
 app.get '/delete_proposed_goal', (ctx) ->>
   {goal_id} = ctx.request.query
   if need_query_property ctx, 'goal_id'
@@ -236,142 +261,5 @@ app.get '/downvote_proposed_goal', (ctx) ->>
   ctx.body = JSON.stringify {response: 'done', success: true}
   db?close()
 
-# TODO: These routes might be consolidated with others in the future
-# specifically for adding shared intervention accross users
-app.post '/upvote_proposed_idea', (ctx) ->>
-  ctx.type = 'json'
-  {goal, winnerid, loserid, winner, loser, userid, installid} = ctx.request.body
-  if need_body_properties ctx, ['goal', 'winnerid', 'loserid', 'winner', 'loser', 'userid', 'installid']
-    return
-  [proposed_ideas, db] = await get_collection_goal_ideas()
-  [idea_logs, db2] = await get_collection_goal_idea_logs()
-  data = {type: 'vote', winnerid, loserid, winner, loser, userid, installid}
-  data.timestamp = Date.now()
-  data.ip = ctx.request.ip_address_fixed
-  await n2p -> idea_logs.insert(data, it)
-  await n2p -> proposed_ideas.update({_id: mongodb.ObjectID(winnerid)}, {$inc: {vote: 1}}, it)
-  await n2p -> proposed_ideas.update({_id: mongodb.ObjectID(loserid)}, {$inc: {lostvote: 1}}, it)
-  ctx.body = JSON.stringify {response: 'done', success: true}
-  db?close()
-  db2?close()
-
-app.post '/opt_out_nudgeidea', (ctx) ->>
-  ctx.type = 'json'
-  {goal, leftidea, leftideaid, rightidea, rightideaid, userid, installid} = ctx.request.body
-  if need_body_properties ctx, ['goal', 'leftidea', 'leftideaid', 'rightidea', 'rightideaid', 'userid', 'installid']
-    return
-  [proposed_ideas, db] = await get_collection_goal_ideas()
-  [idea_logs, db2] = await get_collection_goal_idea_logs()
-  data = {type: 'tie', leftidea, leftideaid, rightidea, rightideaid, userid, installid}
-  data.timestamp = Date.now()
-  data.ip = ctx.request.ip_address_fixed
-  await n2p -> idea_logs.insert(data, it)
-  await n2p -> proposed_ideas.update({_id: mongodb.ObjectID(leftideaid)}, {$inc: {tie: 1}}, it)
-  await n2p -> proposed_ideas.update({_id: mongodb.ObjectID(rightideaid)}, {$inc: {tie: 1}}, it)
-  ctx.body = JSON.stringify {response: 'done', success: true}
-  db?close()
-  db2?close()
-
-/*
-app.post '/postideas', (ctx) ->>
-  ctx.type = 'json'
-  # construct new sharable item
-  # console.log ctx.request.body
-  # the user generated unique id will be the key to retrieve code
-  {goal, idea, vote} = ctx.request.body
-  if need_query_properties ctx, ['goal', 'idea', 'vote']
-    return
-  new_idea = {goal, idea, vote}
-  try
-    [collection,db] = await get_collection_goal_ideas()
-    await n2p -> collection.insert(fix_object(new_idea), it)
-    ctx.body = JSON.stringify {response: 'success'}
-  catch err
-    console.error 'error in get_collection_goal_ideas'
-    console.error err
-    ctx.body = JSON.stringify {response: 'failure'}
-  finally
-    db?close()
-*/
-
-/*
-app.post '/logvote_pair', (ctx) ->>
-  {goal, winner, loser, userid, installid} = ctx.request.body
-  if need_query_properties ctx, ['goal', 'winner', 'loser', 'userid', 'installid']
-    return
-  logitem = {goal, winner, loser, userid, installid}
-  try
-    [collection,db] = await get_collection_goal_idea_logs()
-    await n2p -> collection.insert(fix_object(logitem), it)
-    ctx.body = JSON.stringify {response: 'success'}
-  catch err
-    console.error 'error in get_collection_goal_ideas'
-    console.error err
-    ctx.body = JSON.stringify {response: 'failure'}
-  finally
-    db?close()
-*/
-
-app.post '/postidea_candidate', (ctx) ->>
-  ctx.type = 'json'
-  # construct new sharable item
-  # console.log ctx.request.body
-  console.log 'postidea_candidate'
-  # the user generated unique id will be the key to retrieve code
-  {goal, idea, userid, installid, email} = ctx.request.body
-  if need_body_properties ctx, ['goal', 'idea', 'userid', 'installid']
-    return
-  new_idea = {goal, idea, userid, installid}
-  if email?
-    new_idea.email = email
-  new_idea.timestamp = Date.now()
-  new_idea.ip = ctx.request.ip_address_fixed
-  try
-    [collection,db] = await get_collection_goal_idea_candidates()
-    console.log 'new_idea'
-    console.log new_idea
-    await n2p -> collection.insert(fix_object(new_idea), it)
-    ctx.body = JSON.stringify {response: 'success'}
-  catch err
-    console.error 'error in get_collection_goal_ideas'
-    console.error err
-    ctx.body = JSON.stringify {response: 'failure'}
-  finally
-    db?close()
-
-app.get '/getideas_vote', (ctx) ->>
-  ctx.type = 'json'
-  {goal} = ctx.request.query
-  if need_query_property ctx, 'goal'
-    return
-  [collection, db] = await get_collection_goal_ideas()/*Find these functions*/
-  all_results = await n2p -> collection.find({goal: goal}).toArray(it)
-  # console.log "Here are the shared results for " + website
-  ctx.body = JSON.stringify(all_results)
-  db?close()
-
-app.get '/getideas_logs', (ctx) ->>
-  ctx.type = 'json'
-  [collection, db] = await get_collection_goal_idea_logs()/*Find these functions*/
-  all_results = await n2p -> collection.find({}).toArray(it)
-  # console.log "Here are the shared results for " + website
-  ctx.body = JSON.stringify(all_results)
-  db?close()
-
-app.get '/getideas_vote_all', (ctx) ->>
-  ctx.type = 'json'
-  [collection, db] = await get_collection_goal_ideas()/*Find these functions*/
-  all_results = await n2p -> collection.find({}).toArray(it)
-  # console.log "Here are the shared results for " + website
-  ctx.body = JSON.stringify(all_results)
-  db?close()
-
-app.get '/getidea_candidates', (ctx) ->>
-  ctx.type = 'json'
-  [collection, db] = await get_collection_goal_idea_candidates()/*Find these functions*/
-  all_results = await n2p -> collection.find({}).toArray(it)
-  # console.log "Here are the shared results for " + website
-  ctx.body = JSON.stringify(all_results)
-  db?close()
 
 require('libs/globals').add_globals(module.exports)
