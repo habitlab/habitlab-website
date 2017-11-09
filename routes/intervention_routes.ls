@@ -11,7 +11,7 @@
 require! {
   n2p
 }
-//Interventions for testing//
+#Testing Structures
 all_contributed_interventions = [
   {
     "name": "block_gif_links",
@@ -50,6 +50,20 @@ all_contributed_interventions = [
     ]
   }
 ]
+proposed_goals_list = [
+  {
+    id: 0
+    description: 'Sleep more'
+    upvotes: 3
+    downvotes: 1
+  }
+  {
+    id: 1
+    description: 'Read more'
+    upvotes: 2
+    downvotes: 1
+  }
+]
 
 intervention_name_to_data = {}
 goal_name_to_interventions = {}
@@ -62,6 +76,7 @@ do ->
       goal_name_to_interventions[goal_name] = []
     goal_name_to_interventions[goal_name].push intervention_name
 
+#Add
 app.get '/add_contributed_intervention', (ctx) ->>
   {name, goal, description, numusers, stars, comments} = ctx.request.query
   if need_query_properties ctx, ['name', 'goal','website', 'description']
@@ -83,6 +98,7 @@ app.get '/add_contributed_intervention', (ctx) ->>
   ctx.body = JSON.stringify {response: 'done', success: true}
   db?close()
 
+#delete
 app.get '/delete_contributed_intervention', (ctx) ->>
   {intervention_id} = ctx.request.query
   if need_query_property ctx, 'intervention_id'
@@ -92,6 +108,7 @@ app.get '/delete_contributed_intervention', (ctx) ->>
   ctx.body = JSON.stringify {response: 'done', success: true}
   db?close()
 
+#Data Queries
 app.get '/get_all_contributed_interventions', (ctx) ->>
   ctx.type = 'json'
   [contributed_interventions, db] = await get_contributed_interventions()
@@ -109,20 +126,27 @@ app.get '/get_contributed_interventions_for_goal', (ctx) ->>
   ctx.body = JSON.stringify(all_results)
   db?close()
 
-proposed_goals_list = [
-  {
-    id: 0
-    description: 'Sleep more'
-    upvotes: 3
-    downvotes: 1
-  }
-  {
-    id: 1
-    description: 'Read more'
-    upvotes: 2
-    downvotes: 1
-  }
-]
+app.get '/get_goals_by_params', (ctx) ->>
+  ctx.type = 'json'
+  {goal_id} = ctx.request.query
+  if need_query_property ctx, 'goal_id'
+    return
+  [proposed_goals, db] = await get_proposed_goals()
+  await n2p -> proposed_goals.update({_id: mongodb.ObjectID(goal_id)}, {$inc: {downvotes: 1}}, it)
+  ctx.body = JSON.stringify {response: 'done', success: true}
+  db?close()
+
+app.get '/get_contributed_interventions_for_params', (ctx) ->>
+  ctx.type = 'json'
+  query = {count, sortType}
+  query = ctx.request.query
+  if need_query_property ctx, 'goal' #?
+    return # ?
+  [contributed_interventions, db] = await get_contributed_interventions(query.count, query.sortType) #where is function defined (want to add alternate)
+  all_results = await n2p -> contributed_interventions.find({goal: goal}).toArray(it)  #what does this do?
+  ctx.body = JSON.stringify(all_results)
+  db?close()
+
 
 export upvote_intervention = (intervention_name, userid) ->>
   [intervention_votes, db] = await get_intervention_votes()
@@ -176,6 +200,7 @@ app.get '/get_intervention_downvotes', (ctx) ->>
   ctx.body = 0
 */
 
+# Goals, not really sure about their use
 app.get '/delete_proposed_goal', (ctx) ->>
   {goal_id} = ctx.request.query
   if need_query_property ctx, 'goal_id'
@@ -229,5 +254,7 @@ app.get '/downvote_proposed_goal', (ctx) ->>
   await n2p -> proposed_goals.update({_id: mongodb.ObjectID(goal_id)}, {$inc: {downvotes: 1}}, it)
   ctx.body = JSON.stringify {response: 'done', success: true}
   db?close()
+
+
 
 require('libs/globals').add_globals(module.exports)
