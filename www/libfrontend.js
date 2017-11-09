@@ -396,7 +396,16 @@ expose_getjson('get_web_visit_actions')
 async function get_intervention_to_attrition_probability() {
   let intervention_to_num_times_seen_last = await get_intervention_to_num_times_seen_last()
   let intervention_to_num_times_seen_total = await get_intervention_to_num_times_seen_total()
-
+  let output = {}
+  for (let intervention_name of Object.keys(intervention_to_num_times_seen_total)) {
+    let num_times_seen_last = 0
+    if (intervention_to_num_times_seen_last[intervention_name] != null) {
+      num_times_seen_last = intervention_to_num_times_seen_last[intervention_name]
+    }
+    let num_times_seen_total = intervention_to_num_times_seen_total[intervention_name]
+    output[intervention_name] = num_times_seen_last / num_times_seen_total
+  }
+  return output
 }
 
 async function get_intervention_to_num_times_seen_total() {
