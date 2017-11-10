@@ -30,7 +30,13 @@ sudo npm install -g mongosrv node-dev
 
 Extract the file `mongodb_backup_nov9.tar.gz` to a directory.
 
-Start the command `mongosrv` in the directory where you want the database to be stored. A folder called `mongodata` will be created containing the database.
+Go to the directory where you want the database to be stored. Run the command:
+
+```
+mongosrv
+```
+
+A folder called `mongodata` will be created containing the database.
 
 Now run the following command to restore the database from the dump:
 
