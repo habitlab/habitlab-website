@@ -16,10 +16,30 @@ MONGODB_URI: mongodb://localhost:27017/default
 roles: viewdata,logging,reportbug,intervention,debug
 ```
 
-Install [Node.js](https://nodejs.org/en/) version 8, [MongoDB](https://docs.mongodb.com/manual/administration/install-community/), extract the mongodb database to the directory `mongodata` if you have a database dump you want to work with, then install dependencies and run the server:
+Install [Node.js](https://nodejs.org/en/) version 8, [MongoDB](https://docs.mongodb.com/manual/administration/install-community/) version 3.4.
+
+Install dependencies:
 
 ```
 yarn
 sudo npm install -g mongosrv node-dev
-./runserver
 ```
+
+
+## Extracting the Database
+
+Extract the file `mongodb_backup_nov9.tar.gz` to a directory.
+
+Start the command `mongosrv` in the directory where you want the database to be stored. A folder called `mongodata` will be created containing the database.
+
+Now run the following command to restore the database from the dump:
+
+```
+mongorestore mongodb_backup_nov9/dump
+```
+
+On subsequent runs, you just need to start the command `mongosrv` in that folder containing the `mongodata` command to start the server.
+
+## Running the server
+
+Make sure the mongodb server is running (using the `mongosrv` command, see section above), then run the command `./runserver`
