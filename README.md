@@ -9,7 +9,7 @@ git clone https://github.com/habitlab/habitlab-website.git
 cd habitlab-website
 ```
 
-Edit the file `.getsecret.yaml` and add in the following contents:
+Create the file `.getsecret.yaml` (in the `habitlab-website` directory) and add in the following contents:
 
 ```
 MONGODB_URI: mongodb://localhost:27017/default
