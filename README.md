@@ -56,4 +56,4 @@ Make sure the mongodb server is running (using the `mongosrv` command, see secti
 
 ## Accessing the dashboard
 
-Once the server is running, visit http://localhost:5000/dashboard to see the dashboard. The code for it is under [www/dashboard.html](https://github.com/habitlab/habitlab-website/blob/master/www/dashboard.html) and [www/dashboard.js](https://github.com/habitlab/habitlab-website/blob/master/www/dashboard.js) and [www/libfrontend.js](https://github.com/habitlab/habitlab-website/blob/master/www/libfrontend.js)
+Once the server is running, visit http://localhost:5000/dashboard to see the dashboard. The code for it is under [www/dashboard.html](https://github.com/habitlab/habitlab-website/blob/master/www/dashboard.html) and [www/libfrontend.js](https://github.com/habitlab/habitlab-website/blob/master/www/libfrontend.js)
