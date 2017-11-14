@@ -5,7 +5,7 @@
 Get the code from github
 
 ```
-git clone git@github.com:habitlab/habitlab-website.git
+git clone https://github.com/habitlab/habitlab-website.git
 cd habitlab-website
 ```
 
@@ -48,7 +48,7 @@ On subsequent runs, you just need to start the command `mongosrv` in that folder
 
 ## Running the server
 
-Make sure the mongodb server is running (using the `mongosrv` command, see section above), then run the command
+Make sure the mongodb server is running (using the `mongosrv` command, see section above), then run the command (from the `habitlab-website` directory)
 
 ```
 ./runserver
