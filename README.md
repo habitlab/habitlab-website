@@ -48,7 +48,7 @@ On subsequent runs, you just need to start the command `mongosrv` in that folder
 
 ## Running the server
 
-Make sure the mongodb server is running (using the `mongosrv` command, see section above), then run the command (from the `habitlab-website` directory)
+Make sure the mongodb server is running (using the `mongosrv` command, see section above), then run the following command from the `habitlab-website` directory:
 
 ```
 ./runserver
