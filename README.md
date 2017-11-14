@@ -54,3 +54,6 @@ Make sure the mongodb server is running (using the `mongosrv` command, see secti
 ./runserver
 ```
 
+## Accessing the dashboard
+
+Once the server is running, visit http://localhost:5000/dashboard to see the dashboard
