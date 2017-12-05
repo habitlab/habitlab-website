@@ -507,6 +507,80 @@ async function get_web_install_rejects() {
   return output
 }
 
+async function get_all_page_click_to() {
+  let user_to_is_logging_enabled = await get_user_to_is_logging_enabled()
+  let user_list = []
+  for (let username of Object.keys(user_to_is_logging_enabled)) {
+    if (user_to_is_logging_enabled[username]) {
+      user_list.push(username)
+    }
+  }
+  let output = {}
+  for (let username of user_list) {
+    let infolist = await get_collection_for_user(username, 'logs:pages')
+    for (let x of infolist) {
+      if (x.type != 'click') {
+        continue
+      }
+      let to = x.to
+      if (output[to] == null) {
+        output[to] = 0
+      }
+      output[to] += 1
+    }
+  }
+  return output
+}
+
+async function get_all_page_views() {
+  let user_to_is_logging_enabled = await get_user_to_is_logging_enabled()
+  let user_list = []
+  for (let username of Object.keys(user_to_is_logging_enabled)) {
+    if (user_to_is_logging_enabled[username]) {
+      user_list.push(username)
+    }
+  }
+  let output = {}
+  for (let username of user_list) {
+    let infolist = await get_collection_for_user(username, 'logs:pages')
+    for (let x of infolist) {
+      if (x.type != 'view') {
+        continue
+      }
+      let page = x.page
+      console.log(page)
+      console.log(output)
+      if (output[page] == null) {
+        output[page] = 0
+      }
+      output[page] += 1
+    }
+  }
+  return output
+}
+
+async function get_all_page_views() {
+  let user_to_is_logging_enabled = await get_user_to_is_logging_enabled()
+  let user_list = []
+  for (let username of Object.keys(user_to_is_logging_enabled)) {
+    if (user_to_is_logging_enabled[username]) {
+      user_list.push(username)
+    }
+  }
+  let output = {}
+  for (let username of user_list) {
+    let infolist = await get_collection_for_user(username, 'logs:pages')
+    for (let x of infolist) {
+      let page = x.page
+      if (output[page] != null) {
+        output[page] = 0
+      }
+      output[page] += 1
+    }
+  }
+  return output
+}
+
 async function get_user_to_session_lengths_with_intervention() {
   let user_to_is_logging_enabled = await get_user_to_is_logging_enabled()
   let user_list = []
