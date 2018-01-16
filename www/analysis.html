@@ -1,0 +1,135 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+  Log Analysis
+  <script src="bower_components/moment/moment.js"></script>
+  <script src="bower_components/jquery/dist/jquery.min.js"></script>
+  <script src="bower_components/localforage/dist/localforage.min.js"></script>
+  <script src="bower_components/mathjs/dist/math.min.js"></script>
+  <script src="bower_components/prelude-ls/browser/prelude-browser-min.js"></script>
+  <script src="libfrontend.js"></script>
+
+  <link rel="import" href="bower_components/polymer/polymer.html">
+  <link rel="import" href="bower_components/google-chart/google-chart.html">
+</head>
+
+<body>
+  analysis
+  <p id="test_section"></p>
+  <script>
+    //window.prelude = require('prelude-ls')
+    console.log('Beginning test loggings\n')
+    console.log('log for test user')
+    const test_user = '12a641126b3874b179b6ebf7'
+    async function print_test() {
+      let test_data = await get_collection_for_user(test_user, 'logs:interventions')
+      console.log(test_data)
+    }
+
+    print_test()
+
+    async function intervention_data_for_usernames(usernames, job_name) {
+      console.log(usernames.length + " usernames found")
+      let intervention_data = []
+      var count = 0
+      for (let username of usernames) {
+        if (count % 100 == 0) console.log(job_name + " is " + 
+          int(count / usernames.length * 100) + "% done.")
+        let user_data = await get_collection_for_user(username, 'logs:interventions')
+        var shows_default = false
+        if (user_data.length > 0) {
+          for (let i in user_data) {
+            if (user_data[i].type == "default_interventions_on_install") {
+              shows_default = true
+            }
+          }
+          if (shows_default) {
+            console.log(user_data)
+            intervention_data.push(user_data)
+          }
+        }
+        count += 1
+      }
+      console.log(intervention_data)
+    }
+
+    async function show_installed_duration_until_uninstalled() {
+      let user_to_install_times = await get_user_to_install_times()
+      let user_to_uninstall_times = await get_user_to_uninstall_times()
+      let user_id_list = []
+      for (let user_id of Object.keys(user_to_uninstall_times)) {
+        if (user_to_install_times[user_id]) {
+          user_id_list.push(user_id)
+        }
+      }
+      let days_installed_to_num_users = {}
+      let hours_installed_to_num_users = {}
+      let minutes_installed_to_num_users = {}
+      for (let user_id of user_id_list) {
+        let install_time = user_to_install_times[user_id]
+        if (install_time < Date.now() - 30 * 24 * 3600 * 1000) {
+          // install occurred more than 30 days ago
+          continue
+        }
+        let uninstall_time = user_to_uninstall_times[user_id]
+        if (uninstall_time < install_time) {
+          // uninstall occurred before install - can happen if different devices share userid and install happened very early
+          continue
+        }
+        let time_installed = uninstall_time - install_time
+        let days_installed = Math.floor(time_installed / (3600 * 1000 * 24))
+        let hours_installed = Math.floor(time_installed / (3600 * 1000))
+        let minutes_installed = Math.floor(time_installed / (60 * 1000))
+        if (days_installed_to_num_users[days_installed] == null) {
+          days_installed_to_num_users[days_installed] = 1
+        } else {
+          days_installed_to_num_users[days_installed] += 1
+        }
+        if (hours_installed < 24) {
+          if (hours_installed_to_num_users[hours_installed] == null) {
+            hours_installed_to_num_users[hours_installed] = 1
+          } else {
+            hours_installed_to_num_users[hours_installed] += 1
+          }
+        }
+        if (minutes_installed < 60) {
+          if (minutes_installed_to_num_users[minutes_installed] == null) {
+            minutes_installed_to_num_users[minutes_installed] = 1
+          } else {
+            minutes_installed_to_num_users[minutes_installed] += 1
+          }
+        }
+      }
+      console.log()
+    }
+
+    async function main() {
+      let user_to_install_times = await get_user_to_install_times()
+      if(!(test_user in Object.keys(user_to_install_times))) {
+        console.log("test not in install times")
+      }
+      if(!(test_user in Object.keys(user_to_uninstall_times))) {
+        console.log("test not in uninstall times")
+      }
+      let user_to_uninstall_times = await get_user_to_uninstall_times()
+      var usernames = []
+      for (let username of Object.keys(user_to_uninstall_times)) {
+        if (user_to_install_times[username]) {
+          usernames.push(username)
+        }
+      }
+      intervention_data_for_usernames(usernames, "job 1")
+      usernames = Object.keys(user_to_install_times)
+      intervention_data_for_usernames(usernames, "job 2")
+    }
+
+    main()
+
+
+
+  </script>
+
+</body>
+
+</html>
