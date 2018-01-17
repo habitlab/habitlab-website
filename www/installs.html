@@ -223,6 +223,7 @@ async function show_retention_curve() {
 
 async function show_uninstalls() {
   let install_info_list = await get_uninstall_data()
+  console.log(install_info_list)
   let current_time = moment()
   let days_ago_to_num_installs = {}
   for (let install_info of install_info_list) {

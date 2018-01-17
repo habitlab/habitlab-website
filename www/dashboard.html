@@ -228,6 +228,24 @@ async function show_user_list() {
   }
 }
 
+async function get_temporary_disable_count(){
+  let user_to_uninstall_times = await get_user_to_uninstall_times()
+  let count_for_uninstalled = []
+  let count_for_not_uninstalled = []
+
+  for (let user_id of user_ids) {
+    let intervention_logs = await get_collection_for_user(user_id, 'logs:interventions')
+    let uninstall_time = user_to_uninstall_times[user_id]
+
+    if (uninstall_time == undefined) {
+      count_for_not_uninstalled.push(intervention_logs.length)
+    } else {
+      count_for_uninstalled.push(intervention_logs.length)
+    }
+    console.log(count_for_uninstalled, count_for_not_uninstalled)
+  }
+}
+
 async function display_goals_tried_by_users() {
   let goal_to_num_users = await get_goals_tried_by_all_users()
   display_dictionary_as_table(goal_to_num_users, '#goals_tried')
@@ -354,15 +372,18 @@ async function display_last_intervention_before_stop_using_with_total_impression
 
 async function main() {
   user_ids = await get_user_ids()
-  show_user_list()
-  display_users_with_logging_enabled()
-  display_users_with_logging_disabled()
-  display_goals_tried_by_users()
-  display_goals_enabled_by_users()
-  display_interventions_enabled_by_users()
-  display_interventions_disabled_by_users()
-  display_last_intervention_before_stop_using()
-  display_last_intervention_before_stop_using_with_total_impressions()
+  // show_user_list()
+
+  get_temporary_disable_count()
+
+  // display_users_with_logging_enabled()
+  // display_users_with_logging_disabled()
+  // display_goals_tried_by_users()
+  // display_goals_enabled_by_users()
+  // display_interventions_enabled_by_users()
+  // display_interventions_disabled_by_users()
+  // display_last_intervention_before_stop_using()
+  // display_last_intervention_before_stop_using_with_total_impressions()
   let num_users_who_have_tried_nondefault_goal = await get_num_users_who_have_tried_nondefault_goal()
   let num_users_who_have_tried_custom_goal = await get_num_users_who_have_tried_custom_goal()
   let num_users_who_have_set_nondefault_target = await get_num_users_who_have_set_nondefault_target()
