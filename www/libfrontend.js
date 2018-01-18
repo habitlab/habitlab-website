@@ -389,7 +389,7 @@ expose_getjson('get_users_with_logs_who_are_no_longer_active')
 
 expose_getjson('get_last_interventions_for_former_users')
 
-//expose_getjson('get_last_interventions_and_num_impressions_for_former_users')
+expose_getjson('get_last_interventions_and_num_impressions_for_former_users')
 
 expose_getjson('get_web_visit_actions')
 
