@@ -148,4 +148,19 @@ export expose_get_auth = (func, ...params) ->
     results = await func(...data_array)
     ctx.body = JSON.stringify results
 
+export fix_object = (obj) ->
+  if Array.isArray(obj)
+    return obj.map(fix_object)
+  if typeof(obj) != 'object'
+    return obj
+  output = {}
+  for k,v of obj
+    if typeof(k) == 'string'
+      if k.includes('.')
+        k = k.split('.').join('\u2024')
+      if k[0] == '$'
+        k = '\ufe69' + k.substr(1)
+    output[k] = fix_object(v)
+  return output
+
 require('libs/globals').add_globals(module.exports)

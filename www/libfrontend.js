@@ -241,6 +241,7 @@ async function get_disabled_interventions_for_user(userid) {
   return output
 }
 
+/*
 async function get_enabled_goals_for_user(userid) {
   let latest_log_info = await get_latest_intervention_info_for_user(userid)
   let output = {}
@@ -249,6 +250,7 @@ async function get_enabled_goals_for_user(userid) {
   }
   return output
 }
+*/
 
 async function list_intervention_logs_for_user(userid) {
   let all_logs = await getjson('/list_logs_for_user' , {userid: userid})
