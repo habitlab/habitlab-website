@@ -241,6 +241,7 @@ async function get_disabled_interventions_for_user(userid) {
   return output
 }
 
+/*
 async function get_enabled_goals_for_user(userid) {
   let latest_log_info = await get_latest_intervention_info_for_user(userid)
   let output = {}
@@ -249,6 +250,7 @@ async function get_enabled_goals_for_user(userid) {
   }
   return output
 }
+*/
 
 async function list_intervention_logs_for_user(userid) {
   let all_logs = await getjson('/list_logs_for_user' , {userid: userid})
@@ -264,6 +266,71 @@ async function list_intervention_logs_for_user(userid) {
   //let interventions_with_data = await get_
 //}
 
+let get_store_cached = {}
+
+function get_store(name) {
+  if (get_store_cached[name]) {
+    return get_store_cached[name]
+  }
+  let store = localforage.createInstance({name: name})
+  get_store_cached[name] = store
+  return store
+}
+
+function clear_cache_for_func(name) {
+  let store = get_store(name)
+  store.clear()
+}
+
+function memoize_to_disk(f, func_name) {
+  if (f.length == 1) {
+    return memoize_to_disk_1arg(f, func_name)
+  }
+  if (f.length == 0) {
+    return memoize_to_disk_0arg(f, func_name)
+  }
+  throw new Exception('memoize_to_disk provided with function with inappropriate number of arguments: ' + f.name + ' with num arguments ' + f.length)
+}
+
+function memoize_to_disk_0arg(f, func_name) {
+  if (func_name == null) {
+    func_name = f.name
+  }
+  let store = get_store('memoizedisk|' + func_name)
+  return async function() {
+    let cached_value = await store.getItem('default')
+    if (cached_value != null) {
+      return cached_value
+    }
+    cached_value = await f()
+    if (cached_value != null) {
+      await store.setItem('default', cached_value)
+    }
+    return cached_value
+  }
+}
+
+function memoize_to_disk_1arg(f, func_name) {
+  if (func_name == null) {
+    func_name = f.name
+  }
+  let store = get_store('memoizedisk|' + func_name)
+  return async function(arg) {
+    let cached_value = await store.getItem(arg)
+    if (cached_value != null) {
+      return cached_value
+    }
+    console.log('not cached: ' + arg + ' for function ' + func_name)
+    cached_value = await f(arg)
+    console.log('cached_value:')
+    console.log(cached_value)
+    if (cached_value != null) {
+      await store.setItem(arg, cached_value)
+    }
+    return cached_value
+  }
+}
+
 function expose_getjson(func_name, ...params) {
   let func_body = null
   let request_path = '/' + func_name
@@ -278,11 +345,37 @@ function expose_getjson(func_name, ...params) {
   }
 }
 
+function expose_getjson_cached(func_name, param) {
+  let func_body = null
+  let request_path = '/' + func_name
+  window[func_name] = memoize_to_disk_1arg(async function(arg) {
+    let data = {}
+    data[param] = arg
+    return await getjson(request_path, data)
+  }, func_name)
+}
+
+function make_getjson(func_name, ...params) {
+  let func_body = null
+  let request_path = '/' + func_name
+  return async function(...args) {
+    let data = {}
+    for (let i = 0; i < params.length; ++i) {
+      let param = params[i]
+      let value = args[i]
+      data[param] = value
+    }
+    return await getjson(request_path, data)
+  }
+}
+
 expose_getjson('get_time_last_log_was_sent_for_user', 'userid')
 
 expose_getjson('get_last_intervention_seen_and_time', 'userid')
 
-expose_getjson('get_last_intervention_seen', 'userid')
+expose_getjson('get_intervention_to_time_most_recently_seen', 'userid')
+
+expose_getjson_cached('get_last_intervention_seen', 'userid')
 
 expose_getjson('list_logs_for_user', 'userid')
 
@@ -292,7 +385,7 @@ expose_getjson('get_is_logging_enabled_for_user', 'userid')
 
 expose_getjson('get_user_to_is_logging_enabled')
 
-expose_getjson('get_intervention_to_num_times_seen', 'userid')
+expose_getjson_cached('get_intervention_to_num_times_seen', 'userid')
 
 expose_getjson('get_users_with_logs_who_are_no_longer_active')
 
@@ -301,6 +394,60 @@ expose_getjson('get_last_interventions_for_former_users')
 expose_getjson('get_last_interventions_and_num_impressions_for_former_users')
 
 expose_getjson('get_web_visit_actions')
+
+async function get_intervention_to_attrition_probability() {
+  let intervention_to_num_times_seen_last = await get_intervention_to_num_times_seen_last()
+  let intervention_to_num_times_seen_total = await get_intervention_to_num_times_seen_total()
+  let output = {}
+  for (let intervention_name of Object.keys(intervention_to_num_times_seen_total)) {
+    let num_times_seen_last = 0
+    if (intervention_to_num_times_seen_last[intervention_name] != null) {
+      num_times_seen_last = intervention_to_num_times_seen_last[intervention_name]
+    }
+    let num_times_seen_total = intervention_to_num_times_seen_total[intervention_name]
+    output[intervention_name] = num_times_seen_last / num_times_seen_total
+  }
+  return output
+}
+
+async function get_intervention_to_num_times_seen_total() {
+  let user_to_is_logging_enabled = await get_user_to_is_logging_enabled()
+  let user_list = []
+  for (let user_id of Object.keys(user_to_is_logging_enabled)) {
+    if (user_to_is_logging_enabled[user_id]) {
+      user_list.push(user_id)
+    }
+  }
+  let output = {}
+  for (let user_id of user_list) {
+    let intervention_to_num_times_seen = await get_intervention_to_num_times_seen(user_id)
+    for (let intervention of Object.keys(intervention_to_num_times_seen)) {
+      let num_times_seen = intervention_to_num_times_seen[intervention]
+      if (output[intervention] == null) {
+        output[intervention] = 0
+      }
+      output[intervention] += num_times_seen
+    }
+  }
+  return output
+}
+
+async function get_intervention_to_num_times_seen_last() {
+  let intervention_to_num_times_seen_last = {}
+  let former_user_list = await get_users_with_logs_who_are_no_longer_active()
+  for (let userid of former_user_list) {
+    let intervention_name = await get_last_intervention_seen(userid)
+    //if (intervention_name == null) {
+    //  console.log('last intervention not seen')
+    //  console.log(userid)
+    //}
+    if (intervention_to_num_times_seen_last[intervention_name] == null) {
+      intervention_to_num_times_seen_last[intervention_name] = 0
+    }
+    intervention_to_num_times_seen_last[intervention_name] += 1
+  }
+  return intervention_to_num_times_seen_last
+}
 
 async function get_all_web_visit_actions() {
   let visit_info_list = await get_web_visit_actions()
@@ -362,12 +509,149 @@ async function get_web_install_rejects() {
   return output
 }
 
+async function get_all_page_click_to() {
+  let user_to_is_logging_enabled = await get_user_to_is_logging_enabled()
+  let user_list = []
+  for (let username of Object.keys(user_to_is_logging_enabled)) {
+    if (user_to_is_logging_enabled[username]) {
+      user_list.push(username)
+    }
+  }
+  let output = {}
+  for (let username of user_list) {
+    let infolist = await get_collection_for_user(username, 'logs:pages')
+    for (let x of infolist) {
+      if (x.type != 'click') {
+        continue
+      }
+      let to = x.to
+      if (output[to] == null) {
+        output[to] = 0
+      }
+      output[to] += 1
+    }
+  }
+  return output
+}
+
+async function get_all_page_views() {
+  let user_to_is_logging_enabled = await get_user_to_is_logging_enabled()
+  let user_list = []
+  for (let username of Object.keys(user_to_is_logging_enabled)) {
+    if (user_to_is_logging_enabled[username]) {
+      user_list.push(username)
+    }
+  }
+  let output = {}
+  for (let username of user_list) {
+    let infolist = await get_collection_for_user(username, 'logs:pages')
+    for (let x of infolist) {
+      if (x.type != 'view') {
+        continue
+      }
+      let page = x.page
+      console.log(page)
+      console.log(output)
+      if (output[page] == null) {
+        output[page] = 0
+      }
+      output[page] += 1
+    }
+  }
+  return output
+}
+
+async function get_all_page_views() {
+  let user_to_is_logging_enabled = await get_user_to_is_logging_enabled()
+  let user_list = []
+  for (let username of Object.keys(user_to_is_logging_enabled)) {
+    if (user_to_is_logging_enabled[username]) {
+      user_list.push(username)
+    }
+  }
+  let output = {}
+  for (let username of user_list) {
+    let infolist = await get_collection_for_user(username, 'logs:pages')
+    for (let x of infolist) {
+      let page = x.page
+      if (output[page] != null) {
+        output[page] = 0
+      }
+      output[page] += 1
+    }
+  }
+  return output
+}
+
+async function get_user_to_session_lengths_with_intervention() {
+  let user_to_is_logging_enabled = await get_user_to_is_logging_enabled()
+  let user_list = []
+  for (let username of Object.keys(user_to_is_logging_enabled)) {
+    if (user_to_is_logging_enabled[username]) {
+      user_list.push(username)
+    }
+  }
+  let output = {}
+  for (let username of user_list) {
+    console.log(username)
+    output[username] = await get_session_lengths_with_intervention(username)
+  }
+  return output
+  /*
+  console.log(user_list)
+  console.log(user_list.length)
+  let output_list_promises = []
+  for (let username of user_list) {
+    console.log(username)
+    session_lengths_with_intervention_promise = get_session_lengths_with_intervention(username)
+    output_list_promises.push(session_lengths_with_intervention_promise)
+  }
+  console.log('starting promise wait')
+  output_list = await Promise.all(output_list_promises)
+  let output = {}
+  for (let i = 0; i < user_list.length; ++i) {
+    let username = user_list[i]
+    let session_lengths_with_intervention = output_list[i]
+    output[username] = session_lengths_with_intervention
+  }
+  console.log('done with computation')
+  */
+  return output
+}
+
+async function get_session_lengths_with_intervention_all_users() {
+  username_to_session_lengths_with_intervention = await get_user_to_session_lengths_with_intervention()
+  let output = {}
+  for (let username of Object.keys(username_to_session_lengths_with_intervention)) {
+    let domain_to_intervention_to_session_lengths = username_to_session_lengths_with_intervention[username]
+    for (let domain of Object.keys(domain_to_intervention_to_session_lengths)) {
+      let intervention_to_session_lengths = domain_to_intervention_to_session_lengths[domain]
+      for (let intervention_name of Object.keys(intervention_to_session_lengths)) {
+        let session_lengths = intervention_to_session_lengths[intervention_name]
+        if (output[domain] == null) {
+          output[domain] = {}
+        }
+        if (output[domain][intervention_name] == null) {
+          output[domain][intervention_name] = []
+        }
+        for (let session_length of session_lengths) {
+          output[domain][intervention_name].push(session_length)
+        }
+      }
+    }
+  }
+  return output
+}
+
 async function get_session_lengths_with_intervention(user_id) {
   seconds_on_domain_per_session = await get_collection_for_user(user_id, 'synced:seconds_on_domain_per_session')
   interventions_active_for_domain_and_session = await get_collection_for_user(user_id, 'synced:interventions_active_for_domain_and_session')
   let domain_to_intervention_to_session_lengths = {}
   let domain_to_session_to_intervention = {}
   for (let x of interventions_active_for_domain_and_session) {
+    if (x.val == null) {
+      continue
+    }
     let interventions_active = JSON.parse(x.val)
     if (interventions_active.length == 0) {
       continue
@@ -418,9 +702,15 @@ async function get_session_lengths_with_intervention(user_id) {
   //console.log(interventions_active_for_domain_and_session)
 }
 
+get_session_lengths_with_intervention = memoize_to_disk(get_session_lengths_with_intervention)
+
 function printcb(err, result) {
   console.log(err)
   if (result !== undefined) {
     console.log(result)
   }
 }
+
+navigator.storage.persist().then(function(x) {
+  console.log(x)
+})

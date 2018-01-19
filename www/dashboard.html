@@ -1,7 +1,15 @@
 <!DOCTYPE html>
 <html>
 <head>
-  <title></title>
+  <title>Dashboard</title>
+
+  <script src="bower_components/moment/moment.js"></script>
+  <script src="bower_components/jquery/dist/jquery.min.js"></script>
+  <script src="bower_components/localforage/dist/localforage.min.js"></script>
+  <script src="bower_components/mathjs/dist/math.min.js"></script>
+  <script src="bower_components/prelude-ls/browser/prelude-browser-min.js"></script>
+  <script src="libfrontend.js"></script>  
+
   <link rel="import" href="bower_components/polymer/polymer.html">
   <link rel="import" href="bower_components/google-chart/google-chart.html">
 </head>
@@ -30,6 +38,8 @@
 }
 </style>
 
+<a href="interventions.html">Overall effectiveness of interventions across all users</a><br><br>
+
 <div>Num active users within past week:</div>
 <div id="num_active_users"></div>
 
@@ -45,6 +55,11 @@
 
 <br>
 
+<div>Num active users within past week who have logging not set:</div>
+<div id="num_active_users_logging_not_set"></div>
+
+<br>
+
 <div>List of users active in the past week:</div>
 <div id="user_list"></div>
 
@@ -57,6 +72,11 @@
 
 <div>List of users with logging disabled:</div>
 <div id="user_list_logging_disabled"></div>
+
+<br>
+
+<div>List of users with logging not set:</div>
+<div id="user_list_logging_not_set"></div>
 
 <br>
 
@@ -119,9 +139,6 @@
 <google-chart id="install_source" cols='[{"label": "Data", "type": "string"},{"label": "Installs", "type": "number"}]' rows='[["Something", 1]]'></google-chart>
 -->
 
-<script src="bower_components/moment/moment.js"></script>
-<script src="bower_components/jquery/dist/jquery.min.js"></script>
-<script src="libfrontend.js"></script>
 <script>
 
 let user_ids = null
@@ -314,7 +331,7 @@ async function display_users_with_logging_disabled() {
   let user_to_is_logging_enabled = await get_user_to_is_logging_enabled()
   let user_ids_with_logging_disabled = []
   for (let user_id of user_ids) {
-    if (!user_to_is_logging_enabled[user_id]) {
+    if (user_to_is_logging_enabled[user_id] == false) {
       user_ids_with_logging_disabled.push(user_id)
     }
   }
@@ -323,6 +340,21 @@ async function display_users_with_logging_disabled() {
     $('#user_list_logging_disabled').append('<br>')
   }
   $('#num_active_users_logging_disabled').text(user_ids_with_logging_disabled.length)
+}
+
+async function display_users_with_logging_not_set() {
+  let user_to_is_logging_enabled = await get_user_to_is_logging_enabled()
+  let user_ids_with_logging_enabled = []
+  for (let user_id of user_ids) {
+    if (user_to_is_logging_enabled[user_id] == null) {
+      user_ids_with_logging_enabled.push(user_id)
+    }
+  }
+  for (let user_id of user_ids_with_logging_enabled) {
+    $('#user_list_logging_not_set').append($('<a href="/viewuser.html?userid=' + user_id + '">' + user_id + '</a>'))
+    $('#user_list_logging_not_set').append('<br>')
+  }
+  $('#num_active_users_logging_not_set').text(user_ids_with_logging_enabled.length)
 }
 
 async function display_last_intervention_before_stop_using() {
@@ -350,6 +382,7 @@ async function main() {
   show_user_list()
   display_users_with_logging_enabled()
   display_users_with_logging_disabled()
+  display_users_with_logging_not_set()
   display_goals_tried_by_users()
   display_goals_enabled_by_users()
   display_interventions_enabled_by_users()

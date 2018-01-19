@@ -1,7 +1,18 @@
 <!DOCTYPE html>
 <html>
 <head>
-  <title></title>
+  <title>View User</title>
+  <script src="bower_components/moment/moment.js"></script>
+  <script src="bower_components/jquery/dist/jquery.min.js"></script>
+  <script src="bower_components/prelude-ls/browser/prelude-browser-min.js"></script>
+  <script src="bower_components/localforage/dist/localforage.min.js"></script>
+  <script src="bower_components/mathjs/dist/math.min.js"></script>
+<script>
+    window.prelude = require('prelude-ls');
+  </script>
+  <script src="libfrontend.js"></script>
+  <script src="npm_libs/geturlparameters.js"></script>
+
   <link rel="import" href="bower_components/polymer/polymer.html">
   <link rel="import" href="bower_components/google-chart/google-chart.html">
   <link rel="import" href="components/intervention-effectiveness-display.html">
@@ -76,15 +87,6 @@ Effectiveness of interventions for user:
 
 <google-chart id="install_source" cols='[{"label": "Data", "type": "string"},{"label": "Installs", "type": "number"}]' rows='[["Something", 1]]'></google-chart>
 -->
-
-<script src="bower_components/moment/moment.js"></script>
-<script src="bower_components/jquery/dist/jquery.min.js"></script>
-<script src="bower_components/prelude-ls/browser/prelude-browser-min.js"></script>
-<script>
-  window.prelude = require('prelude-ls');
-</script>
-<script src="libfrontend.js"></script>
-<script src="npm_libs/geturlparameters.js"></script>
 <script>
 
 let user_id = geturlparameters().userid

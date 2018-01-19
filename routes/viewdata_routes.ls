@@ -202,6 +202,15 @@ export get_last_intervention_seen = (user_id) ->>
 
 expose_get_auth get_last_intervention_seen, 'userid'
 
+export get_num_interventions_seen_by_user = (user_id) ->>
+  total_interventions_seen = 0
+  intervention_to_num_times_seen = await get_intervention_to_num_times_seen(user_id)
+  for intervention_name,times_seen of intervention_to_num_times_seen
+    total_interventions_seen += times_seen
+  return total_interventions_seen
+
+expose_get_auth get_num_interventions_seen_by_user, 'userid'
+
 export get_intervention_to_num_times_seen = (user_id) ->>
   collections = await list_intervention_collections_for_user(user_id)
   db = await get_mongo_db()
@@ -578,6 +587,111 @@ export get_users_to_days_active = ->>
       user_to_days_active[user] = []
     user_to_days_active[user].push day
   return user_to_days_active
+
+export get_user_to_num_interventions_seen = ->>
+  users = await get_users_active_at_least_30_days()
+  output = {}
+  for userid in users
+    num_interventions_seen = await get_num_interventions_seen_by_user(userid)
+    output[userid] = num_interventions_seen
+  return output
+
+expose_get_auth get_user_to_num_interventions_seen
+
+export get_user_to_num_interventions_seen_per_day = ->>
+  users = await get_users_active_at_least_30_days()
+  user_to_num_days_ago_installed = await get_user_to_num_days_ago_installed()
+  output = {}
+  for userid in users
+    num_interventions_seen = await get_num_interventions_seen_by_user(userid)
+    num_days_installed = user_to_num_days_ago_installed[userid]
+    output[userid] = num_interventions_seen / num_days_installed
+  return output
+
+expose_get_auth get_user_to_num_interventions_seen_per_day
+
+export get_user_to_num_days_ago_installed = ->>
+  [user_active_dates, db] = await get_user_active_dates()
+  all_results = await n2p -> user_active_dates.find({}).toArray(it)
+  db.close()
+  output = {}
+  mnow = moment()
+  for {day, user} in all_results
+    mday = moment(day)
+    days_ago_installed = Math.round(mnow.diff(mday) / (3600*24*1000))
+    if not output[user]?
+      output[user] = days_ago_installed
+    else
+      output[user] = Math.max(output[user], days_ago_installed)
+  return output
+
+expose_get_auth get_user_to_num_days_ago_installed
+
+export get_users_active_at_least_7_days = ->>
+  [user_active_dates, db] = await get_user_active_dates()
+  all_results = await n2p -> user_active_dates.find({}).toArray(it)
+  db.close()
+  users_seen_last_month = {}
+  users_seen_recently = {}
+  recently = moment().subtract(3, 'day')
+  month_ago = moment().subtract(7, 'day')
+  for {day, user} in all_results
+    mday = moment(day)
+    if mday >= recently
+      users_seen_recently[user] = true
+    if mday <= month_ago
+      users_seen_last_month[user] = true
+  output = []
+  for user in Object.keys(users_seen_recently)
+    if users_seen_last_month[user]?
+      output.push user
+  return output
+
+expose_get_auth get_users_active_at_least_7_days
+
+export get_users_active_at_least_30_days = ->>
+  [user_active_dates, db] = await get_user_active_dates()
+  all_results = await n2p -> user_active_dates.find({}).toArray(it)
+  db.close()
+  users_seen_last_month = {}
+  users_seen_recently = {}
+  recently = moment().subtract(3, 'day')
+  month_ago = moment().subtract(30, 'day')
+  for {day, user} in all_results
+    mday = moment(day)
+    if mday >= recently
+      users_seen_recently[user] = true
+    if mday <= month_ago
+      users_seen_last_month[user] = true
+  output = []
+  for user in Object.keys(users_seen_recently)
+    if users_seen_last_month[user]?
+      output.push user
+  return output
+
+expose_get_auth get_users_active_at_least_30_days
+
+export get_users_active_at_least_90_days = ->>
+  [user_active_dates, db] = await get_user_active_dates()
+  all_results = await n2p -> user_active_dates.find({}).toArray(it)
+  db.close()
+  users_seen_last_month = {}
+  users_seen_recently = {}
+  recently = moment().subtract(7, 'day')
+  month_ago = moment().subtract(90, 'day')
+  for {day, user} in all_results
+    mday = moment(day)
+    if mday > recently
+      users_seen_recently[user] = true
+    if mday < month_ago
+      users_seen_last_month[user] = true
+  output = []
+  for user in Object.keys(users_seen_recently)
+    if users_seen_last_month[user]?
+      output.push user
+  return output
+
+expose_get_auth get_users_active_at_least_90_days
 
 days_retained_count_to_retention_values = (days_retained_counts) ->
   output = [0] * (highest_day + 1)
