@@ -1,0 +1,4 @@
+1/26/2018 - Complete routes and make sure database is queryable, figure out how to send extensions and begin javascript side fetch work
+2/02/2018 - Complete basic GUI polymer component with added fetch work
+2/09/2018 - Complete authentication for users to manage their own nudges
+2/16/2018 - Fix Bugs and finish up GUI components (figure out how to integrate with analytics?)
