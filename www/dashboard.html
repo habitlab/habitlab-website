@@ -55,8 +55,8 @@
 
 <br>
 
-<div>Retention curves:</div>
-<retention-rates id="retention_rates_display"></div>
+<div>Num active users within past week who have logging not set:</div>
+<div id="num_active_users_logging_not_set"></div>
 
 <br>
 
@@ -72,6 +72,11 @@
 
 <div>List of users with logging disabled:</div>
 <div id="user_list_logging_disabled"></div>
+
+<br>
+
+<div>List of users with logging not set:</div>
+<div id="user_list_logging_not_set"></div>
 
 <br>
 
@@ -344,7 +349,7 @@ async function display_users_with_logging_disabled() {
   let user_to_is_logging_enabled = await get_user_to_is_logging_enabled()
   let user_ids_with_logging_disabled = []
   for (let user_id of user_ids) {
-    if (!user_to_is_logging_enabled[user_id]) {
+    if (user_to_is_logging_enabled[user_id] == false) {
       user_ids_with_logging_disabled.push(user_id)
     }
   }
@@ -353,6 +358,21 @@ async function display_users_with_logging_disabled() {
     $('#user_list_logging_disabled').append('<br>')
   }
   $('#num_active_users_logging_disabled').text(user_ids_with_logging_disabled.length)
+}
+
+async function display_users_with_logging_not_set() {
+  let user_to_is_logging_enabled = await get_user_to_is_logging_enabled()
+  let user_ids_with_logging_enabled = []
+  for (let user_id of user_ids) {
+    if (user_to_is_logging_enabled[user_id] == null) {
+      user_ids_with_logging_enabled.push(user_id)
+    }
+  }
+  for (let user_id of user_ids_with_logging_enabled) {
+    $('#user_list_logging_not_set').append($('<a href="/viewuser.html?userid=' + user_id + '">' + user_id + '</a>'))
+    $('#user_list_logging_not_set').append('<br>')
+  }
+  $('#num_active_users_logging_not_set').text(user_ids_with_logging_enabled.length)
 }
 
 async function display_last_intervention_before_stop_using() {
@@ -383,6 +403,7 @@ async function main() {
 
   display_users_with_logging_enabled()
   display_users_with_logging_disabled()
+  display_users_with_logging_not_set()
   display_goals_tried_by_users()
   display_goals_enabled_by_users()
   display_interventions_enabled_by_users()

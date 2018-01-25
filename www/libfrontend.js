@@ -270,6 +270,7 @@ async function get_disabled_interventions_for_user(userid) {
   return output
 }
 
+/*
 async function get_enabled_goals_for_user(userid) {
   let latest_log_info = await get_latest_intervention_info_for_user(userid)
   let output = {}
@@ -278,6 +279,7 @@ async function get_enabled_goals_for_user(userid) {
   }
   return output
 }
+*/
 
 async function list_intervention_logs_for_user(userid) {
   let all_logs = await getjson('/list_logs_for_user' , {userid: userid})
@@ -418,7 +420,7 @@ expose_getjson('get_users_with_logs_who_are_no_longer_active')
 
 expose_getjson('get_last_interventions_for_former_users')
 
-//expose_getjson('get_last_interventions_and_num_impressions_for_former_users')
+expose_getjson('get_last_interventions_and_num_impressions_for_former_users')
 
 expose_getjson('get_web_visit_actions')
 
