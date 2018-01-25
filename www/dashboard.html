@@ -55,6 +55,11 @@
 
 <br>
 
+<div>Retention curves:</div>
+<retention-rates id="retention_rates_display"></div>
+
+<br>
+
 <div>List of users active in the past week:</div>
 <div id="user_list"></div>
 
@@ -376,14 +381,14 @@ async function main() {
 
   get_temporary_disable_count()
 
-  // display_users_with_logging_enabled()
-  // display_users_with_logging_disabled()
-  // display_goals_tried_by_users()
-  // display_goals_enabled_by_users()
-  // display_interventions_enabled_by_users()
-  // display_interventions_disabled_by_users()
-  // display_last_intervention_before_stop_using()
-  // display_last_intervention_before_stop_using_with_total_impressions()
+  display_users_with_logging_enabled()
+  display_users_with_logging_disabled()
+  display_goals_tried_by_users()
+  display_goals_enabled_by_users()
+  display_interventions_enabled_by_users()
+  display_interventions_disabled_by_users()
+  display_last_intervention_before_stop_using()
+  display_last_intervention_before_stop_using_with_total_impressions()
   let num_users_who_have_tried_nondefault_goal = await get_num_users_who_have_tried_nondefault_goal()
   let num_users_who_have_tried_custom_goal = await get_num_users_who_have_tried_custom_goal()
   let num_users_who_have_set_nondefault_target = await get_num_users_who_have_set_nondefault_target()
