@@ -56,45 +56,56 @@
       return intervention_data
     }
 
-    async function avg_attrition_by_initial_condition(for_website, user_to_install_times, user_to_uninstall_times, intervention_data) {
-        var user_condition_counts = {}
-        var user_condition_avg_times = {}
-        for(let username of intervention_data) {
-          if(intervention_data[username].length > 1) {
-            console.log("multiple default configuration entries - this case doesn't make any sense to me")
-            continue
-          }
-          // count number of enabled interventions for the for_website
-          var count = 0
-          for(let intervention_name of Object.keys(intervention_data[username][0].default_enabled_interventions)) {
-            if(intervention_name.indexOf(for_website) != -1) {
-              count += 1
+    async function find_default_interventions_entry(user_data) {
+      for (x of user_data) {
+        if (x.type == 'default_interventions_on_install') return x
+      }
+      return null
+      /*
+      var result = -1
+          for(let i in user_data) {
+            if(user_data[i].type == "default_interventions_on_install") {
+              result = i
+              break
             }
           }
-          let time_until_uninstall = user_to_uninstall_times[username] - user_to_install_times[username]
-          if(user_condition_counts[count]) {
-            user_condition_counts[count] += 1
-            user_condition_avg_times[count] += time_until_uninstall
+      return result
+      */
+    }
+
+    // install to uninstall less than an hour might be noisy -
+    async function avg_attrition_by_initial_condition(user_to_install_times, user_to_uninstall_times, intervention_data) {
+        var user_condition_counts = {}
+        var user_condition_avg_times = {}
+        for(let username of Object.keys(intervention_data)) {
+          let entry = find_default_interventions_entry(intervention_data[username])
+          if(entry == null) continue
+          let user_condition = entry.interventions_per_goal
+          if(user_condition == null) continue
+          console.log(user_condition)
+
+          end = moment(user_to_uninstall_times[username])
+          start = moment(user_to_install_times[username])
+          let time_until_uninstall = moment.duration(end.diff(start)).asDays()
+          console.log(user_to_uninstall_times[username])
+          console.log(user_to_install_times[username])
+          if(user_condition_counts[user_condition]) {
+            user_condition_counts[user_condition] += 1
+            user_condition_avg_times[user_condition] += time_until_uninstall
           } else {
-            user_condition_counts[count] = 1
-            user_condition_avg_times[count] = time_until_uninstall
+            user_condition_counts[user_condition] = 1
+            user_condition_avg_times[user_condition] = time_until_uninstall
           }
           for(let key of Object.keys(user_condition_counts)) {
             user_condition_avg_times[key] /= user_condition_counts[key]
           }
         }
-        return user_condition_avg_times
+        return [user_condition_avg_times, user_condition_counts]
       }
 
     async function main() {
       let user_to_install_times = await get_user_to_install_times()
-      if(Object.keys(user_to_install_times).indexOf(test_user) == -1) {
-        console.log("test not in install times")
-      }
       let user_to_uninstall_times = await get_user_to_uninstall_times()
-      if(Object.keys(user_to_uninstall_times).indexOf(test_user) == -1) {
-        console.log("test not in uninstall times")
-      }
       var usernames = []
       for (let username of Object.keys(user_to_uninstall_times)) {
         if (user_to_install_times[username]) {
@@ -104,6 +115,14 @@
       let intervention_data = await intervention_data_for_usernames(usernames, "job 1")
       //usernames = Object.keys(user_to_install_times)
       //intervention_data_for_usernames(usernames, "job 2")
+      let result = await avg_attrition_by_initial_condition(
+        user_to_install_times, user_to_uninstall_times, intervention_data)
+      let user_condition_avg_times = result[0]
+      let user_condition_counts = result[1]
+      console.log("average times")
+      console.log(user_condition_avg_times)
+      console.log("sample counts")
+      console.log(user_condition_counts)
 
     }
 
