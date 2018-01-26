@@ -5,6 +5,7 @@ require! {
   getsecret
 }
 
+
 {exec, which} = require 'shelljs'
 
 for command in ['node-dev', 'mongosrv'] # 'gulp', 'pouchdb-server'

@@ -393,6 +393,10 @@ expose_getjson('get_last_interventions_for_former_users')
 
 expose_getjson('get_last_interventions_and_num_impressions_for_former_users')
 
+expose_getjson('get_user_to_dates_active')
+
+//expose_getjson('get_last_interventions_and_num_impressions_for_former_users')
+
 expose_getjson('get_web_visit_actions')
 
 async function get_intervention_to_attrition_probability() {

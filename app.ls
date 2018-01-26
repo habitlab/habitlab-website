@@ -25,8 +25,26 @@ else
 
 {
   kapp
+  prelude
   app
   auth
+  get_mongo_db
+  get_collection
+  get_signups
+  get_secrets
+  get_logging_states
+  get_installs
+  get_uninstalls
+  get_uninstall_feedback
+  list_collections
+  list_log_collections_for_user
+  list_intervention_collections_for_user
+  list_log_collections_for_logname
+  get_collection_for_user_and_logname
+  get_user_active_dates
+  need_query_property
+  need_query_properties
+  expose_get_auth
 } = require 'libs/server_common'
 
 app.use (ctx, next) ->>
@@ -52,6 +70,7 @@ if roles.logging?
 if roles.viewdata?
   require('routes/viewdata_routes')
   require('routes/webpage_routes')
+
 
 if roles.debug?
   do ->
