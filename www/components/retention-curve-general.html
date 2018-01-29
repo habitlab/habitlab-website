@@ -6,10 +6,11 @@
     <style>
     </style>
     <google-chart
-      type="column"
-      id="effectiveness_display"
-      cols='[{"label": "Data", "type": "string"},{"label": "Seconds", "type": "number"},{"label": "Num Samples", "type": "string", "role": "tooltip", "p": {"html": true}}, {"label": "90% confidence interval top", "type": "number", "role": "interval"}, {"label": "90% confidence interval bottom", "type": "number", "role": "interval"}]'
-      rows="{{domain_and_intervention_effectiveness.intervention_info_list}}" options='{"tooltip": {"isHtml": true}, "legend": "none"}'
+      type="line"
+      id="retention_curve_general"
+      cols='[{"label": "Day", "type": "number"},{"label": "Seconds", "type": "number"}]'
+      rows="{{data}}"
+      options='{"tooltip": {"isHtml": true}, "legend": "none"}'
     ></google-chart>
   </template>
   <script>
@@ -20,6 +21,11 @@
       },
       ready: async function() {
         console.log('retention-curve-general')
+        this.data = [
+          [0, 3],
+          [1, 6],
+          [2, 5]
+        ]
       }
     })
   </script>
