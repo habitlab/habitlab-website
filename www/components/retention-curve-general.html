@@ -1,0 +1,26 @@
+<link rel="import" href="../bower_components/polymer/polymer.html">
+<link rel="import" href="../bower_components/google-chart/google-chart.html">
+
+<dom-module id="retention-curve-general">
+  <template>
+    <style>
+    </style>
+    <google-chart
+      type="column"
+      id="effectiveness_display"
+      cols='[{"label": "Data", "type": "string"},{"label": "Seconds", "type": "number"},{"label": "Num Samples", "type": "string", "role": "tooltip", "p": {"html": true}}, {"label": "90% confidence interval top", "type": "number", "role": "interval"}, {"label": "90% confidence interval bottom", "type": "number", "role": "interval"}]'
+      rows="{{domain_and_intervention_effectiveness.intervention_info_list}}" options='{"tooltip": {"isHtml": true}, "legend": "none"}'
+    ></google-chart>
+  </template>
+  <script>
+    Polymer({
+      is: 'retention-curve-general',
+      properties: {
+
+      },
+      ready: async function() {
+        console.log('retention-curve-general')
+      }
+    })
+  </script>
+</dom-module>
