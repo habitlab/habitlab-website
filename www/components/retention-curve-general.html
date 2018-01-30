@@ -25,7 +25,22 @@
       },
       ready: async function() {
         let user_to_first_active_since_today = await list_first_active_date_for_all_users_since_today()
-        console.log(user_to_first_active_since_today)
+        let user_to_last_active_since_today = await list_last_active_date_for_all_users_since_today()
+        let user_list = Object.keys(user_to_first_active_since_today)
+        let days_to_analyze = 7
+        for (let userid of user_list) {
+          let first_active = user_to_first_active_since_today[userid]
+          if (first_active < days_to_analyze) {
+            continue
+          }
+          let last_active = user_to_last_active_since_today[userid]
+          let days_active = first_active - last_active
+          for (let i = 0; i <= days_active; ++i) {
+            
+          }
+          console.log('first active: ' + first_active + ' days active: ' + days_active)
+        }
+        //console.log(user_to_first_active_since_today)
         console.log('retention-curve-general')
         this.data = [
           [0, 3],
