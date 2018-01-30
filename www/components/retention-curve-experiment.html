@@ -1,0 +1,91 @@
+<link rel="import" href="../bower_components/polymer/polymer.html">
+<link rel="import" href="../bower_components/google-chart/google-chart.html">
+
+<dom-module id="retention-curve-experiment">
+  <template>
+    <style>
+      #retention_curve_experiment {
+        width: 100%;
+        height: 600px;
+      }
+      #retention_curve_experiment2 {
+        width: 100%;
+        height: 600px;
+      }
+      #retention_curve_experiment3 {
+        width: 100%;
+        height: 600px;
+      }
+      #retention_curve_experiment4 {
+        width: 100%;
+        height: 600px;
+      }
+    </style>
+    <google-chart
+      type="line"
+      id="retention_curve_experiment"
+      cols='[{"label": "Day", "type": "number"},{"label": "Number of users retained", "type": "number"},{"label": "Fraction of users retained", "type": "number", "role": "tooltip", "p": {"html": true}}]'
+      rows="{{data}}"
+      options='{"tooltip": {"isHtml": true}, "legend": "none"}'
+    ></google-chart>
+    <google-chart
+      type="line"
+      id="retention_curve_experiment2"
+      cols='[{"label": "Day", "type": "number"},{"label": "Number of users retained", "type": "number"},{"label": "Fraction of users retained", "type": "number", "role": "tooltip", "p": {"html": true}}]'
+      rows="{{data2}}"
+      options='{"tooltip": {"isHtml": true}, "legend": "none"}'
+    ></google-chart>
+    <google-chart
+      type="line"
+      id="retention_curve_experiment3"
+      cols='[{"label": "Day", "type": "number"},{"label": "Number of users retained", "type": "number"},{"label": "Fraction of users retained", "type": "number", "role": "tooltip", "p": {"html": true}}]'
+      rows="{{data3}}"
+      options='{"tooltip": {"isHtml": true}, "legend": "none"}'
+    ></google-chart>
+    <google-chart
+      type="line"
+      id="retention_curve_experiment4"
+      cols='[{"label": "Day", "type": "number"},{"label": "all", "type": "number"},{"label": "half", "type": "number"},{"label": "one", "type": "number"}]'
+      rows="{{data4}}"
+      options='{"tooltip": {"isHtml": true}}'
+    ></google-chart>
+  </template>
+  <script>
+    Polymer({
+      is: 'retention-curve-experiment',
+      properties: {
+
+      },
+      ready: async function() {
+        let user_to_first_active_since_today = await list_first_active_date_for_all_users_since_today()
+        let all_user_list = Object.keys(user_to_first_active_since_today)
+        let condition_to_users = {}
+        for (let userid of all_user_list) {
+          let condition = await get_experiment_condition_for_user_cached(userid)
+          if (condition == 'none') continue
+          if (condition_to_users[condition] == null) {
+            condition_to_users[condition] = []
+          }
+          condition_to_users[condition].push(userid)
+        }
+        let condition_list = [
+          'all_of_defaults',
+          'half_of_defaults',
+          'one'
+        ]
+        let days_to_analyze = 10
+        console.log('sample sizes:')
+        let retention_data = await get_retention_curves_for_users(condition_to_users['all_of_defaults'], days_to_analyze)
+        console.log(retention_data[0])
+        this.data = math.range(0, days_to_analyze + 1).map((i) => [i, retention_data[i] / retention_data[0], retention_data[i]]).toArray()
+        let retention_data2 = await get_retention_curves_for_users(condition_to_users['half_of_defaults'], days_to_analyze)
+        console.log(retention_data2[0])
+        this.data2 = math.range(0, days_to_analyze + 1).map((i) => [i, retention_data2[i] / retention_data2[0], retention_data2[i]]).toArray()
+        let retention_data3 = await get_retention_curves_for_users(condition_to_users['one'], days_to_analyze)
+        console.log(retention_data3[0])
+        this.data3 = math.range(0, days_to_analyze + 1).map((i) => [i, retention_data3[i] / retention_data3[0], retention_data3[i]]).toArray()
+        this.data4 = math.range(0, days_to_analyze + 1).map((i) => [i, retention_data[i] / retention_data[0], retention_data2[i] / retention_data2[0], retention_data3[i] / retention_data3[0]]).toArray()
+      }
+    })
+  </script>
+</dom-module>

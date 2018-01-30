@@ -1,3 +1,85 @@
+
+let get_store_cached = {}
+
+function get_store(name) {
+  if (get_store_cached[name]) {
+    return get_store_cached[name]
+  }
+  let store = localforage.createInstance({name: name})
+  get_store_cached[name] = store
+  return store
+}
+
+function clear_cache_for_func(name) {
+  let store = get_store(name)
+  store.clear()
+}
+
+function memoize_to_disk(f, func_name) {
+  if (f.length == 1) {
+    return memoize_to_disk_1arg(f, func_name)
+  }
+  if (f.length == 0) {
+    return memoize_to_disk_0arg(f, func_name)
+  }
+  throw new Exception('memoize_to_disk provided with function with inappropriate number of arguments: ' + f.name + ' with num arguments ' + f.length)
+}
+
+function memoize_to_disk_nargs(f, func_name, num_args) {
+  if (num_args == 0) {
+    return memoize_to_disk_0arg(f, func_name)
+  } else if (num_args == 1) {
+    return memoize_to_disk_1arg(f, func_name)
+  } else {
+    alert('memoize_to_disk_nargs called for function ' + func_name + ' with unsupported num_args ' + num_args)
+  }
+}
+
+function memoize_to_disk_0arg(f, func_name) {
+  if (func_name == null) {
+    func_name = f.name
+  }
+  let store = get_store('memoizedisk|' + func_name)
+  let memoize_to_disk_0arg_cache = null
+  return async function() {
+    if (memoize_to_disk_0arg_cache != null) {
+      return memoize_to_disk_0arg_cache
+    }
+    let cached_value = await store.getItem('default')
+    if (cached_value != null) {
+      return cached_value
+    }
+    cached_value = await f()
+    if (cached_value != null) {
+      await store.setItem('default', cached_value)
+    }
+    memoize_to_disk_0arg_cache = cached_value
+    return cached_value
+  }
+}
+
+function memoize_to_disk_1arg(f, func_name) {
+  if (func_name == null) {
+    func_name = f.name
+  }
+  let memoize_to_disk_1arg_cache = {}
+  let store = get_store('memoizedisk|' + func_name)
+  return async function(arg) {
+    if (memoize_to_disk_1arg_cache[arg] != null) {
+      return memoize_to_disk_1arg_cache[arg]
+    }
+    let cached_value = await store.getItem(arg)
+    if (cached_value != null) {
+      return cached_value
+    }
+    cached_value = await f(arg)
+    if (cached_value != null) {
+      await store.setItem(arg, cached_value)
+    }
+    return cached_value
+  }
+}
+
 async function geolocate_ip(ip_addr) {
   let geolocate_info = {}
   if (localStorage.getItem('geolocate_info_' + ip_addr)) {
@@ -228,7 +310,7 @@ async function get_enabled_interventions_for_user(userid) {
 }
 
 async function get_disabled_interventions_for_user(userid) {
-  let results = await get_collection_for_user(user_id, 'synced:interventions_currently_disabled')
+  let results = await get_collection_for_user(userid, 'synced:interventions_currently_disabled')
   let output = {}
   for (let info of results) {
     let name = info.key
@@ -261,6 +343,20 @@ async function list_intervention_logs_for_user(userid) {
   }
   return output
 }
+
+let get_experiment_condition_for_user = async function(userid) {
+  let intervention_logs = await get_collection_for_user(userid, 'logs:interventions')
+  for (let x of intervention_logs) {
+    if (x.type == 'default_interventions_on_install') {
+      if (x.interventions_per_goal != null) {
+        return x.interventions_per_goal
+      }
+    }
+  }
+  return 'none'
+}
+
+let get_experiment_condition_for_user_cached = memoize_to_disk_1arg(get_experiment_condition_for_user, 'get_experiment_condition_for_user')
 
 async function list_first_active_date_for_all_users() {
   let user_to_dates_active = await get_user_to_dates_active_cached()
@@ -349,87 +445,6 @@ async function get_retention_curves_for_users(user_list, days_to_analyze) {
 //async function get_intervention_to_num_impressions_for_user(userid) {
   //let interventions_with_data = await get_
 //}
-
-let get_store_cached = {}
-
-function get_store(name) {
-  if (get_store_cached[name]) {
-    return get_store_cached[name]
-  }
-  let store = localforage.createInstance({name: name})
-  get_store_cached[name] = store
-  return store
-}
-
-function clear_cache_for_func(name) {
-  let store = get_store(name)
-  store.clear()
-}
-
-function memoize_to_disk(f, func_name) {
-  if (f.length == 1) {
-    return memoize_to_disk_1arg(f, func_name)
-  }
-  if (f.length == 0) {
-    return memoize_to_disk_0arg(f, func_name)
-  }
-  throw new Exception('memoize_to_disk provided with function with inappropriate number of arguments: ' + f.name + ' with num arguments ' + f.length)
-}
-
-function memoize_to_disk_nargs(f, func_name, num_args) {
-  if (num_args == 0) {
-    return memoize_to_disk_0arg(f, func_name)
-  } else if (num_args == 1) {
-    return memoize_to_disk_1arg(f, func_name)
-  } else {
-    alert('memoize_to_disk_nargs called for function ' + func_name + ' with unsupported num_args ' + num_args)
-  }
-}
-
-function memoize_to_disk_0arg(f, func_name) {
-  if (func_name == null) {
-    func_name = f.name
-  }
-  let store = get_store('memoizedisk|' + func_name)
-  let memoize_to_disk_0arg_cache = null
-  return async function() {
-    if (memoize_to_disk_0arg_cache != null) {
-      return memoize_to_disk_0arg_cache
-    }
-    let cached_value = await store.getItem('default')
-    if (cached_value != null) {
-      return cached_value
-    }
-    cached_value = await f()
-    if (cached_value != null) {
-      await store.setItem('default', cached_value)
-    }
-    memoize_to_disk_0arg_cache = cached_value
-    return cached_value
-  }
-}
-
-function memoize_to_disk_1arg(f, func_name) {
-  if (func_name == null) {
-    func_name = f.name
-  }
-  let memoize_to_disk_1arg_cache = {}
-  let store = get_store('memoizedisk|' + func_name)
-  return async function(arg) {
-    if (memoize_to_disk_1arg_cache[arg] != null) {
-      return memoize_to_disk_1arg_cache[arg]
-    }
-    let cached_value = await store.getItem(arg)
-    if (cached_value != null) {
-      return cached_value
-    }
-    cached_value = await f(arg)
-    if (cached_value != null) {
-      await store.setItem(arg, cached_value)
-    }
-    return cached_value
-  }
-}
 
 function expose_getjson(func_name, ...params) {
   let func_body = null
