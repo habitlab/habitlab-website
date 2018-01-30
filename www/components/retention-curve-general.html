@@ -4,11 +4,15 @@
 <dom-module id="retention-curve-general">
   <template>
     <style>
+      #retention_curve_general {
+        width: 100%;
+        height: 600px;
+      }
     </style>
     <google-chart
       type="line"
       id="retention_curve_general"
-      cols='[{"label": "Day", "type": "number"},{"label": "Seconds", "type": "number"}]'
+      cols='[{"label": "Day", "type": "number"},{"label": "Fraction of users retained", "type": "number"}]'
       rows="{{data}}"
       options='{"tooltip": {"isHtml": true}, "legend": "none"}'
     ></google-chart>
@@ -20,6 +24,8 @@
 
       },
       ready: async function() {
+        let user_to_first_active_since_today = await list_first_active_date_for_all_users_since_today()
+        console.log(user_to_first_active_since_today)
         console.log('retention-curve-general')
         this.data = [
           [0, 3],

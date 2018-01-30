@@ -262,6 +262,73 @@ async function list_intervention_logs_for_user(userid) {
   return output
 }
 
+async function list_first_active_date_for_all_users() {
+  let user_to_dates_active = await get_user_to_dates_active_cached()
+  console.log(user_to_dates_active)
+  let output = {}
+  for (let userid of Object.keys(user_to_dates_active)) {
+    let dates_active = user_to_dates_active[userid]
+    output[userid] = dates_active[0]
+  }
+  return output
+}
+
+async function list_last_active_date_for_all_users() {
+  let user_to_dates_active = await get_user_to_dates_active_cached()
+  let output = {}
+  for (let userid of Object.keys(user_to_dates_active)) {
+    let dates_active = user_to_dates_active[userid]
+    output[userid] = dates_active[dates_active.length - 1]
+  }
+  return output
+}
+
+async function list_first_active_date_for_all_users_since_today() {
+  let today = moment().hours(0).minutes(0).seconds(0).milliseconds(0)
+  let user_to_first_active_date = await list_first_active_date_for_all_users()
+  let output = {}
+  for (let userid of Object.keys(user_to_first_active_date)) {
+    let first_active = user_to_first_active_date[userid]
+    output[userid] = Math.round(moment.duration(today.diff(first_active)).asDays())
+  }
+  return output
+}
+
+async function list_last_active_date_for_all_users_since_today() {
+  let today = moment().hours(0).minutes(0).seconds(0).milliseconds(0)
+  let user_to_last_active_date = await list_last_active_date_for_all_users()
+  let output = {}
+  for (let userid of Object.keys(user_to_last_active_date)) {
+    let last_active = user_to_last_active_date[userid]
+    output[userid] = Math.round(moment.duration(today.diff(last_active)).asDays())
+  }
+  return output
+}
+
+async function list_first_active_date_for_user(userid) {
+  let user_to_dates_active = await get_user_to_dates_active_cached()
+  let dates_active = user_to_dates_active[userid]
+  return dates_active[0]
+}
+
+async function list_last_active_date_for_user(userid) {
+  let user_to_dates_active = await get_user_to_dates_active_cached()
+  let dates_active = user_to_dates_active[userid]
+  return dates_active[dates_active.length - 1]
+}
+
+async function list_first_active_date_for_user_since_today(userid) {
+  let today = moment().hours(0).minutes(0).seconds(0).milliseconds(0)
+  let first_active = await list_first_active_date_for_user(userid)
+  return Math.round(moment.duration(today.diff(first_active)).asDays())
+}
+
+async function list_last_active_date_for_user_since_today(userid) {
+  let today = moment().hours(0).minutes(0).seconds(0).milliseconds(0)
+  let last_active = await list_first_active_date_for_user(userid)
+  return Math.round(moment.duration(today.diff(last_active)).asDays())
+}
+
 //async function get_intervention_to_num_impressions_for_user(userid) {
   //let interventions_with_data = await get_
 //}
@@ -292,12 +359,26 @@ function memoize_to_disk(f, func_name) {
   throw new Exception('memoize_to_disk provided with function with inappropriate number of arguments: ' + f.name + ' with num arguments ' + f.length)
 }
 
+function memoize_to_disk_nargs(f, func_name, num_args) {
+  if (num_args == 0) {
+    return memoize_to_disk_0arg(f, func_name)
+  } else if (num_args == 1) {
+    return memoize_to_disk_1arg(f, func_name)
+  } else {
+    alert('memoize_to_disk_nargs called for function ' + func_name + ' with unsupported num_args ' + num_args)
+  }
+}
+
 function memoize_to_disk_0arg(f, func_name) {
   if (func_name == null) {
     func_name = f.name
   }
   let store = get_store('memoizedisk|' + func_name)
+  let memoize_to_disk_0arg_cache = null
   return async function() {
+    if (memoize_to_disk_0arg_cache != null) {
+      return memoize_to_disk_0arg_cache
+    }
     let cached_value = await store.getItem('default')
     if (cached_value != null) {
       return cached_value
@@ -306,6 +387,7 @@ function memoize_to_disk_0arg(f, func_name) {
     if (cached_value != null) {
       await store.setItem('default', cached_value)
     }
+    memoize_to_disk_0arg_cache = cached_value
     return cached_value
   }
 }
@@ -314,16 +396,17 @@ function memoize_to_disk_1arg(f, func_name) {
   if (func_name == null) {
     func_name = f.name
   }
+  let memoize_to_disk_1arg_cache = {}
   let store = get_store('memoizedisk|' + func_name)
   return async function(arg) {
+    if (memoize_to_disk_1arg_cache[arg] != null) {
+      return memoize_to_disk_1arg_cache[arg]
+    }
     let cached_value = await store.getItem(arg)
     if (cached_value != null) {
       return cached_value
     }
-    console.log('not cached: ' + arg + ' for function ' + func_name)
     cached_value = await f(arg)
-    console.log('cached_value:')
-    console.log(cached_value)
     if (cached_value != null) {
       await store.setItem(arg, cached_value)
     }
@@ -343,16 +426,29 @@ function expose_getjson(func_name, ...params) {
     }
     return await getjson(request_path, data)
   }
+  window[func_name + '_cached'] = memoize_to_disk_nargs(async function(...args) {
+    let data = {}
+    for (let i = 0; i < params.length; ++i) {
+      let param = params[i]
+      let value = args[i]
+      data[param] = value
+    }
+    return await getjson(request_path, data)
+  }, func_name, params.length)
 }
 
-function expose_getjson_cached(func_name, param) {
+function expose_getjson_cached(func_name, ...params) {
   let func_body = null
   let request_path = '/' + func_name
-  window[func_name] = memoize_to_disk_1arg(async function(arg) {
+  window[func_name] = memoize_to_disk_nargs(async function(...args) {
     let data = {}
-    data[param] = arg
+    for (let i = 0; i < params.length; ++i) {
+      let param = params[i]
+      let value = args[i]
+      data[param] = value
+    }
     return await getjson(request_path, data)
-  }, func_name)
+  }, func_name, params.length)
 }
 
 function make_getjson(func_name, ...params) {
