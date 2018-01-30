@@ -264,7 +264,6 @@ async function list_intervention_logs_for_user(userid) {
 
 async function list_first_active_date_for_all_users() {
   let user_to_dates_active = await get_user_to_dates_active_cached()
-  console.log(user_to_dates_active)
   let output = {}
   for (let userid of Object.keys(user_to_dates_active)) {
     let dates_active = user_to_dates_active[userid]
@@ -327,6 +326,24 @@ async function list_last_active_date_for_user_since_today(userid) {
   let today = moment().hours(0).minutes(0).seconds(0).milliseconds(0)
   let last_active = await list_first_active_date_for_user(userid)
   return Math.round(moment.duration(today.diff(last_active)).asDays())
+}
+
+async function get_retention_curves_for_users(user_list, days_to_analyze) {
+  let user_to_first_active_since_today = await list_first_active_date_for_all_users_since_today()
+  let user_to_last_active_since_today = await list_last_active_date_for_all_users_since_today()
+  let retention_data = Array(days_to_analyze + 1).fill(0)
+  for (let userid of user_list) {
+    let first_active = user_to_first_active_since_today[userid]
+    if (first_active < days_to_analyze) {
+      continue
+    }
+    let last_active = user_to_last_active_since_today[userid]
+    let days_active = first_active - last_active
+    for (let i = 0; i <= Math.min(days_active, days_to_analyze); ++i) {
+      retention_data[i] += 1
+    }
+  }
+  return retention_data
 }
 
 //async function get_intervention_to_num_impressions_for_user(userid) {

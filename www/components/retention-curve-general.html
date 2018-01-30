@@ -25,22 +25,9 @@
       },
       ready: async function() {
         let user_to_first_active_since_today = await list_first_active_date_for_all_users_since_today()
-        let user_to_last_active_since_today = await list_last_active_date_for_all_users_since_today()
         let user_list = Object.keys(user_to_first_active_since_today)
         let days_to_analyze = 7
-        let retention_data = Array(days_to_analyze + 1).fill(0)
-        for (let userid of user_list) {
-          let first_active = user_to_first_active_since_today[userid]
-          if (first_active < days_to_analyze) {
-            continue
-          }
-          let last_active = user_to_last_active_since_today[userid]
-          let days_active = first_active - last_active
-          for (let i = 0; i <= Math.min(days_active, days_to_analyze); ++i) {
-            retention_data[i] += 1
-          }
-        }
-        console.log(retention_data)
+        let retention_data = await get_retention_curves_for_users(user_list, days_to_analyze)
         this.data = math.range(0, days_to_analyze + 1).map((i) => [i, retention_data[i] / retention_data[0], retention_data[i]]).toArray()
       }
     })
