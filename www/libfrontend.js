@@ -11,7 +11,7 @@ function get_store(name) {
 }
 
 function clear_cache_for_func(name) {
-  let store = get_store(name)
+  let store = get_store('memoizedisk|' + name)
   store.clear()
 }
 
@@ -344,6 +344,49 @@ async function list_intervention_logs_for_user(userid) {
   return output
 }
 
+let list_logs_for_all_users = async function() {
+  let all_collections = await listcollections()
+  let output = {}
+  for (let full_collection_name of all_collections) {
+    let underscore_idx = full_collection_name.indexOf('_')
+    if (underscore_idx == -1) {
+      continue
+    }
+    let userid = full_collection_name.substr(0, underscore_idx)
+    let collection_name = full_collection_name.substr(underscore_idx + 1)
+    if (output[userid] == null) {
+      output[userid] = []
+    }
+    output[userid].push(collection_name)
+  }
+  return output
+}
+
+let list_logs_for_all_users_cached = memoize_to_disk_0arg(list_logs_for_all_users, 'list_logs_for_all_users')
+
+let list_intervention_logs_for_all_users = async function() {
+  let all_collections = await listcollections()
+  let output = {}
+  for (let full_collection_name of all_collections) {
+    let underscore_idx = full_collection_name.indexOf('_')
+    if (underscore_idx == -1) {
+      continue
+    }
+    let userid = full_collection_name.substr(0, underscore_idx)
+    let collection_name = full_collection_name.substr(underscore_idx + 1)
+    if (collection_name.startsWith('synced:') || collection_name.startsWith('logs:')) {
+      continue
+    }
+    if (output[userid] == null) {
+      output[userid] = []
+    }
+    output[userid].push(collection_name)
+  }
+  return output
+}
+
+let list_intervention_logs_for_all_users_cached = memoize_to_disk_0arg(list_intervention_logs_for_all_users, 'list_intervention_logs_for_all_users')
+
 let get_experiment_condition_for_user = async function(userid) {
   let intervention_logs = await get_collection_for_user(userid, 'logs:interventions')
   for (let x of intervention_logs) {
@@ -357,6 +400,18 @@ let get_experiment_condition_for_user = async function(userid) {
 }
 
 let get_experiment_condition_for_user_cached = memoize_to_disk_1arg(get_experiment_condition_for_user, 'get_experiment_condition_for_user')
+
+let get_did_user_complete_onboarding = async function(userid) {
+  let pages_logs = await get_collection_for_user(userid, 'logs:pages')
+  for (let x of pages_logs) {
+    if (x.reason == 'onboarding-complete') {
+      return true
+    }
+  }
+  return false
+}
+
+let get_did_user_complete_onboarding_cached = memoize_to_disk_1arg(get_did_user_complete_onboarding, 'get_did_user_complete_onboarding')
 
 async function list_first_active_date_for_all_users() {
   let user_to_dates_active = await get_user_to_dates_active_cached()
@@ -512,6 +567,8 @@ expose_getjson('get_dates_active_for_user', 'userid')
 expose_getjson('get_is_logging_enabled_for_user', 'userid')
 
 expose_getjson('get_user_to_is_logging_enabled')
+
+expose_getjson('listcollections')
 
 expose_getjson_cached('get_intervention_to_num_times_seen', 'userid')
 

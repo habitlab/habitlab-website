@@ -60,9 +60,15 @@
         let user_to_first_active_since_today = await list_first_active_date_for_all_users_since_today()
         let all_user_list = Object.keys(user_to_first_active_since_today)
         let condition_to_users = {}
+        let user_to_interventions_seen = await list_intervention_logs_for_all_users_cached()
         for (let userid of all_user_list) {
+          //console.log(userid)
+          let interventions_seen = user_to_interventions_seen[userid]
+          if (interventions_seen == null || interventions_seen.length == 0) continue
           let condition = await get_experiment_condition_for_user_cached(userid)
           if (condition == 'none') continue
+          let onboarding_completed = await get_did_user_complete_onboarding_cached(userid)
+          if (!onboarding_completed) continue
           if (condition_to_users[condition] == null) {
             condition_to_users[condition] = []
           }
@@ -73,7 +79,7 @@
           'half_of_defaults',
           'one'
         ]
-        let days_to_analyze = 10
+        let days_to_analyze = 7
         console.log('sample sizes:')
         let retention_data = await get_retention_curves_for_users(condition_to_users['all_of_defaults'], days_to_analyze)
         console.log(retention_data[0])
