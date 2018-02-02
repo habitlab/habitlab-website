@@ -25,8 +25,15 @@
       },
       ready: async function() {
         let user_to_first_active_since_today = await list_first_active_date_for_all_users_since_today()
-        let user_list = Object.keys(user_to_first_active_since_today)
-        let days_to_analyze = 7
+        let all_user_list = Object.keys(user_to_first_active_since_today)
+        let user_list = []
+        let user_to_interventions_seen = await list_intervention_logs_for_all_users_cached()
+        for (let userid of all_user_list) {
+          let interventions_seen = user_to_interventions_seen[userid]
+          if (interventions_seen == null || interventions_seen.length == 0) continue
+          user_list.push(userid)
+        }
+        let days_to_analyze = 90
         let retention_data = await get_retention_curves_for_users(user_list, days_to_analyze)
         this.data = math.range(0, days_to_analyze + 1).map((i) => [i, retention_data[i] / retention_data[0], retention_data[i]]).toArray()
       }

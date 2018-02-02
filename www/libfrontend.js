@@ -497,6 +497,28 @@ async function get_retention_curves_for_users(user_list, days_to_analyze) {
   return retention_data
 }
 
+async function get_lifetimes_and_whether_attrition_was_observed_for_users(user_list) {
+  let lifetimes = []
+  let attritions = []
+  let user_to_first_active_since_today = await list_first_active_date_for_all_users_since_today()
+  let user_to_last_active_since_today = await list_last_active_date_for_all_users_since_today()
+  for (let userid of user_list) {
+    let first_active = user_to_first_active_since_today[userid]
+    let last_active = user_to_last_active_since_today[userid]
+    let days_active = first_active - last_active
+    let attritioned = 1
+    if (last_active == 0) {
+      attritioned = 0
+    }
+    lifetimes.push(days_active)
+    attritions.push(attritioned)
+  }
+  return {
+    lifetimes,
+    attritions
+  }
+}
+
 //async function get_intervention_to_num_impressions_for_user(userid) {
   //let interventions_with_data = await get_
 //}
