@@ -39,29 +39,65 @@ export mongourl = getsecret('MONGODB_URI') ? 'mongodb://localhost:27017/default'
 
 export mongourl2 = getsecret('MONGODB_URI2') ? 'mongodb://localhost:27017/default'
 
+sleep = (time) ->>
+  return new Promise ->
+    setTimeout(it, time)
+
+local_cache_db = null
+getdb_running = false
+
 export get_mongo_db = ->>
+  if local_cache_db?
+    return local_cache_db
+  if getdb_running
+    while getdb_running
+      await sleep(1)
+    while getdb_running or local_cache_db == null
+      await sleep(1)
+    return local_cache_db
+  getdb_running := true
   try
-    return await n2p -> mongodb.MongoClient.connect mongourl, it
+    local_cache_db := await n2p -> mongodb.MongoClient.connect mongourl, it
+    return local_cache_db
   catch err
     console.error 'error getting mongodb'
     console.error err
     return
 
+local_cache_db2 = null
+getdb_running2 = false
+
 export get_mongo_db2 = ->>
+  if local_cache_db2?
+    return local_cache_db2
+  if getdb_running2
+    while getdb_running2
+      await sleep(1)
+    while getdb_running2 or local_cache_db2 == null
+      await sleep(1)
+    return local_cache_db2
+  getdb_running2 := true
   try
-    return await n2p -> mongodb.MongoClient.connect mongourl2, it
+    local_cache_db2 := await n2p -> mongodb.MongoClient.connect mongourl2, it
+    return local_cache_db2
   catch err
-    console.error 'error getting mongodb'
+    console.error 'error getting mongodb2'
     console.error err
     return
 
 export get_collection = (collection_name) ->>
   db = await get_mongo_db()
-  return [db.collection(collection_name), db]
+  fakedb = {
+    close: ->
+  }
+  return [db.collection(collection_name), fakedb]
 
 export get_collection2 = (collection_name) ->>
   db = await get_mongo_db2()
-  return [db.collection(collection_name), db]
+  fakedb = {
+    close: ->
+  }
+  return [db.collection(collection_name), fakedb]
 
 export get_signups = ->>
   return await get_collection('signups')
@@ -99,11 +135,25 @@ export get_intervention_votes_total = ->>
 export get_webvisits = ->>
   return await get_collection('webvisits')
 
-export list_collections = ->>
+debounce = require('promise-debounce')
+
+memoizeSingleAsync = (func) ->
+  debounced_func = debounce func
+  cached_val = null
+  return ->>
+    if cached_val?
+      return cached_val
+    result = await debounced_func()
+    cached_val := result
+    return result
+
+export list_collections_real = ->>
   ndb = await get_mongo_db()
   collections_list = await n2p -> ndb.listCollections().toArray(it)
-  ndb.close()
+  #ndb.close()
   return collections_list.map (.name)
+
+export list_collections = memoizeSingleAsync list_collections_real
 
 export list_log_collections_for_user = (userid) ->>
   all_collections = await list_collections()
@@ -147,5 +197,20 @@ export expose_get_auth = (func, ...params) ->
     data_array = [data[param] for param in params]
     results = await func(...data_array)
     ctx.body = JSON.stringify results
+
+export fix_object = (obj) ->
+  if Array.isArray(obj)
+    return obj.map(fix_object)
+  if typeof(obj) != 'object'
+    return obj
+  output = {}
+  for k,v of obj
+    if typeof(k) == 'string'
+      if k.includes('.')
+        k = k.split('.').join('\u2024')
+      if k[0] == '$'
+        k = '\ufe69' + k.substr(1)
+    output[k] = fix_object(v)
+  return output
 
 require('libs/globals').add_globals(module.exports)

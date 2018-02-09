@@ -1,3 +1,85 @@
+
+let get_store_cached = {}
+
+function get_store(name) {
+  if (get_store_cached[name]) {
+    return get_store_cached[name]
+  }
+  let store = localforage.createInstance({name: name})
+  get_store_cached[name] = store
+  return store
+}
+
+function clear_cache_for_func(name) {
+  let store = get_store('memoizedisk|' + name)
+  store.clear()
+}
+
+function memoize_to_disk(f, func_name) {
+  if (f.length == 1) {
+    return memoize_to_disk_1arg(f, func_name)
+  }
+  if (f.length == 0) {
+    return memoize_to_disk_0arg(f, func_name)
+  }
+  throw new Exception('memoize_to_disk provided with function with inappropriate number of arguments: ' + f.name + ' with num arguments ' + f.length)
+}
+
+function memoize_to_disk_nargs(f, func_name, num_args) {
+  if (num_args == 0) {
+    return memoize_to_disk_0arg(f, func_name)
+  } else if (num_args == 1) {
+    return memoize_to_disk_1arg(f, func_name)
+  } else {
+    alert('memoize_to_disk_nargs called for function ' + func_name + ' with unsupported num_args ' + num_args)
+  }
+}
+
+function memoize_to_disk_0arg(f, func_name) {
+  if (func_name == null) {
+    func_name = f.name
+  }
+  let store = get_store('memoizedisk|' + func_name)
+  let memoize_to_disk_0arg_cache = null
+  return async function() {
+    if (memoize_to_disk_0arg_cache != null) {
+      return memoize_to_disk_0arg_cache
+    }
+    let cached_value = await store.getItem('default')
+    if (cached_value != null) {
+      return cached_value
+    }
+    cached_value = await f()
+    if (cached_value != null) {
+      await store.setItem('default', cached_value)
+    }
+    memoize_to_disk_0arg_cache = cached_value
+    return cached_value
+  }
+}
+
+function memoize_to_disk_1arg(f, func_name) {
+  if (func_name == null) {
+    func_name = f.name
+  }
+  let memoize_to_disk_1arg_cache = {}
+  let store = get_store('memoizedisk|' + func_name)
+  return async function(arg) {
+    if (memoize_to_disk_1arg_cache[arg] != null) {
+      return memoize_to_disk_1arg_cache[arg]
+    }
+    let cached_value = await store.getItem(arg)
+    if (cached_value != null) {
+      return cached_value
+    }
+    cached_value = await f(arg)
+    if (cached_value != null) {
+      await store.setItem(arg, cached_value)
+    }
+    return cached_value
+  }
+}
+
 async function geolocate_ip(ip_addr) {
   let geolocate_info = {}
   if (localStorage.getItem('geolocate_info_' + ip_addr)) {
@@ -228,7 +310,7 @@ async function get_enabled_interventions_for_user(userid) {
 }
 
 async function get_disabled_interventions_for_user(userid) {
-  let results = await get_collection_for_user(user_id, 'synced:interventions_currently_disabled')
+  let results = await get_collection_for_user(userid, 'synced:interventions_currently_disabled')
   let output = {}
   for (let info of results) {
     let name = info.key
@@ -241,6 +323,7 @@ async function get_disabled_interventions_for_user(userid) {
   return output
 }
 
+/*
 async function get_enabled_goals_for_user(userid) {
   let latest_log_info = await get_latest_intervention_info_for_user(userid)
   let output = {}
@@ -249,6 +332,7 @@ async function get_enabled_goals_for_user(userid) {
   }
   return output
 }
+*/
 
 async function list_intervention_logs_for_user(userid) {
   let all_logs = await getjson('/list_logs_for_user' , {userid: userid})
@@ -260,74 +344,184 @@ async function list_intervention_logs_for_user(userid) {
   return output
 }
 
+let list_logs_for_all_users = async function() {
+  let all_collections = await listcollections()
+  let output = {}
+  for (let full_collection_name of all_collections) {
+    let underscore_idx = full_collection_name.indexOf('_')
+    if (underscore_idx == -1) {
+      continue
+    }
+    let userid = full_collection_name.substr(0, underscore_idx)
+    let collection_name = full_collection_name.substr(underscore_idx + 1)
+    if (output[userid] == null) {
+      output[userid] = []
+    }
+    output[userid].push(collection_name)
+  }
+  return output
+}
+
+let list_logs_for_all_users_cached = memoize_to_disk_0arg(list_logs_for_all_users, 'list_logs_for_all_users')
+
+let list_intervention_logs_for_all_users = async function() {
+  let all_collections = await listcollections()
+  let output = {}
+  for (let full_collection_name of all_collections) {
+    let underscore_idx = full_collection_name.indexOf('_')
+    if (underscore_idx == -1) {
+      continue
+    }
+    let userid = full_collection_name.substr(0, underscore_idx)
+    let collection_name = full_collection_name.substr(underscore_idx + 1)
+    if (collection_name.startsWith('synced:') || collection_name.startsWith('logs:')) {
+      continue
+    }
+    if (output[userid] == null) {
+      output[userid] = []
+    }
+    output[userid].push(collection_name)
+  }
+  return output
+}
+
+let list_intervention_logs_for_all_users_cached = memoize_to_disk_0arg(list_intervention_logs_for_all_users, 'list_intervention_logs_for_all_users')
+
+let get_experiment_condition_for_user = async function(userid) {
+  let intervention_logs = await get_collection_for_user(userid, 'logs:interventions')
+  for (let x of intervention_logs) {
+    if (x.type == 'default_interventions_on_install') {
+      if (x.interventions_per_goal != null) {
+        return x.interventions_per_goal
+      }
+    }
+  }
+  return 'none'
+}
+
+let get_experiment_condition_for_user_cached = memoize_to_disk_1arg(get_experiment_condition_for_user, 'get_experiment_condition_for_user')
+
+let get_did_user_complete_onboarding = async function(userid) {
+  let pages_logs = await get_collection_for_user(userid, 'logs:pages')
+  for (let x of pages_logs) {
+    if (x.reason == 'onboarding-complete') {
+      return true
+    }
+  }
+  return false
+}
+
+let get_did_user_complete_onboarding_cached = memoize_to_disk_1arg(get_did_user_complete_onboarding, 'get_did_user_complete_onboarding')
+
+async function list_first_active_date_for_all_users() {
+  let user_to_dates_active = await get_user_to_dates_active_cached()
+  let output = {}
+  for (let userid of Object.keys(user_to_dates_active)) {
+    let dates_active = user_to_dates_active[userid]
+    output[userid] = dates_active[0]
+  }
+  return output
+}
+
+async function list_last_active_date_for_all_users() {
+  let user_to_dates_active = await get_user_to_dates_active_cached()
+  let output = {}
+  for (let userid of Object.keys(user_to_dates_active)) {
+    let dates_active = user_to_dates_active[userid]
+    output[userid] = dates_active[dates_active.length - 1]
+  }
+  return output
+}
+
+async function list_first_active_date_for_all_users_since_today() {
+  let today = moment().hours(0).minutes(0).seconds(0).milliseconds(0)
+  let user_to_first_active_date = await list_first_active_date_for_all_users()
+  let output = {}
+  for (let userid of Object.keys(user_to_first_active_date)) {
+    let first_active = user_to_first_active_date[userid]
+    output[userid] = Math.round(moment.duration(today.diff(first_active)).asDays())
+  }
+  return output
+}
+
+async function list_last_active_date_for_all_users_since_today() {
+  let today = moment().hours(0).minutes(0).seconds(0).milliseconds(0)
+  let user_to_last_active_date = await list_last_active_date_for_all_users()
+  let output = {}
+  for (let userid of Object.keys(user_to_last_active_date)) {
+    let last_active = user_to_last_active_date[userid]
+    output[userid] = Math.round(moment.duration(today.diff(last_active)).asDays())
+  }
+  return output
+}
+
+async function list_first_active_date_for_user(userid) {
+  let user_to_dates_active = await get_user_to_dates_active_cached()
+  let dates_active = user_to_dates_active[userid]
+  return dates_active[0]
+}
+
+async function list_last_active_date_for_user(userid) {
+  let user_to_dates_active = await get_user_to_dates_active_cached()
+  let dates_active = user_to_dates_active[userid]
+  return dates_active[dates_active.length - 1]
+}
+
+async function list_first_active_date_for_user_since_today(userid) {
+  let today = moment().hours(0).minutes(0).seconds(0).milliseconds(0)
+  let first_active = await list_first_active_date_for_user(userid)
+  return Math.round(moment.duration(today.diff(first_active)).asDays())
+}
+
+async function list_last_active_date_for_user_since_today(userid) {
+  let today = moment().hours(0).minutes(0).seconds(0).milliseconds(0)
+  let last_active = await list_first_active_date_for_user(userid)
+  return Math.round(moment.duration(today.diff(last_active)).asDays())
+}
+
+async function get_retention_curves_for_users(user_list, days_to_analyze) {
+  let user_to_first_active_since_today = await list_first_active_date_for_all_users_since_today()
+  let user_to_last_active_since_today = await list_last_active_date_for_all_users_since_today()
+  let retention_data = Array(days_to_analyze + 1).fill(0)
+  for (let userid of user_list) {
+    let first_active = user_to_first_active_since_today[userid]
+    if (first_active < days_to_analyze) {
+      continue
+    }
+    let last_active = user_to_last_active_since_today[userid]
+    let days_active = first_active - last_active
+    for (let i = 0; i <= Math.min(days_active, days_to_analyze); ++i) {
+      retention_data[i] += 1
+    }
+  }
+  return retention_data
+}
+
+async function get_lifetimes_and_whether_attrition_was_observed_for_users(user_list) {
+  let lifetimes = []
+  let attritions = []
+  let user_to_first_active_since_today = await list_first_active_date_for_all_users_since_today()
+  let user_to_last_active_since_today = await list_last_active_date_for_all_users_since_today()
+  for (let userid of user_list) {
+    let first_active = user_to_first_active_since_today[userid]
+    let last_active = user_to_last_active_since_today[userid]
+    let days_active = first_active - last_active
+    let attritioned = 1
+    if (last_active == 0) {
+      attritioned = 0
+    }
+    lifetimes.push(days_active)
+    attritions.push(attritioned)
+  }
+  return {
+    lifetimes,
+    attritions
+  }
+}
+
 //async function get_intervention_to_num_impressions_for_user(userid) {
   //let interventions_with_data = await get_
 //}
-
-let get_store_cached = {}
-
-function get_store(name) {
-  if (get_store_cached[name]) {
-    return get_store_cached[name]
-  }
-  let store = localforage.createInstance({name: name})
-  get_store_cached[name] = store
-  return store
-}
-
-function clear_cache_for_func(name) {
-  let store = get_store(name)
-  store.clear()
-}
-
-function memoize_to_disk(f, func_name) {
-  if (f.length == 1) {
-    return memoize_to_disk_1arg(f, func_name)
-  }
-  if (f.length == 0) {
-    return memoize_to_disk_0arg(f, func_name)
-  }
-  throw new Exception('memoize_to_disk provided with function with inappropriate number of arguments: ' + f.name + ' with num arguments ' + f.length)
-}
-
-function memoize_to_disk_0arg(f, func_name) {
-  if (func_name == null) {
-    func_name = f.name
-  }
-  let store = get_store('memoizedisk|' + func_name)
-  return async function() {
-    let cached_value = await store.getItem('default')
-    if (cached_value != null) {
-      return cached_value
-    }
-    cached_value = await f()
-    if (cached_value != null) {
-      await store.setItem('default', cached_value)
-    }
-    return cached_value
-  }
-}
-
-function memoize_to_disk_1arg(f, func_name) {
-  if (func_name == null) {
-    func_name = f.name
-  }
-  let store = get_store('memoizedisk|' + func_name)
-  return async function(arg) {
-    let cached_value = await store.getItem(arg)
-    if (cached_value != null) {
-      return cached_value
-    }
-    console.log('not cached: ' + arg + ' for function ' + func_name)
-    cached_value = await f(arg)
-    console.log('cached_value:')
-    console.log(cached_value)
-    if (cached_value != null) {
-      await store.setItem(arg, cached_value)
-    }
-    return cached_value
-  }
-}
 
 function expose_getjson(func_name, ...params) {
   let func_body = null
@@ -341,16 +535,29 @@ function expose_getjson(func_name, ...params) {
     }
     return await getjson(request_path, data)
   }
+  window[func_name + '_cached'] = memoize_to_disk_nargs(async function(...args) {
+    let data = {}
+    for (let i = 0; i < params.length; ++i) {
+      let param = params[i]
+      let value = args[i]
+      data[param] = value
+    }
+    return await getjson(request_path, data)
+  }, func_name, params.length)
 }
 
-function expose_getjson_cached(func_name, param) {
+function expose_getjson_cached(func_name, ...params) {
   let func_body = null
   let request_path = '/' + func_name
-  window[func_name] = memoize_to_disk_1arg(async function(arg) {
+  window[func_name] = memoize_to_disk_nargs(async function(...args) {
     let data = {}
-    data[param] = arg
+    for (let i = 0; i < params.length; ++i) {
+      let param = params[i]
+      let value = args[i]
+      data[param] = value
+    }
     return await getjson(request_path, data)
-  }, func_name)
+  }, func_name, params.length)
 }
 
 function make_getjson(func_name, ...params) {
@@ -383,11 +590,15 @@ expose_getjson('get_is_logging_enabled_for_user', 'userid')
 
 expose_getjson('get_user_to_is_logging_enabled')
 
+expose_getjson('listcollections')
+
 expose_getjson_cached('get_intervention_to_num_times_seen', 'userid')
 
 expose_getjson('get_users_with_logs_who_are_no_longer_active')
 
 expose_getjson('get_last_interventions_for_former_users')
+
+expose_getjson('get_last_interventions_and_num_impressions_for_former_users')
 
 expose_getjson('get_user_to_dates_active')
 

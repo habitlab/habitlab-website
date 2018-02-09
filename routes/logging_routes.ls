@@ -14,6 +14,7 @@
   mongodb
   need_query_properties
   get_webvisits
+  fix_object
 } = require 'libs/server_common'
 
 require! {
@@ -39,7 +40,7 @@ app.post '/add_secret', (ctx) ->>
     if (await n2p -> secrets.findOne({'user_id': user_id}, it))?
       ctx.body = JSON.stringify {response: 'error', error: 'Already have set user_secret for user_id'}
       return
-    await n2p -> secrets.insert(query, it)
+    await n2p -> secrets.insert(fix_object(query), it)
   catch err
     console.error 'error in add_secret'
     console.error err
@@ -56,7 +57,7 @@ app.post '/add_logging_state', (ctx) ->>
       delete query.callback
     query.timestamp = Date.now()
     query.ip = ctx.request.ip_address_fixed
-    await n2p -> logging_states.insert(query, it)
+    await n2p -> logging_states.insert(fix_object(query), it)
   catch err
     console.error 'error in add_logging_state'
     console.error err
@@ -73,7 +74,7 @@ app.get '/add_install', (ctx) ->>
       delete query.callback
     query.timestamp = Date.now()
     query.ip = ctx.request.ip_address_fixed
-    await n2p -> installs.insert(query, it)
+    await n2p -> installs.insert(fix_object(query), it)
   catch err
     console.error 'error in add_install'
     console.error err
@@ -90,7 +91,7 @@ app.post '/add_install', (ctx) ->>
       delete query.callback
     query.timestamp = Date.now()
     query.ip = ctx.request.ip_address_fixed
-    await n2p -> installs.insert(query, it)
+    await n2p -> installs.insert(fix_object(query), it)
   catch err
     console.error 'error in add_install'
     console.error err
@@ -107,7 +108,7 @@ app.get '/add_uninstall', (ctx) ->>
       delete query.callback
     query.timestamp = Date.now()
     query.ip = ctx.request.ip_address_fixed
-    await n2p -> uninstalls.insert(query, it)
+    await n2p -> uninstalls.insert(fix_object(query), it)
   catch err
     console.error 'error in add_uninstall'
     console.error err
@@ -124,7 +125,7 @@ app.get '/add_uninstall_feedback', (ctx) ->>
       delete query.callback
     query.timestamp = Date.now()
     query.ip = ctx.request.ip_address_fixed
-    await n2p -> uninstalls.insert(query, it)
+    await n2p -> uninstalls.insert(fix_object(query), it)
   catch err
     console.error 'error in add_uninstall_feedback'
     console.error err
@@ -155,7 +156,7 @@ app.post '/addtolog', (ctx) ->>
     if ctx.request.body.timestamp?
       ctx.request.body.timestamp_local = ctx.request.body.timestamp
     ctx.request.body.timestamp = Date.now()
-    await n2p -> collection.insert(ctx.request.body, it)
+    await n2p -> collection.insert(fix_object(ctx.request.body), it)
   catch err
     console.error 'error in addtolog'
     console.error err
@@ -179,7 +180,7 @@ app.post '/sync_collection_item', (ctx) ->>
     if ctx.request.body.timestamp?
       ctx.request.body.timestamp_local = ctx.request.body.timestamp
     ctx.request.body.timestamp = Date.now()
-    await n2p -> collection.insert(ctx.request.body, it)
+    await n2p -> collection.insert(fix_object(ctx.request.body), it)
   catch err
     console.error 'error in sync_collection_item'
     console.error err
@@ -196,7 +197,7 @@ app.post '/addsignup', (ctx) ->>
     return
   try
     [signups, db] = await get_signups()
-    await n2p -> signups.insert(ctx.request.body, it)
+    await n2p -> signups.insert(fix_object(ctx.request.body), it)
   catch err
     console.error 'error in addsignup'
     console.error err
@@ -212,7 +213,7 @@ app.get '/addsignup', (ctx) ->>
     return
   try
     [signups,db] = await get_signups()
-    await n2p -> signups.insert(ctx.request.query, it)
+    await n2p -> signups.insert(fix_object(ctx.request.query), it)
   catch err
     console.error 'error in addsignup'
     console.error err
@@ -228,7 +229,7 @@ app.get '/logwebvisit', (ctx) ->>
   try
     [webvisits, db] = await get_webvisits()
     timestamp = Date.now()
-    await n2p -> webvisits.insert({userid, domain, action, timestamp}, it)
+    await n2p -> webvisits.insert(fix_object({userid, domain, action, timestamp}), it)
   catch err
     console.error 'error in logwebvisit'
     console.error err

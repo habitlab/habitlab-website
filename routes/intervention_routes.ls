@@ -6,6 +6,7 @@
   need_query_property
   get_intervention_votes
   get_intervention_votes_total
+  fix_object
 } = require 'libs/server_common'
 
 require! {
@@ -76,7 +77,7 @@ app.get '/add_contributed_intervention', (ctx) ->>
     comments
   }
   [contributed_interventions, db] = await get_contributed_interventions()
-  result = await n2p -> contributed_interventions.insert(new_contributed_intervention, it)
+  result = await n2p -> contributed_interventions.insert(fix_object(new_contributed_intervention), it)
   ctx.body = JSON.stringify {response: 'done', success: true}
   db?close()
 
@@ -124,8 +125,8 @@ proposed_goals_list = [
 export upvote_intervention = (intervention_name, userid) ->>
   [intervention_votes, db] = await get_intervention_votes()
   [intervention_votes_total, db2] = await get_intervention_votes_total()
-  await n2p -> intervention_votes.update({intervention_name, userid}, {$inc: {upvotes: 1}}, {upsert: true}, it)
-  await n2p -> intervention_votes_total.update({intervention_name}, {$inc: {upvotes: 1}}, {upsert: true}, it)
+  await n2p -> intervention_votes.update(fix_object({intervention_name, userid}), {$inc: {upvotes: 1}}, {upsert: true}, it)
+  await n2p -> intervention_votes_total.update(fix_object({intervention_name}), {$inc: {upvotes: 1}}, {upsert: true}, it)
   db.close()
   db2.close()
   return
@@ -155,7 +156,7 @@ export clear_intervention_upvotes_total = ->>
 
 export get_intervention_upvotes_total = (intervention_name) ->>
   [intervention_votes_total, db] = await get_intervention_votes_total()
-  results = await n2p -> intervention_votes_total.find({intervention_name}).toArray(it)
+  results = await n2p -> intervention_votes_total.find(fix_object({intervention_name})).toArray(it)
   db.close()
   if results.length < 1
     return 0
@@ -187,7 +188,7 @@ app.get '/add_proposed_goal', (ctx) ->>
   if need_query_property ctx, 'description'
     return
   [proposed_goals, db] = await get_proposed_goals()
-  existing_goals_with_description = await n2p -> proposed_goals.find({description: description}).toArray(it)
+  existing_goals_with_description = await n2p -> proposed_goals.find(fix_object({description: description})).toArray(it)
   if existing_goals_with_description.length > 0
     ctx.body = JSON.stringify {response: 'error', error: 'Goal with this description already exists', result: existing_goals_with_description[0]}
     return
