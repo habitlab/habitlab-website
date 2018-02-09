@@ -124,10 +124,10 @@ async function list_active_users_week() {
 }
 
 async function list_intervention_logs(userid) {
-  let collections_list = await list_logs_for_user(user_id)
+  let collections_list = await list_logs_for_user(userid)
   let log_name_list = []
   for (let collection_name of collections_list) {
-    let collection_name_short = collection_name.replace(user_id + '_', '')
+    let collection_name_short = collection_name.replace(userid + '_', '')
     log_name_list.push(collection_name_short)
   }
   let log_name_list_filtered = []
@@ -152,6 +152,35 @@ async function get_user_to_uninstall_times() {
 
 async function get_collection_for_user(userid, collection_name) {
   return await getjson('/printcollection', {userid: userid, logname: collection_name})
+}
+
+async function get_user_max_intervention_count(userid) {
+  let intervention_count_dict = Promise.resolve(get_intervention_count_dict(userid))
+  // let curr = 0
+  // intervention_count_dict.then(function(x) {
+  //   for ([k, v] of x){
+  //     if (v > curr) {
+  //       curr = v
+  //     }
+  //   }
+  // })
+  console.log(intervention_count_dict)
+}
+
+async function get_intervention_count_dict(userid) {
+  let combined_collection = Promise.resolve(get_combined_collection_for_user(userid))
+
+  let intervention_count_dict = {}
+  combined_collection.then(function(value) {
+    for (let entry of value) {
+      let intervention_name = entry["intervention"]
+      if (intervention_count_dict[intervention_name] == null) {
+        intervention_count_dict[intervention_name] = 0
+      }
+      intervention_count_dict[intervention_name] += 1
+    }
+  })
+  return intervention_count_dict
 }
 
 async function get_combined_collection_for_user(userid) {

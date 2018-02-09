@@ -60,6 +60,11 @@
 
 <br>
 
+<div>Retention curves:</div>
+<retention-rates id="retention_curves"></div>
+
+<br>
+
 <div>List of users active in the past week:</div>
 <div id="user_list"></div>
 
@@ -399,7 +404,7 @@ async function main() {
   user_ids = await get_user_ids()
   // show_user_list()
 
-  get_temporary_disable_count()
+  // get_temporary_disable_count()
 
   display_users_with_logging_enabled()
   display_users_with_logging_disabled()
