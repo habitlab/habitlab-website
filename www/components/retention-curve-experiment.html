@@ -57,6 +57,9 @@
 
       },
       ready: async function() {
+        let user_to_install_data = await get_user_to_install_data_cached()
+        console.log('user_to_install_data')
+        console.log(user_to_install_data)
         let user_to_first_active_since_today = await list_first_active_date_for_all_users_since_today()
         let all_user_list = Object.keys(user_to_first_active_since_today)
         let condition_to_users = {}
@@ -72,6 +75,19 @@
           
         //}
         for (let userid of all_user_list) {
+          let install_info = user_to_install_data[userid]
+          if (install_info == null) {
+            // don't have install event logged
+            continue
+          }
+          if (install_info.chrome_runtime_id != "obghclocpdgcekcognpkblghkedcpdgd") {
+            // not running production version
+            continue
+          }
+          if (install_info.last_visit_to_chrome_store == -1 && install_info.last_visit_to_website == -1) {
+            // fake user or autoinstall
+            continue
+          } 
           //console.log(userid)
           let interventions_seen = user_to_interventions_seen[userid]
           //if (interventions_seen == null || interventions_seen.length == 0) continue
@@ -105,7 +121,7 @@
           'half_of_defaults',
           'one'
         ]
-        let days_to_analyze = 7
+        let days_to_analyze = 14
         console.log('sample sizes:')
         let retention_data = await get_retention_curves_for_users(condition_to_users['all_of_defaults'], days_to_analyze)
         console.log(retention_data[0])
@@ -124,11 +140,11 @@
         let lifetimes1 = await get_lifetimes_and_whether_attrition_was_observed_for_users(condition_to_users['all_of_defaults'])
         let lifetimes2 = await get_lifetimes_and_whether_attrition_was_observed_for_users(condition_to_users['half_of_defaults'])
         let lifetimes3 = await get_lifetimes_and_whether_attrition_was_observed_for_users(condition_to_users['one'])
-        console.log({
+        console.log(JSON.stringify({
           all_of_defaults: lifetimes1,
           half_of_defaults: lifetimes2,
           one: lifetimes3,
-        })
+        }))
       }
     })
   </script>

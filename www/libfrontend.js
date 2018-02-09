@@ -157,8 +157,28 @@ async function getjson(path, data) {
   return await fetch(path + querystring).then(x => x.json())
 }
 
+async function get_user_to_install_data() {
+  let install_info_list = await get_installs()
+  let output = {}
+  for (let install_info of install_info_list) {
+    let user_id = install_info.user_id
+    output[user_id] = install_info
+  }
+  return output
+}
+
+async function get_user_to_install_data_cached() {
+  let install_info_list = await get_installs_cached()
+  let output = {}
+  for (let install_info of install_info_list) {
+    let user_id = install_info.user_id
+    output[user_id] = install_info
+  }
+  return output
+}
+
 async function get_install_data() {
-  let install_info_list = await fetch('/get_installs').then(x => x.json())
+  let install_info_list = await get_installs()
   let output = []
    for (let install_info of install_info_list) {
     if (install_info.devmode || install_info.unofficial_version) {
@@ -176,7 +196,7 @@ async function get_install_data() {
 }
 
 async function get_uninstall_data() {
-  let install_info_list = await getjson('/get_uninstalls')
+  let install_info_list = await get_uninstalls()
   let output = []
   for (let install_info of install_info_list) {
     if (install_info.r != 0) { // not stable release
@@ -591,6 +611,10 @@ expose_getjson('get_is_logging_enabled_for_user', 'userid')
 expose_getjson('get_user_to_is_logging_enabled')
 
 expose_getjson('listcollections')
+
+expose_getjson('get_installs')
+
+expose_getjson('get_uninstalls')
 
 expose_getjson_cached('get_intervention_to_num_times_seen', 'userid')
 
