@@ -1,9 +1,8 @@
 <!DOCTYPE html>
 <html>
+
 <head>
   <title>Dashboard</title>
-
-
 
   <script src="bower_components/moment/moment.js"></script>
   <script src="bower_components/jquery/dist/jquery.min.js"></script>
@@ -15,19 +14,15 @@
   </script>
   <script src="libfrontend.js"></script>
   <script src="npm_libs/geturlparameters.js"></script>
-
   <link rel="import" href="bower_components/polymer/polymer.html">
-  <link rel="import" href="components/intervention-effectiveness-display.html">
-  
+  <link rel="import" href="components/intervention-failure-display.html">
 </head>
 
 <body>
 
-<style>
-</style>
-
-<div>Intervention effectiveness across domains:</div>
-<intervention-effectiveness-display userid="all" id="effectiveness_display"></intervention-effectiveness-display>
+  <div>Occurences of Intervention Failures Across Domains:</div>
+  <intervention-failure-display userid="all" id="failure_display"></intervention-failure-display>
 
 </body>
+
 </html>
