@@ -135,11 +135,25 @@ export get_intervention_votes_total = ->>
 export get_webvisits = ->>
   return await get_collection('webvisits')
 
-export list_collections = ->>
+debounce = require('promise-debounce')
+
+memoizeSingleAsync = (func) ->
+  debounced_func = debounce func
+  cached_val = null
+  return ->>
+    if cached_val?
+      return cached_val
+    result = await debounced_func()
+    cached_val := result
+    return result
+
+export list_collections_real = ->>
   ndb = await get_mongo_db()
   collections_list = await n2p -> ndb.listCollections().toArray(it)
   #ndb.close()
   return collections_list.map (.name)
+
+export list_collections = memoizeSingleAsync list_collections_real
 
 export list_log_collections_for_user = (userid) ->>
   all_collections = await list_collections()
