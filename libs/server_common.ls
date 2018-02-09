@@ -39,29 +39,65 @@ export mongourl = getsecret('MONGODB_URI') ? 'mongodb://localhost:27017/default'
 
 export mongourl2 = getsecret('MONGODB_URI2') ? 'mongodb://localhost:27017/default'
 
+sleep = (time) ->>
+  return new Promise ->
+    setTimeout(it, time)
+
+local_cache_db = null
+getdb_running = false
+
 export get_mongo_db = ->>
+  if local_cache_db?
+    return local_cache_db
+  if getdb_running
+    while getdb_running
+      await sleep(1)
+    while getdb_running or local_cache_db == null
+      await sleep(1)
+    return local_cache_db
+  getdb_running := true
   try
-    return await n2p -> mongodb.MongoClient.connect mongourl, it
+    local_cache_db := await n2p -> mongodb.MongoClient.connect mongourl, it
+    return local_cache_db
   catch err
     console.error 'error getting mongodb'
     console.error err
     return
 
+local_cache_db2 = null
+getdb_running2 = false
+
 export get_mongo_db2 = ->>
+  if local_cache_db2?
+    return local_cache_db2
+  if getdb_running2
+    while getdb_running2
+      await sleep(1)
+    while getdb_running2 or local_cache_db2 == null
+      await sleep(1)
+    return local_cache_db2
+  getdb_running2 := true
   try
-    return await n2p -> mongodb.MongoClient.connect mongourl2, it
+    local_cache_db2 := await n2p -> mongodb.MongoClient.connect mongourl2, it
+    return local_cache_db2
   catch err
-    console.error 'error getting mongodb'
+    console.error 'error getting mongodb2'
     console.error err
     return
 
 export get_collection = (collection_name) ->>
   db = await get_mongo_db()
-  return [db.collection(collection_name), db]
+  fakedb = {
+    close: ->
+  }
+  return [db.collection(collection_name), fakedb]
 
 export get_collection2 = (collection_name) ->>
   db = await get_mongo_db2()
-  return [db.collection(collection_name), db]
+  fakedb = {
+    close: ->
+  }
+  return [db.collection(collection_name), fakedb]
 
 export get_signups = ->>
   return await get_collection('signups')
