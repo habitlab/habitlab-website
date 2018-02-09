@@ -138,7 +138,7 @@ export get_webvisits = ->>
 export list_collections = ->>
   ndb = await get_mongo_db()
   collections_list = await n2p -> ndb.listCollections().toArray(it)
-  ndb.close()
+  #ndb.close()
   return collections_list.map (.name)
 
 export list_log_collections_for_user = (userid) ->>
