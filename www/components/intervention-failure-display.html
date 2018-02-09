@@ -1,7 +1,7 @@
 <link rel="import" href="../bower_components/polymer/polymer.html">
 <link rel="import" href="../bower_components/google-chart/google-chart.html">
 
-<dom-module id="failed_intervention_display">
+<dom-module id="intervention-failure-display">
   <template>
     <style>
       :root {
@@ -91,35 +91,23 @@
     Polymer({
       is: 'intervention-failure-display',
       properties: {
-        userid: {
-          type: 'String',
-          observer: 'userid_changed'
-        },
         domain_and_intervention_failure_list: {
           type: Array,
         }
       },
-      userid_changed: async function () {
-        let userid = this.userid
-        if (!userid) {
-          return
-        }
-        let domain_to_intervention_to_session_lengths;
-        if (userid == 'all') {
-          domain_to_intervention_to_session_lengths = await get_session_lengths_with_intervention_all_users()
-        } else {
-          domain_to_intervention_to_session_lengths = await get_session_lengths_with_intervention(userid)
-        }
+      ready: async function () {
+        //let domain_to_intervention_to_session_lengths = await get_session_lengths_with_intervention_all_users()
+        let intervention_to_num_times_seen_total = await get_intervention_to_num_times_seen_total()
         let short_users = await get_short_users()
         console.log(short_users)
         let domain_and_intervention_failure_list = []
         let intervention_to_short_count = await get_intervention_to_short_count(short_users)
         console.log(intervention_to_short_count)
         console.log('here')
-        for (let domain of Object.keys(domain_to_intervention_to_session_lengths)) {
+        for (let domain of ["All Domains"]) {
           let intervention_info_list = []
-          let intervention_to_session_lengths = domain_to_intervention_to_session_lengths[domain]
-          for (let intervention_name of Object.keys(intervention_to_session_lengths)) {
+          //let intervention_to_session_lengths = domain_to_intervention_to_session_lengths[domain]
+          for (let intervention_name of Object.keys(intervention_to_num_times_seen_total)) {
             //let short_count = await get_short_count(intervention_name, short_users)
             let short_count = intervention_to_short_count[intervention_name.replace('/', ':')]
             if(short_count == null) continue
