@@ -1894,6 +1894,10 @@ process-nextick-args@~1.0.6:
   version "1.0.7"
   resolved "https://registry.yarnpkg.com/process-nextick-args/-/process-nextick-args-1.0.7.tgz#150e20b756590ad3f91093f25a4f2ad8bff30ba3"
 
+promise-debounce@^1.0.1:
+  version "1.0.1"
+  resolved "https://registry.yarnpkg.com/promise-debounce/-/promise-debounce-1.0.1.tgz#6ed76f8f79d0144fdbd01cc15589ce57f9d71e78"
+
 punycode@^1.4.1:
   version "1.4.1"
   resolved "https://registry.yarnpkg.com/punycode/-/punycode-1.4.1.tgz#c0d5a63b2718800ad8e1eb0fa5269c84dd41845e"

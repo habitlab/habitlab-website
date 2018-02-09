@@ -40,7 +40,7 @@ app.get '/feedback', auth, (ctx) ->>
       for item in all_items
         feedback.push item["feedback"] if item["feedback"]?
   ctx.body = JSON.stringify feedback
-  db.close()
+  #db.close()
   return
 
 app.get '/getactiveusers_withversion', auth, (ctx) ->>
@@ -76,7 +76,7 @@ app.get '/getactiveusers_withversion', auth, (ctx) ->>
             if semver.gt version, user_to_version[userid]
               user_to_version[userid] = version
   ctx.body = JSON.stringify user_to_version
-  db.close()
+  #db.close()
   return
 
 app.get '/get_version_for_user', auth, (ctx) ->>
@@ -109,7 +109,7 @@ app.get '/get_version_for_user', auth, (ctx) ->>
             if semver.gt version, user_to_version[userid]
               user_to_version[userid] = version
   ctx.body = user_to_version[userid]
-  db.close()
+  #db.close()
 
 app.get '/getactiveusers', auth, (ctx) ->>
   ctx.type = 'json'
@@ -141,7 +141,7 @@ app.get '/getactiveusers', auth, (ctx) ->>
           users.push userid
           users_set[userid] = true
   ctx.body = JSON.stringify users
-  db.close()
+  #db.close()
   return
 
 app.get '/get_time_last_log_was_sent_for_user', auth, (ctx) ->>
@@ -169,7 +169,7 @@ app.get '/get_time_last_log_was_sent_for_user', auth, (ctx) ->>
         if timestamp > latest_timestamp
           latest_timestamp = timestamp
   ctx.body = latest_timestamp
-  db.close()
+  #db.close()
 
 export get_intervention_to_time_most_recently_seen = (user_id) ->>
   collections = await list_intervention_collections_for_user(user_id)
@@ -181,7 +181,7 @@ export get_intervention_to_time_most_recently_seen = (user_id) ->>
     all_items = await n2p -> collection.find({}, {fields: {'timestamp': 1}}).toArray(it)
     timestamp = prelude.maximum all_items.map (.timestamp)
     output[entry_key] = timestamp
-  db.close()
+  #db.close()
   return output
 
 expose_get_auth get_intervention_to_time_most_recently_seen, 'userid'
@@ -871,7 +871,7 @@ export get_user_to_dates_active_oldlogs = ->>
       #  if not users_set[userid]?
       #    users.push userid
       #    users_set[userid] = true
-  db.close()
+  #db.close()
   return user_to_days_active
 
 expose_get_auth get_user_to_dates_active_oldlogs
