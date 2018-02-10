@@ -93,6 +93,9 @@
           //if (interventions_seen == null || interventions_seen.length == 0) continue
           let condition = await get_experiment_condition_for_user_cached(userid)
           if (condition == 'none') continue
+          //let default_interventions = await get_default_interventions_for_user(userid)
+          //console.log('default interventions are')
+          //console.log(default_interventions)
           let onboarding_completed = await get_did_user_complete_onboarding_cached(userid)
           //if (!onboarding_completed) continue
           let intervention_to_num_times_seen = await get_intervention_to_num_times_seen(userid)

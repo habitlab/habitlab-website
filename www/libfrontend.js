@@ -421,6 +421,20 @@ let get_experiment_condition_for_user = async function(userid) {
 
 let get_experiment_condition_for_user_cached = memoize_to_disk_1arg(get_experiment_condition_for_user, 'get_experiment_condition_for_user')
 
+let get_default_interventions_for_user = async function(userid) {
+  let intervention_logs = await get_collection_for_user(userid, 'logs:interventions')
+  for (let x of intervention_logs) {
+    if (x.type == 'default_interventions_on_install') {
+      if (x.enabled_interventions != null) {
+        return x.enabled_interventions
+      }
+    }
+  }
+  return 'none'
+}
+
+let get_default_interventions_for_user_cached = memoize_to_disk_1arg(get_default_interventions_for_user, 'get_default_interventions_for_user')
+
 let get_did_user_complete_onboarding = async function(userid) {
   let pages_logs = await get_collection_for_user(userid, 'logs:pages')
   for (let x of pages_logs) {
