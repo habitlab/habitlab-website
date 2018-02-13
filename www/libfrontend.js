@@ -157,6 +157,134 @@ async function getjson(path, data) {
   return await fetch(path + querystring).then(x => x.json())
 }
 
+async function get_user_to_install_times_list() {
+  let install_info_list = await get_installs()
+  let output = {}
+  for (let install_info of install_info_list) {
+    let user_id = install_info.user_id
+    if (output[user_id] == null) {
+      output[user_id] = []
+    }
+    output[user_id].push(install_info.timestamp)
+  }
+  for (let user_id of Object.keys(output)) {
+    output[user_id].sort((a, b) => a - b)
+  }
+  return output
+}
+
+async function get_user_to_install_times_list_cached() {
+  let install_info_list = await get_installs_cached()
+  let output = {}
+  for (let install_info of install_info_list) {
+    let user_id = install_info.user_id
+    if (output[user_id] == null) {
+      output[user_id] = []
+    }
+    output[user_id].push(install_info.timestamp)
+  }
+  for (let user_id of Object.keys(output)) {
+    output[user_id].sort((a, b) => a - b)
+  }
+  return output
+}
+
+async function get_user_to_install_dates_list() {
+  let install_info_list = await get_installs()
+  let output = {}
+  for (let install_info of install_info_list) {
+    let user_id = install_info.user_id
+    if (output[user_id] == null) {
+      output[user_id] = []
+    }
+    output[user_id].push(moment(install_info.timestamp).tz("America/Los_Angeles").format('YYYYMMDD'))
+  }
+  for (let user_id of Object.keys(output)) {
+    output[user_id].sort()
+  }
+  return output
+}
+
+async function get_user_to_install_dates_list_cached() {
+  let install_info_list = await get_installs_cached()
+  let output = {}
+  for (let install_info of install_info_list) {
+    let user_id = install_info.user_id
+    if (output[user_id] == null) {
+      output[user_id] = []
+    }
+    output[user_id].push(moment(install_info.timestamp).tz("America/Los_Angeles").format('YYYYMMDD'))
+  }
+  for (let user_id of Object.keys(output)) {
+    output[user_id].sort()
+  }
+  return output
+}
+
+async function get_user_to_uninstall_times_list() {
+  let install_info_list = await get_uninstalls()
+  let output = {}
+  for (let install_info of install_info_list) {
+    let user_id = install_info.u
+    if (output[user_id] == null) {
+      output[user_id] = []
+    }
+    output[user_id].push(install_info.timestamp)
+  }
+  for (let user_id of Object.keys(output)) {
+    output[user_id].sort((a, b) => a - b)
+  }
+  return output
+}
+
+async function get_user_to_uninstall_times_list_cached() {
+  let install_info_list = await get_uninstalls_cached()
+  let output = {}
+  for (let install_info of install_info_list) {
+    let user_id = install_info.u
+    if (output[user_id] == null) {
+      output[user_id] = []
+    }
+    output[user_id].push(install_info.timestamp)
+  }
+  for (let user_id of Object.keys(output)) {
+    output[user_id].sort((a, b) => a - b)
+  }
+  return output
+}
+
+async function get_user_to_uninstall_dates_list() {
+  let install_info_list = await get_uninstalls()
+  let output = {}
+  for (let install_info of install_info_list) {
+    let user_id = install_info.u
+    if (output[user_id] == null) {
+      output[user_id] = []
+    }
+    output[user_id].push(moment(install_info.timestamp).tz("America/Los_Angeles").format('YYYYMMDD'))
+  }
+  for (let user_id of Object.keys(output)) {
+    output[user_id].sort()
+  }
+  return output
+}
+
+async function get_user_to_uninstall_dates_list_cached() {
+  let install_info_list = await get_uninstalls_cached()
+  let output = {}
+  for (let install_info of install_info_list) {
+    let user_id = install_info.u
+    if (output[user_id] == null) {
+      output[user_id] = []
+    }
+    output[user_id].push(moment(install_info.timestamp).tz("America/Los_Angeles").format('YYYYMMDD'))
+  }
+  for (let user_id of Object.keys(output)) {
+    output[user_id].sort()
+  }
+  return output
+}
+
 async function get_user_to_install_data() {
   let install_info_list = await get_installs()
   let output = {}
@@ -555,6 +683,10 @@ async function get_lifetimes_and_whether_attrition_was_observed_for_users(user_l
       console.log("days_active is negative")
       console.log(userid)
       continue
+    }
+    if (days_active > 50) {
+      console.log("days_active is too large")
+      console.log(userid)
     }
     let attritioned = 1
     if (last_active == 0) {
