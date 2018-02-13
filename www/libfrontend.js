@@ -532,14 +532,30 @@ async function get_retention_curves_for_users(user_list, days_to_analyze) {
 }
 
 async function get_lifetimes_and_whether_attrition_was_observed_for_users(user_list) {
+  console.log('running get_lifetimes_and_whether_attrition_was_observed_for_users')
   let lifetimes = []
   let attritions = []
   let user_to_first_active_since_today = await list_first_active_date_for_all_users_since_today()
   let user_to_last_active_since_today = await list_last_active_date_for_all_users_since_today()
   for (let userid of user_list) {
     let first_active = user_to_first_active_since_today[userid]
+    if (first_active == null) {
+      console.log("first_active is null")
+      console.log(userid)
+      continue
+    }
     let last_active = user_to_last_active_since_today[userid]
+    if (last_active == null) {
+      console.log("last_active is null")
+      console.log(userid)
+      continue
+    }
     let days_active = first_active - last_active
+    if (days_active < 0) {
+      console.log("days_active is negative")
+      console.log(userid)
+      continue
+    }
     let attritioned = 1
     if (last_active == 0) {
       attritioned = 0

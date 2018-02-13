@@ -552,6 +552,8 @@ app.get '/get_user_to_dates_active', auth, (ctx) ->>
       if not output[user]?
         output[user] = []
       output[user].push day
+    for user in Object.keys(output)
+      output[user].sort()
     ctx.body = JSON.stringify output
   catch err
     console.log 'error in get_user_active_dates'
