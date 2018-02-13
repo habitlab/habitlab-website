@@ -165,6 +165,10 @@ async function get_user_to_install_times_list() {
     if (output[user_id] == null) {
       output[user_id] = []
     }
+    if (install_info.timestamp == null) {
+      console.log('missing timestamp for user install event for user_id ' + user_id)
+      continue
+    }
     output[user_id].push(install_info.timestamp)
   }
   for (let user_id of Object.keys(output)) {
@@ -183,6 +187,10 @@ async function get_user_to_install_times_list_cached() {
     }
     output[user_id].push(install_info.timestamp)
   }
+  if (install_info.timestamp == null) {
+    console.log('missing timestamp for user install event for user_id ' + user_id)
+    continue
+  }
   for (let user_id of Object.keys(output)) {
     output[user_id].sort((a, b) => a - b)
   }
@@ -196,6 +204,10 @@ async function get_user_to_install_dates_list() {
     let user_id = install_info.user_id
     if (output[user_id] == null) {
       output[user_id] = []
+    }
+    if (install_info.timestamp == null) {
+      console.log('missing timestamp for user install event for user_id ' + user_id)
+      continue
     }
     output[user_id].push(moment(install_info.timestamp).tz("America/Los_Angeles").format('YYYYMMDD'))
   }
@@ -213,6 +225,10 @@ async function get_user_to_install_dates_list_cached() {
     if (output[user_id] == null) {
       output[user_id] = []
     }
+    if (install_info.timestamp == null) {
+      console.log('missing timestamp for user install event for user_id ' + user_id)
+      continue
+    }
     output[user_id].push(moment(install_info.timestamp).tz("America/Los_Angeles").format('YYYYMMDD'))
   }
   for (let user_id of Object.keys(output)) {
@@ -228,6 +244,10 @@ async function get_user_to_uninstall_times_list() {
     let user_id = install_info.u
     if (output[user_id] == null) {
       output[user_id] = []
+    }
+    if (install_info.timestamp == null) {
+      console.log('missing timestamp for user install event for user_id ' + user_id)
+      continue
     }
     output[user_id].push(install_info.timestamp)
   }
@@ -245,6 +265,10 @@ async function get_user_to_uninstall_times_list_cached() {
     if (output[user_id] == null) {
       output[user_id] = []
     }
+    if (install_info.timestamp == null) {
+      console.log('missing timestamp for user install event for user_id ' + user_id)
+      continue
+    }
     output[user_id].push(install_info.timestamp)
   }
   for (let user_id of Object.keys(output)) {
@@ -261,6 +285,10 @@ async function get_user_to_uninstall_dates_list() {
     if (output[user_id] == null) {
       output[user_id] = []
     }
+    if (install_info.timestamp == null) {
+      console.log('missing timestamp for user uninstall event for user_id ' + user_id)
+      continue
+    }
     output[user_id].push(moment(install_info.timestamp).tz("America/Los_Angeles").format('YYYYMMDD'))
   }
   for (let user_id of Object.keys(output)) {
@@ -276,6 +304,10 @@ async function get_user_to_uninstall_dates_list_cached() {
     let user_id = install_info.u
     if (output[user_id] == null) {
       output[user_id] = []
+    }
+    if (install_info.timestamp == null) {
+      console.log('missing timestamp for user uninstall event for user_id ' + user_id)
+      continue
     }
     output[user_id].push(moment(install_info.timestamp).tz("America/Los_Angeles").format('YYYYMMDD'))
   }
@@ -535,33 +567,67 @@ let list_intervention_logs_for_all_users = async function() {
 
 let list_intervention_logs_for_all_users_cached = memoize_to_disk_0arg(list_intervention_logs_for_all_users, 'list_intervention_logs_for_all_users')
 
-let get_experiment_condition_for_user = async function(userid) {
+let get_experiment_info_for_user = async function(userid) {
   let intervention_logs = await get_collection_for_user(userid, 'logs:interventions')
   for (let x of intervention_logs) {
     if (x.type == 'default_interventions_on_install') {
-      if (x.interventions_per_goal != null) {
-        return x.interventions_per_goal
+      if (x.interventions_per_goal != null && x.enabled_interventions != null) {
+        return x
       }
     }
   }
   return 'none'
 }
 
-let get_experiment_condition_for_user_cached = memoize_to_disk_1arg(get_experiment_condition_for_user, 'get_experiment_condition_for_user')
+let get_experiment_info_for_user_cached = memoize_to_disk_1arg(get_experiment_info_for_user, 'get_experiment_info_for_user')
+
+let get_experiment_date_for_user = async function(userid) {
+  let experiment_info = await get_experiment_info_for_user(userid)
+  if (experiment_info != null && experiment_info != 'none' && experiment_info.timestamp != null) {
+    return moment(experiment_info.timestamp).tz("America/Los_Angeles").format('YYYYMMDD')
+  }
+  return 'none'
+}
+
+let get_experiment_date_for_user_cached = async function(userid) {
+  let experiment_info = await get_experiment_info_for_user_cached(userid)
+  if (experiment_info != null && experiment_info != 'none' && experiment_info.timestamp != null) {
+    return moment(experiment_info.timestamp).tz("America/Los_Angeles").format('YYYYMMDD')
+  }
+  return 'none'
+}
+
+let get_experiment_condition_for_user = async function(userid) {
+  let experiment_info = await get_experiment_info_for_user(userid)
+  if (experiment_info != null && experiment_info != 'none' && experiment_info.interventions_per_goal != null) {
+    return experiment_info.interventions_per_goal
+  }
+  return 'none'
+}
+
+let get_experiment_condition_for_user_cached = async function(userid) {
+  let experiment_info = await get_experiment_info_for_user_cached(userid)
+  if (experiment_info != null && experiment_info != 'none' && experiment_info.interventions_per_goal != null) {
+    return experiment_info.interventions_per_goal
+  }
+  return 'none'
+}
 
 let get_default_interventions_for_user = async function(userid) {
-  let intervention_logs = await get_collection_for_user(userid, 'logs:interventions')
-  for (let x of intervention_logs) {
-    if (x.type == 'default_interventions_on_install') {
-      if (x.enabled_interventions != null) {
-        return x.enabled_interventions
-      }
-    }
+  let experiment_info = await get_experiment_info_for_user(userid)
+  if (experiment_info != null && experiment_info != 'none' && experiment_info.enabled_interventions != null) {
+    return experiment_info.enabled_interventions
   }
   return 'none'
 }
 
-let get_default_interventions_for_user_cached = memoize_to_disk_1arg(get_default_interventions_for_user, 'get_default_interventions_for_user')
+let get_default_interventions_for_user_cached = async function(userid) {
+  let experiment_info = await get_experiment_info_for_user_cached(userid)
+  if (experiment_info != null && experiment_info != 'none' && experiment_info.enabled_interventions != null) {
+    return experiment_info.enabled_interventions
+  }
+  return 'none'
+}
 
 let get_did_user_complete_onboarding = async function(userid) {
   let pages_logs = await get_collection_for_user(userid, 'logs:pages')
@@ -684,7 +750,7 @@ async function get_lifetimes_and_whether_attrition_was_observed_for_users(user_l
       console.log(userid)
       continue
     }
-    if (days_active > 50) {
+    if (days_active > 22) {
       console.log("days_active is too large")
       console.log(userid)
     }
