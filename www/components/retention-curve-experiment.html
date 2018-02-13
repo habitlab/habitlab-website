@@ -20,6 +20,10 @@
         width: 100%;
         height: 600px;
       }
+      #retention_curve_experiment5 {
+        width: 100%;
+        height: 600px;
+      }
     </style>
     <google-chart
       type="line"
@@ -42,11 +46,20 @@
       rows="{{data3}}"
       options='{"tooltip": {"isHtml": true}, "legend": "none"}'
     ></google-chart>
+    Basic retention curves for each condition
     <google-chart
       type="line"
       id="retention_curve_experiment4"
-      cols='[{"label": "Day", "type": "number"},{"label": "all", "type": "number"},{"label": "half", "type": "number"},{"label": "one", "type": "number"}, {"label": "pre-experiment", "type": "number"}]'
+      cols='{{cols4}}'
       rows="{{data4}}"
+      options='{"tooltip": {"isHtml": true}}'
+    ></google-chart>
+    One condition broken further by initially selected intervention
+    <google-chart
+      type="line"
+      id="retention_curve_experiment5"
+      cols='{{cols5}}'
+      rows="{{data5}}"
       options='{"tooltip": {"isHtml": true}}'
     ></google-chart>
   </template>
@@ -75,6 +88,8 @@
         //for (let userid of all_user_list ) {
           
         //}
+        let facebook_condition_names_set = {}
+        let facebook_condition_names = []
         for (let userid of all_user_list) {
           let install_info = user_to_install_data[userid]
           if (install_info == null) {
@@ -130,27 +145,74 @@
             condition_to_users[condition] = []
           }
           condition_to_users[condition].push(userid)
+          // now break up one condition further
+          if (condition == 'one') {
+            let default_interventions = await get_default_interventions_for_user_cached(userid)
+            let facebook_interventions = []
+            for (intervention_name of Object.keys(default_interventions)) {
+              if (default_interventions[intervention_name] == true && intervention_name.startsWith('facebook/')) {
+                facebook_interventions.push(intervention_name)
+              }
+            }
+            if (facebook_interventions.length != 1) {
+              console.log('wrong number of facebook interventions for user ' + userid)
+              continue
+            }
+            let condition_name = 'one_' + facebook_interventions[0]
+            if (facebook_condition_names_set[condition_name] == null) {
+              facebook_condition_names.push(condition_name)
+              facebook_condition_names_set[condition_name] = true
+            }
+            if (condition_to_users[condition_name] == null) {
+              condition_to_users[condition_name] = []
+            }
+            condition_to_users[condition_name].push(userid)
+          }
         }
+        condition_to_users['pre-experiment'] = user_list_historic
         let condition_list = [
           'all_of_defaults',
           'half_of_defaults',
-          'one'
+          'one',
+          'pre-experiment'
+        ].concat(facebook_condition_names)
+        let condition_list_graph4 = [
+          'all_of_defaults',
+          'half_of_defaults',
+          'one',
+          'pre-experiment'
         ]
-        let days_to_analyze = 3
+        let days_to_analyze = 7
+        let condition_to_retention_data = {}
+        let condition_to_retention_graph_data = {}
+        for (let condition of condition_list) {
+          let retention_data = await get_retention_curves_for_users(condition_to_users[condition], days_to_analyze)
+          condition_to_retention_data[condition] = retention_data
+          condition_to_retention_graph_data[condition] = math.range(0, days_to_analyze + 1).map((i) => [i, retention_data[i] / retention_data[0], retention_data[i]]).toArray()
+        }
         console.log('sample sizes:')
-        let retention_data = await get_retention_curves_for_users(condition_to_users['all_of_defaults'], days_to_analyze)
-        console.log(retention_data[0])
-        this.data = math.range(0, days_to_analyze + 1).map((i) => [i, retention_data[i] / retention_data[0], retention_data[i]]).toArray()
-        let retention_data2 = await get_retention_curves_for_users(condition_to_users['half_of_defaults'], days_to_analyze)
-        console.log(retention_data2[0])
-        this.data2 = math.range(0, days_to_analyze + 1).map((i) => [i, retention_data2[i] / retention_data2[0], retention_data2[i]]).toArray()
-        let retention_data3 = await get_retention_curves_for_users(condition_to_users['one'], days_to_analyze)
-        console.log(retention_data3[0])
-        console.log(retention_data3)
-        let retention_data4 = await get_retention_curves_for_users(user_list_historic, days_to_analyze)
-        console.log(retention_data4[0])
-        this.data3 = math.range(0, days_to_analyze + 1).map((i) => [i, retention_data3[i] / retention_data3[0], retention_data3[i]]).toArray()
-        this.data4 = math.range(0, days_to_analyze + 1).map((i) => [i, retention_data[i] / retention_data[0], retention_data2[i] / retention_data2[0], retention_data3[i] / retention_data3[0], retention_data4[i] / retention_data4[0]]).toArray()
+        console.log(condition_to_retention_data['all_of_defaults'][0])
+        this.data = condition_to_retention_graph_data['all_of_defaults']
+        console.log(condition_to_retention_data['half_of_defaults'][0])
+        this.data2 = condition_to_retention_graph_data['half_of_defaults']
+        console.log(condition_to_retention_data['one'][0])
+        this.data3 = condition_to_retention_graph_data['one']
+        this.cols4 = [{"label": "Day", "type": "number"}].concat(condition_list_graph4.map(x => { return {'label': x, 'type': 'number'}}))
+        console.log('cols4 is:')
+        console.log(this.cols4)
+        this.data4 = math.range(0, days_to_analyze + 1).map((i) => {
+          return [i].concat(condition_list_graph4.map(condition => {
+            return condition_to_retention_data[condition][i] / condition_to_retention_data[condition][0]
+          }))
+        }).toArray()
+        console.log('data4 is:')
+        console.log(this.data4)
+        this.cols5 = [{"label": "Day", "type": "number"}].concat(condition_list.map(x => { return {'label': x, 'type': 'number'}}))
+        this.data5 = math.range(0, days_to_analyze + 1).map((i) => {
+          return [i].concat(condition_list.map(condition => {
+            return condition_to_retention_data[condition][i] / condition_to_retention_data[condition][0]
+          }))
+        }).toArray()
         console.log('data for making logrank test')
         let lifetimes1 = await get_lifetimes_and_whether_attrition_was_observed_for_users(condition_to_users['all_of_defaults'])
         let lifetimes2 = await get_lifetimes_and_whether_attrition_was_observed_for_users(condition_to_users['half_of_defaults'])
