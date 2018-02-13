@@ -141,7 +141,7 @@
             //skip if not many users of this intervention
             if (intervention_to_num_times_seen_total[intervention_name] < magnitudeCutoff) continue
             // skip if not in the current domain
-            if (intervention_name.indexOf(domain) == -1) continue
+            if (intervention_name.indexOf(domain + ':') != 0) continue
             let short_count = intervention_to_short_count[intervention_name.replace('/', ':')]
             if (short_count == null) continue
             drop_ratio = short_count / intervention_to_num_times_seen_total[intervention_name]
