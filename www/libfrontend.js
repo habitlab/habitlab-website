@@ -567,6 +567,50 @@ let list_intervention_logs_for_all_users = async function() {
 
 let list_intervention_logs_for_all_users_cached = memoize_to_disk_0arg(list_intervention_logs_for_all_users, 'list_intervention_logs_for_all_users')
 
+let get_time_until_user_changed_interventions = async function(userid) {
+  let intervention_logs = await get_collection_for_user(userid, 'logs:interventions')
+  let first_intervention_enabled = null
+  let first_intervention_disabled = null
+  let first_intervention_changed = null
+  let experiment_start = null
+  for (let x of intervention_logs) {
+    if (x.type == 'default_interventions_on_install') {
+      if (x.interventions_per_goal != null && x.enabled_interventions != null) {
+        if (experiment_start == null || x.timestamp < experiment_start)
+          experiment_start = x.timestamp
+      }
+    }
+    if (x.type == 'intervention_set_smartly_managed') {
+      if (first_intervention_enabled == null || x.timestamp < first_intervention_enabled)
+        first_intervention_enabled = x.timestamp
+      if (first_intervention_changed == null || x.timestamp < first_intervention_changed)
+        first_intervention_changed = x.timestamp
+    }
+    if (x.type == 'intervention_set_always_disabled') {
+      if (first_intervention_disabled == null || x.timestamp < first_intervention_disabled)
+        first_intervention_disabled = x.timestamp
+      if (first_intervention_changed == null || x.timestamp < first_intervention_changed)
+        first_intervention_changed = x.timestamp
+    }
+  }
+  let output = {}
+  if (experiment_start != null) {
+    output.experiment_start = experiment_start
+  }
+  if (experiment_start != null && first_intervention_enabled != null) {
+    output.milliseconds_until_first_intervention_enabled = first_intervention_enabled - experiment_start
+  }
+  if (experiment_start != null && first_intervention_disabled != null) {
+    output.milliseconds_until_first_intervention_disabled = first_intervention_disabled - experiment_start
+  }
+  if (experiment_start != null && first_intervention_changed != null) {
+    output.milliseconds_until_first_intervention_changed = first_intervention_changed - experiment_start
+  }
+  return output
+}
+
+let get_time_until_user_changed_interventions_cached = memoize_to_disk_1arg(get_time_until_user_changed_interventions, 'get_time_until_user_changed_interventions')
+
 let get_experiment_info_for_user = async function(userid) {
   let intervention_logs = await get_collection_for_user(userid, 'logs:interventions')
   for (let x of intervention_logs) {

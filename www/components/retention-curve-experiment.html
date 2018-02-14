@@ -24,6 +24,18 @@
         width: 100%;
         height: 600px;
       }
+      #retention_curve_experiment6 {
+        width: 100%;
+        height: 600px;
+      }
+      #retention_curve_experiment7 {
+        width: 100%;
+        height: 600px;
+      }
+      #retention_curve_experiment8 {
+        width: 100%;
+        height: 600px;
+      }
     </style>
     <google-chart
       type="line"
@@ -60,6 +72,22 @@
       id="retention_curve_experiment5"
       cols='{{cols5}}'
       rows="{{data5}}"
+      options='{"tooltip": {"isHtml": true}}'
+    ></google-chart>
+    By whether users changed interventions or not, overall
+    <google-chart
+      type="line"
+      id="retention_curve_experiment6"
+      cols='{{cols6}}'
+      rows="{{data6}}"
+      options='{"tooltip": {"isHtml": true}}'
+    ></google-chart>
+    By whether users changed interventions or not within first 5 minutes, overall
+    <google-chart
+      type="line"
+      id="retention_curve_experiment7"
+      cols='{{cols7}}'
+      rows="{{data7}}"
       options='{"tooltip": {"isHtml": true}}'
     ></google-chart>
   </template>
@@ -120,6 +148,15 @@
             // was an existing user to whom the experiment was accidentally deployed
             continue
           }
+          let times_interventions_changed = await get_time_until_user_changed_interventions_cached(userid)
+          console.log('times interventions changed')
+          console.log(times_interventions_changed)
+          let did_user_change_interventions = times_interventions_changed.milliseconds_until_first_intervention_changed != null
+          let did_user_enable_interventions = times_interventions_changed.milliseconds_until_first_intervention_enabled != null
+          let did_user_disable_interventions = times_interventions_changed.milliseconds_until_first_intervention_disabled != null
+          let did_user_change_interventions_5min = times_interventions_changed.milliseconds_until_first_intervention_changed < 5*60*1000
+          let did_user_enable_interventions_5min = times_interventions_changed.milliseconds_until_first_intervention_enabled != 5*60*1000
+          let did_user_disable_interventions_5min = times_interventions_changed.milliseconds_until_first_intervention_disabled != 5*60*1000
           //let default_interventions = await get_default_interventions_for_user(userid)
           //console.log('default interventions are')
           //console.log(default_interventions)
@@ -145,6 +182,63 @@
             condition_to_users[condition] = []
           }
           condition_to_users[condition].push(userid)
+
+          if (did_user_change_interventions) {
+            if (condition_to_users['changed_interventions'] == null)
+              condition_to_users['changed_interventions'] = []
+            condition_to_users['changed_interventions'].push(userid)
+          } else {
+            if (condition_to_users['no_changed_interventions'] == null)
+              condition_to_users['no_changed_interventions'] = []
+            condition_to_users['no_changed_interventions'].push(userid)
+          }
+          if (did_user_enable_interventions) {
+            if (condition_to_users['enabled_interventions'] == null)
+              condition_to_users['enabled_interventions'] = []
+            condition_to_users['enabled_interventions'].push(userid)
+          } else {
+            if (condition_to_users['no_enabled_interventions'] == null)
+              condition_to_users['no_enabled_interventions'] = []
+            condition_to_users['no_enabled_interventions'].push(userid)
+          }
+          if (did_user_disable_interventions) {
+            if (condition_to_users['disabled_interventions'] == null)
+              condition_to_users['disabled_interventions'] = []
+            condition_to_users['disabled_interventions'].push(userid)
+          } else {
+            if (condition_to_users['no_disabled_interventions'] == null)
+              condition_to_users['no_disabled_interventions'] = []
+            condition_to_users['no_disabled_interventions'].push(userid)
+          }
+
+          if (did_user_change_interventions_5min) {
+            if (condition_to_users['changed_interventions_5min'] == null)
+              condition_to_users['changed_interventions_5min'] = []
+            condition_to_users['changed_interventions_5min'].push(userid)
+          } else {
+            if (condition_to_users['no_changed_interventions_5min'] == null)
+              condition_to_users['no_changed_interventions_5min'] = []
+            condition_to_users['no_changed_interventions_5min'].push(userid)
+          }
+          if (did_user_enable_interventions_5min) {
+            if (condition_to_users['enabled_interventions_5min'] == null)
+              condition_to_users['enabled_interventions_5min'] = []
+            condition_to_users['enabled_interventions_5min'].push(userid)
+          } else {
+            if (condition_to_users['no_enabled_interventions_5min'] == null)
+              condition_to_users['no_enabled_interventions_5min'] = []
+            condition_to_users['no_enabled_interventions_5min'].push(userid)
+          }
+          if (did_user_disable_interventions_5min) {
+            if (condition_to_users['disabled_interventions_5min'] == null)
+              condition_to_users['disabled_interventions_5min'] = []
+            condition_to_users['disabled_interventions_5min'].push(userid)
+          } else {
+            if (condition_to_users['no_disabled_interventions_5min'] == null)
+              condition_to_users['no_disabled_interventions_5min'] = []
+            condition_to_users['no_disabled_interventions_5min'].push(userid)
+          }
+
           // now break up one condition further
           if (condition == 'one') {
             let default_interventions = await get_default_interventions_for_user_cached(userid)
@@ -170,46 +264,72 @@
           }
         }
         condition_to_users['pre-experiment'] = user_list_historic
-        let condition_list = [
-          'all_of_defaults',
-          'half_of_defaults',
-          'one',
-          'pre-experiment'
-        ].concat(facebook_condition_names)
-        let condition_list_graph4 = [
+        let condition_list_base = [
           'all_of_defaults',
           'half_of_defaults',
           'one',
           'pre-experiment'
         ]
+        let condition_list_intervention_changing = [
+          'changed_interventions',
+          'no_changed_interventions',
+          'enabled_interventions',
+          'no_enabled_interventions',
+          'disabled_interventions',
+          'no_disabled_interventions',
+        ]
+        let condition_list_intervention_changing_5min = [
+          'changed_interventions_5min',
+          'no_changed_interventions_5min',
+          //'enabled_interventions_5min',
+          //'no_enabled_interventions_5min',
+          //'disabled_interventions_5min',
+          //'no_disabled_interventions_5min',
+        ]
+        let condition_list = condition_list_base.concat(facebook_condition_names).concat(condition_list_intervention_changing).concat(condition_list_intervention_changing_5min)
+        let condition_list_graph4 = condition_list_base
+        let condition_list_graph5 = condition_list_base.concat(facebook_condition_names)
+        let condition_list_graph6 = condition_list_base.concat(condition_list_intervention_changing)
+        let condition_list_graph7 = condition_list_base.concat(condition_list_intervention_changing_5min)
         let days_to_analyze = 7
         let condition_to_retention_data = {}
         let condition_to_retention_graph_data = {}
         for (let condition of condition_list) {
+          console.log('getting retention curves for condition ' + condition)
+          console.log('user list is:')
+          console.log(condition_to_users[condition])
           let retention_data = await get_retention_curves_for_users(condition_to_users[condition], days_to_analyze)
           condition_to_retention_data[condition] = retention_data
           condition_to_retention_graph_data[condition] = math.range(0, days_to_analyze + 1).map((i) => [i, retention_data[i] / retention_data[0], retention_data[i]]).toArray()
         }
         console.log('sample sizes:')
-        console.log(condition_to_retention_data['all_of_defaults'][0])
+        for (condition of condition_list) {
+          console.log(condition + ' : ' + condition_to_retention_data[condition][0])
+        }
         this.data = condition_to_retention_graph_data['all_of_defaults']
-        console.log(condition_to_retention_data['half_of_defaults'][0])
         this.data2 = condition_to_retention_graph_data['half_of_defaults']
-        console.log(condition_to_retention_data['one'][0])
         this.data3 = condition_to_retention_graph_data['one']
         this.cols4 = [{"label": "Day", "type": "number"}].concat(condition_list_graph4.map(x => { return {'label': x, 'type': 'number'}}))
-        console.log('cols4 is:')
-        console.log(this.cols4)
         this.data4 = math.range(0, days_to_analyze + 1).map((i) => {
           return [i].concat(condition_list_graph4.map(condition => {
             return condition_to_retention_data[condition][i] / condition_to_retention_data[condition][0]
           }))
         }).toArray()
-        console.log('data4 is:')
-        console.log(this.data4)
-        this.cols5 = [{"label": "Day", "type": "number"}].concat(condition_list.map(x => { return {'label': x, 'type': 'number'}}))
+        this.cols5 = [{"label": "Day", "type": "number"}].concat(condition_list_graph5.map(x => { return {'label': x, 'type': 'number'}}))
         this.data5 = math.range(0, days_to_analyze + 1).map((i) => {
-          return [i].concat(condition_list.map(condition => {
+          return [i].concat(condition_list_graph5.map(condition => {
+            return condition_to_retention_data[condition][i] / condition_to_retention_data[condition][0]
+          }))
+        }).toArray()
+        this.cols6 = [{"label": "Day", "type": "number"}].concat(condition_list_graph6.map(x => { return {'label': x, 'type': 'number'}}))
+        this.data6 = math.range(0, days_to_analyze + 1).map((i) => {
+          return [i].concat(condition_list_graph6.map(condition => {
+            return condition_to_retention_data[condition][i] / condition_to_retention_data[condition][0]
+          }))
+        }).toArray()
+        this.cols7 = [{"label": "Day", "type": "number"}].concat(condition_list_graph7.map(x => { return {'label': x, 'type': 'number'}}))
+        this.data7 = math.range(0, days_to_analyze + 1).map((i) => {
+          return [i].concat(condition_list_graph7.map(condition => {
             return condition_to_retention_data[condition][i] / condition_to_retention_data[condition][0]
           }))
         }).toArray()
