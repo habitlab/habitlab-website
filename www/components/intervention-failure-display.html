@@ -1,0 +1,176 @@
+<link rel="import" href="../bower_components/polymer/polymer.html">
+<link rel="import" href="../bower_components/google-chart/google-chart.html">
+
+<dom-module id="intervention-failure-display">
+  <template>
+    <style>
+      :root {
+        width: 100%;
+      }
+
+      google-chart {
+        width: 100%;
+      }
+    </style>
+    <template is="dom-repeat" items="{{domain_and_intervention_failure_list}}" as="domain_and_intervention_failure">
+      <div>{{domain_and_intervention_failure.domain}}</div>
+      <google-chart type="column" id="failure_display" cols='[{"label": "Data", "type": "string"},{"label": "Percent", "type": "number"},{"label": "Num Samples", "type": "string", "role": "tooltip", "p": {"html": true}}]'
+        rows="{{domain_and_intervention_failure.intervention_info_list}}" options='{"tooltip": {"isHtml": true}, "legend": "none"}'></google-chart>
+    </template>
+  </template>
+  <script>
+    async function get_short_users() {
+      var found_count = 0
+      let user_to_install_times = await get_user_to_install_times()
+      let user_to_uninstall_times = await get_user_to_uninstall_times()
+      var one_day_users = []
+      console.log(Object.keys(user_to_uninstall_times).length)
+      for (let username of Object.keys(user_to_uninstall_times)) {
+        end = moment(user_to_uninstall_times[username])
+        start = moment(user_to_install_times[username])
+        let time_until_uninstall = end.diff(start, 'days')
+        console.log(start)
+        console.log(end)
+        console.log(time_until_uninstall)
+        if (time_until_uninstall <= 1 && time_until_uninstall >= 0) {
+          one_day_users.push(username)
+        }
+      }
+      return one_day_users
+    }
+
+    async function get_sorted_num_times_seen_total(map) {
+      result = []
+      for (let key of Object.keys(map)) {
+        result.push(map[key])
+      }
+      return result.sort()
+    }
+
+    async function get_short_count(intervention, short_users) {
+      console.log(intervention)
+      var short_count = 0
+      for (let user of short_users) {
+        intervention = intervention.replace('/', ':')
+        let user_data = await get_collection_for_user(user, intervention)
+        if (user_data != []) {
+          short_count++
+        }
+      }
+      return short_count
+    }
+
+    async function get_possible_domains(intervention_to_short_count) {
+      var domains = new Set()
+      for (let intervention of Object.keys(intervention_to_short_count)) {
+        let domain = intervention
+        if (intervention.indexOf('generated_') != -1) {
+          domain = domain.substr(0, 'generated_'.length)
+        }
+        if(domain.indexOf(':') != -1) {
+          domain = domain.slice(0, domain.indexOf(':'))
+          domains.add(domain)
+        }
+      }
+      console.log('domains')
+      console.log(domains)
+      return domains
+    }
+
+    function count_logs_for_user(intervention_logs, intervention_to_short_count) {
+      console.log('intervention log')
+      console.log(intervention_logs)
+      for (let intervention of intervention_logs) {
+        if (intervention in intervention_to_short_count) {
+          intervention_to_short_count[intervention] += 1
+        } else {
+          intervention_to_short_count[intervention] = 1
+        }
+      }
+      return intervention_to_short_count
+    }
+
+    async function get_intervention_to_short_count(short_users) {
+      var intervention_to_short_count = {}
+      for (let user of short_users) {
+        let intervention_logs = await list_intervention_logs_for_user(user)
+        intervention_to_short_count = count_logs_for_user(intervention_logs, intervention_to_short_count)
+      }
+      return intervention_to_short_count
+    }
+
+    async function count_sites_for_user(username, intervention_to_user_counts, intervention_names) {
+      for (let intervention of intervention_names) {
+        let user_data = await get_collection_for_user(username, intervention)
+        if (user_data != []) {
+          if (intervention in intervention_to_user_counts) {
+            intervention_to_user_counts[intervention] += 1
+          } else {
+            intervention_to_user_counts[intervention] += 1
+          }
+        }
+      }
+      return intervention_to_user_counts
+    }
+
+    Polymer({
+      is: 'intervention-failure-display',
+      properties: {
+        domain_and_intervention_failure_list: {
+          type: Array,
+        }
+      },
+      attached: async function () {
+        console.log('beginning')
+        //let domain_to_intervention_to_session_lengths = await get_session_lengths_with_intervention_all_users()
+        let intervention_to_num_times_seen_total = await get_intervention_to_num_times_seen_total()
+        let sorted_num_times = await get_sorted_num_times_seen_total(intervention_to_num_times_seen_total)
+        let short_users = await get_short_users()
+        console.log(short_users)
+        let domain_and_intervention_failure_list = []
+        let intervention_to_short_count = await get_intervention_to_short_count(short_users)
+        console.log(intervention_to_short_count)
+        let magnitudeCutoff = sorted_num_times[Math.floor(sorted_num_times.length * 3 / 4)]
+
+        let domains = await get_possible_domains(intervention_to_short_count)
+
+        for (let domain of domains) {
+          let intervention_info_list = []
+          var entries_found = 0
+          for (let intervention_name of Object.keys(intervention_to_num_times_seen_total)) {
+            //skip if not many users of this intervention
+            if (intervention_to_num_times_seen_total[intervention_name] < magnitudeCutoff) continue
+            // skip if not in the current domain
+            if (intervention_name.indexOf(domain + ':') != 0) continue
+            let short_count = intervention_to_short_count[intervention_name.replace('/', ':')]
+            if (short_count == null) continue
+            drop_ratio = short_count / intervention_to_num_times_seen_total[intervention_name]
+            let tooltip = `
+          Intervention: ${intervention_name}<br>
+          1-day Drop Count: ${short_count}<br>
+          Total Seen Count: ${intervention_to_num_times_seen_total[intervention_name]}<br>
+          Ratio: ${drop_ratio}<br>
+          `
+            entries_found++
+            intervention_info_list.push([
+              intervention_name,
+              drop_ratio,
+              tooltip
+            ])
+          }
+          if (entries_found > 0) {
+            domain_and_intervention_failure_list.push({
+              domain: domain,
+              intervention_info_list: intervention_info_list
+            })
+          }
+
+        }
+
+        console.log(domain_and_intervention_failure_list)
+        this.domain_and_intervention_failure_list = domain_and_intervention_failure_list
+      }
+    });
+  </script>
+
+</dom-module>

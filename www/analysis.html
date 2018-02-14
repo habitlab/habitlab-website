@@ -2,8 +2,9 @@
 <html>
 
 <head>
-  Log Analysis
+  <title>Log Analysis</title>
   <script src="bower_components/moment/moment.js"></script>
+  <script src="bower_components/moment-timezone/builds/moment-timezone-with-data.js"></script>
   <script src="bower_components/jquery/dist/jquery.min.js"></script>
   <script src="bower_components/localforage/dist/localforage.min.js"></script>
   <script src="bower_components/mathjs/dist/math.min.js"></script>
@@ -18,118 +19,44 @@
   analysis
   <p id="test_section"></p>
   <script>
-    //window.prelude = require('prelude-ls')
-    console.log('Beginning test loggings\n')
-    console.log('log for test user')
-    const test_user = '12a641126b3874b179b6ebf7'
-    async function print_test() {
-      let test_data = await get_collection_for_user(test_user, 'logs:interventions')
-      console.log(test_data)
-    }
 
-    print_test()
-
-    async function intervention_data_for_usernames(usernames, job_name) {
-      console.log(usernames.length + " usernames found")
-      let intervention_data = {}
-      var count = 0
-      for (let username of usernames) {
-        if (count % 100 == 0) console.log(job_name + " is " + 
-          Math.floor(count / usernames.length * 100) + "% done.")
-        let user_data = await get_collection_for_user(username, 'logs:interventions')
-        var shows_default = false
-        if (user_data.length > 0) {
-          for (let i in user_data) {
-            if (user_data[i].type == "default_interventions_on_install") {
-              shows_default = true
-              break
-            }
-          }
-          if (shows_default) {
-            console.log(user_data)
-            intervention_data[username] = user_data
-          }
-        }
-        count += 1
-      }
-      console.log(intervention_data)
-      return intervention_data
-    }
-
-    async function find_default_interventions_entry(user_data) {
-      for (x of user_data) {
-        if (x.type == 'default_interventions_on_install') return x
-      }
-      return null
-      /*
-      var result = -1
-          for(let i in user_data) {
-            if(user_data[i].type == "default_interventions_on_install") {
-              result = i
-              break
-            }
-          }
-      return result
-      */
-    }
-
-    // install to uninstall less than an hour might be noisy -
-    async function avg_attrition_by_initial_condition(user_to_install_times, user_to_uninstall_times, intervention_data) {
-        var user_condition_counts = {}
-        var user_condition_avg_times = {}
-        for(let username of Object.keys(intervention_data)) {
-          let entry = find_default_interventions_entry(intervention_data[username])
-          if(entry == null) continue
-          let user_condition = entry.interventions_per_goal
-          if(user_condition == null) continue
-          console.log(user_condition)
-
-          end = moment(user_to_uninstall_times[username])
-          start = moment(user_to_install_times[username])
-          let time_until_uninstall = moment.duration(end.diff(start)).asDays()
-          console.log(user_to_uninstall_times[username])
-          console.log(user_to_install_times[username])
-          if(user_condition_counts[user_condition]) {
-            user_condition_counts[user_condition] += 1
-            user_condition_avg_times[user_condition] += time_until_uninstall
-          } else {
-            user_condition_counts[user_condition] = 1
-            user_condition_avg_times[user_condition] = time_until_uninstall
-          }
-          for(let key of Object.keys(user_condition_counts)) {
-            user_condition_avg_times[key] /= user_condition_counts[key]
-          }
-        }
-        return [user_condition_avg_times, user_condition_counts]
-      }
-
-    async function main() {
-      let user_to_install_times = await get_user_to_install_times()
-      let user_to_uninstall_times = await get_user_to_uninstall_times()
-      var usernames = []
-      for (let username of Object.keys(user_to_uninstall_times)) {
-        if (user_to_install_times[username]) {
-          usernames.push(username)
+  async function count_sites_for_user(username, intervention_to_user_counts) {
+    let collections_list = await list_logs_for_user(username)
+    for(let intervention of collections_list) {
+      console.log(intervention)
+      let user_data = await get_collection_for_user(username, intervention)
+      if(user_data != []) {
+        if(intervention in intervention_to_user_counts) {
+          intervention_to_user_counts[intervention] += 1
+        } else {
+          intervention_to_user_counts[intervention] += 1
         }
       }
-      let intervention_data = await intervention_data_for_usernames(usernames, "job 1")
-      //usernames = Object.keys(user_to_install_times)
-      //intervention_data_for_usernames(usernames, "job 2")
-      let result = await avg_attrition_by_initial_condition(
-        user_to_install_times, user_to_uninstall_times, intervention_data)
-      let user_condition_avg_times = result[0]
-      let user_condition_counts = result[1]
-      console.log("average times")
-      console.log(user_condition_avg_times)
-      console.log("sample counts")
-      console.log(user_condition_counts)
-
     }
+    return intervention_to_user_counts
+  }
+  
+  async function main2() {
+    console.log('arrived at main')
+    let user_to_install_times = await get_user_to_install_times()
+    let user_to_uninstall_times = await get_user_to_uninstall_times()
+    var intervention_to_short_user_counts = {} 
+    var one_day_users = []  
 
-    main()
+    for(let username of Object.keys(user_to_uninstall_times)) {
+      end = moment(user_to_uninstall_times[username])
+      start = moment(user_to_install_times[username])
+      let time_until_uninstall = end.diff(start, 'days')
+      if(time_until_uninstall <= 1 && time_until_uninstall >= 0) {
+        one_day_users.push(username)
+        intervention_to_short_user_counts = await count_sites_for_user(username, intervention_to_short_user_counts)
+      } 
+    }
+    console.log(intervention_to_short_user_counts)
+  }
 
 
-
+  main2()
   </script>
 
 </body>
