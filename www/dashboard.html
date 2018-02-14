@@ -60,6 +60,11 @@
 
 <br>
 
+<div>Retention curves:</div>
+<retention-rates id="retention_curves"></div>
+
+<br>
+
 <div>List of users active in the past week:</div>
 <div id="user_list"></div>
 
@@ -238,6 +243,24 @@ async function show_user_list() {
   }
 }
 
+async function get_temporary_disable_count(){
+  let user_to_uninstall_times = await get_user_to_uninstall_times()
+  let count_for_uninstalled = []
+  let count_for_not_uninstalled = []
+
+  for (let user_id of user_ids) {
+    let intervention_logs = await get_collection_for_user(user_id, 'logs:interventions')
+    let uninstall_time = user_to_uninstall_times[user_id]
+
+    if (uninstall_time == undefined) {
+      count_for_not_uninstalled.push(intervention_logs.length)
+    } else {
+      count_for_uninstalled.push(intervention_logs.length)
+    }
+    console.log(count_for_uninstalled, count_for_not_uninstalled)
+  }
+}
+
 async function display_goals_tried_by_users() {
   let goal_to_num_users = await get_goals_tried_by_all_users()
   display_dictionary_as_table(goal_to_num_users, '#goals_tried')
@@ -379,7 +402,10 @@ async function display_last_intervention_before_stop_using_with_total_impression
 
 async function main() {
   user_ids = await get_user_ids()
-  show_user_list()
+  // show_user_list()
+
+  // get_temporary_disable_count()
+
   display_users_with_logging_enabled()
   display_users_with_logging_disabled()
   display_users_with_logging_not_set()

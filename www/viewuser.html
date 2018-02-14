@@ -76,6 +76,10 @@ Effectiveness of interventions for user:
 <div>Logs available:
   <div id="collections_list"></div>
 </div>
+<br>
+<div>Intervention combined log:
+  <span id="combined_collection"></span>
+</div>
 
 <!--
 <google-chart id="days_ago_to_num_installs" cols='[{"label": "Data", "type": "string"},{"label": "Installs", "type": "number"}]' rows='[["Something", 1]]'></google-chart>
@@ -135,6 +139,16 @@ async function show_collections_list() {
   }
 }
 
+async function show_combined_collection() {
+  let combined_collection = await get_combined_collection_for_user(user_id)
+  console.log(combined_collection)
+
+  let count = await get_user_max_intervention_count(user_id)
+  // console.log(collection_list)
+
+  $('#combined_collection').text(combined_collection)
+}
+
 async function show_last_intervention_seen() {
   let {intervention, time} = await get_last_intervention_seen_and_time(user_id)
   $('#display_last_intervention_seen').text(intervention + ' ' + moment(time).toString())
@@ -165,6 +179,7 @@ async function main() {
   show_disabled_interventions()
   show_dates_active()
   show_collections_list()
+  show_combined_collection()
   show_last_intervention_seen()
   show_last_log_sent_time()
   show_is_logging_enabled()
