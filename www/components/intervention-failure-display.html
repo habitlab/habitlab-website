@@ -29,9 +29,13 @@
         end = moment(user_to_uninstall_times[username])
         start = moment(user_to_install_times[username])
         let time_until_uninstall = end.diff(start, 'days')
+        if(time_until_uninstall < 0) {
+          console.log(username)
         console.log(start)
         console.log(end)
         console.log(time_until_uninstall)
+        }
+        
         if (time_until_uninstall <= 1 && time_until_uninstall >= 0) {
           one_day_users.push(username)
         }
