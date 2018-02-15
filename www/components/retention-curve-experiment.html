@@ -90,6 +90,14 @@
       rows="{{data7}}"
       options='{"tooltip": {"isHtml": true}}'
     ></google-chart>
+    Only including users who kept the default interventions
+    <google-chart
+      type="line"
+      id="retention_curve_experiment8"
+      cols='{{cols8}}'
+      rows="{{data8}}"
+      options='{"tooltip": {"isHtml": true}}'
+    ></google-chart>
   </template>
   <script>
     Polymer({
@@ -183,6 +191,13 @@
           }
           condition_to_users[condition].push(userid)
 
+          if (!did_user_enable_interventions) {
+            if (condition_to_users[condition + '_defaultinterventions'] == null) {
+              condition_to_users[condition + '_defaultinterventions'] = []
+            }
+            condition_to_users[condition + '_defaultinterventions'].push(userid)
+          }
+          
           if (did_user_change_interventions) {
             if (condition_to_users['changed_interventions'] == null)
               condition_to_users['changed_interventions'] = []
@@ -286,11 +301,21 @@
           //'disabled_interventions_5min',
           //'no_disabled_interventions_5min',
         ]
-        let condition_list = condition_list_base.concat(facebook_condition_names).concat(condition_list_intervention_changing).concat(condition_list_intervention_changing_5min)
+        let condition_list_defaultinterventions = [
+          'all_of_defaults_defaultinterventions',
+          'half_of_defaults_defaultinterventions',
+          'one_defaultinterventions',
+          //'enabled_interventions_5min',
+          //'no_enabled_interventions_5min',
+          //'disabled_interventions_5min',
+          //'no_disabled_interventions_5min',
+        ]
+        let condition_list = condition_list_base.concat(facebook_condition_names).concat(condition_list_intervention_changing).concat(condition_list_intervention_changing_5min).concat(condition_list_defaultinterventions)
         let condition_list_graph4 = condition_list_base
         let condition_list_graph5 = condition_list_base.concat(facebook_condition_names)
         let condition_list_graph6 = condition_list_base.concat(condition_list_intervention_changing)
         let condition_list_graph7 = condition_list_base.concat(condition_list_intervention_changing_5min)
+        let condition_list_graph8 = [].concat(condition_list_defaultinterventions)
         let days_to_analyze = 7
         let condition_to_retention_data = {}
         let condition_to_retention_graph_data = {}
@@ -333,10 +358,16 @@
             return condition_to_retention_data[condition][i] / condition_to_retention_data[condition][0]
           }))
         }).toArray()
+        this.cols8 = [{"label": "Day", "type": "number"}].concat(condition_list_graph8.map(x => { return {'label': x, 'type': 'number'}}))
+        this.data8 = math.range(0, days_to_analyze + 1).map((i) => {
+          return [i].concat(condition_list_graph8.map(condition => {
+            return condition_to_retention_data[condition][i] / condition_to_retention_data[condition][0]
+          }))
+        }).toArray()
         console.log('data for making logrank test')
-        let lifetimes1 = await get_lifetimes_and_whether_attrition_was_observed_for_users(condition_to_users['all_of_defaults'])
-        let lifetimes2 = await get_lifetimes_and_whether_attrition_was_observed_for_users(condition_to_users['half_of_defaults'])
-        let lifetimes3 = await get_lifetimes_and_whether_attrition_was_observed_for_users(condition_to_users['one'])
+        let lifetimes1 = await get_lifetimes_and_whether_attrition_was_observed_for_users(condition_to_users['all_of_defaults_defaultinterventions'])
+        let lifetimes2 = await get_lifetimes_and_whether_attrition_was_observed_for_users(condition_to_users['half_of_defaults_defaultinterventions'])
+        let lifetimes3 = await get_lifetimes_and_whether_attrition_was_observed_for_users(condition_to_users['one_defaultinterventions'])
         console.log(JSON.stringify({
           all_of_defaults: lifetimes1,
           half_of_defaults: lifetimes2,
