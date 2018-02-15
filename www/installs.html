@@ -2,8 +2,8 @@
 <html>
 <head>
   <title>Installs</title>
-
   <script src="bower_components/moment/moment.js"></script>
+  <script src="bower_components/moment-timezone/builds/moment-timezone-with-data.js"></script>
   <script src="bower_components/jquery/dist/jquery.min.js"></script>
   <script src="bower_components/localforage/dist/localforage.min.js"></script>
   <script src="bower_components/mathjs/dist/math.min.js"></script>
@@ -223,6 +223,7 @@ async function show_retention_curve() {
 
 async function show_uninstalls() {
   let install_info_list = await get_uninstall_data()
+  console.log(install_info_list)
   let current_time = moment()
   let days_ago_to_num_installs = {}
   for (let install_info of install_info_list) {
