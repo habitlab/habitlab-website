@@ -14,7 +14,7 @@
     </style>
     <template is="dom-repeat" items="{{onboarding_attrition_list}}" as="onboarding_attrition">
       <div>{{onboarding_attrition.domain}}</div>
-      <google-chart type="column" id="failure_display" cols='[{"label": "Data", "type": "string"},{"label": "Percent", "type": "number"},{"label": "Num Samples", "type": "string", "role": "tooltip", "p": {"html": true}}]'
+      <google-chart type="column" id="failure_display" cols='[{"label": "Data", "type": "string"},{"label": "Count", "type": "number"},{"label": "Num Samples", "type": "string", "role": "tooltip", "p": {"html": true}}]'
         rows="{{onboarding_attrition.info_list}}" options='{"tooltip": {"isHtml": true}, "legend": "none"}'></google-chart>
     </template>
   </template>
@@ -26,13 +26,14 @@
           // count completion steps for each user
           let n_items = Object.keys(user_to_install_times).length
           for(let user of Object.keys(user_to_install_times)) {
-            if(counter % 100 == 0) console.log("" + Math.floor(100.0 * counter / n_items) + "% complete")
+            if(counter % 100 == 0) console.log("Onboarding curves " + Math.floor(100.0 * counter / n_items) + "% complete")
             counter++
             log = await get_collection_for_user(user, 'logs:pages')
             var found1 = false
             var found2 = false
             var found3 = false
             var found4 = false
+            // counts of per user turning on intervention divided by count of times intervention turned off by default
             for(let i of Object.keys(log)) {
               if(log[i].tab == 'onboarding') {
                 if(log[i].slide_idx != undefined) {
