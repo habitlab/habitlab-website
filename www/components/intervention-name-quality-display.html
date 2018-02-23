@@ -1,0 +1,139 @@
+<link rel="import" href="../bower_components/polymer/polymer.html">
+<link rel="import" href="../bower_components/google-chart/google-chart.html">
+
+<dom-module id="intervention-name-quality-display">
+  <template>
+    <style>
+      :root {
+        width: 100%;
+      }
+
+      google-chart {
+        width: 100%;
+      }
+    </style>
+    <template is="dom-repeat" items="{{domain_and_intervention_name_quality_list}}" as="domain_and_intervention_name_quality">
+      <div>{{domain_and_intervention_name_quality.domain}}</div>
+      <google-chart type="column" id="name_quality_display" cols='[{"label": "Data", "type": "string"},{"label": "Count", "type": "number"},{"label": "Num Samples", "type": "string", "role": "tooltip", "p": {"html": true}}]' 
+      rows="{{domain_and_intervention_name_quality.info_list}}" options='{"tooltip": {"isHtml": true}, "legend": "none"}'></google-chart>
+    </template>
+  </template>
+  <script>
+    async function earliest_time_intervention_changed(user, intervention, intervention_logs, activated) {
+      var start = true
+      if(activated) start = false
+      var end = !start
+      intervention = intervention.replace(':', '/')
+      for(let log of intervention_logs) {
+        if(log.type == 'intervention_set_smartly_managed') {
+          if(log.prev_enabled_interventions[intervention] == start &&
+          log.enabled_interventions[intervention] == end) {
+            return log.timestamp
+          }
+        }
+      }
+      return -1
+    }
+
+    async function is_intervention_turned_on_default(intervention_logs, intervention) {
+      if(intervention_logs[0].type == 'default_interventions_on_install') {
+        return (intervention_logs[0].enabled_interventions[intervention])
+      }
+      console.log('not expected to reach here')
+      return false
+    }
+
+    async function get_intervention_to_change_before_impression_counts(user_list, intervention_name_list) {
+      var intervention_activation_before_impression = {}
+      var intervention_deactivation_before_impression = {}
+      var interventions_off_by_default = {}
+      for(let user of user_list) {
+        let collections_list = await list_logs_for_user(user_id)
+        for(let collection_name of collecions_list) {
+          let collection_name_short = collection_name.replace(user_id + '_', '')
+          if(collection_name_short in intervention_name_list) { // is intervention
+            let intervention_logs = await get_collection_for_user(user, 'logs:interventions')
+            if(!(collection_name_short in Object.keys(intervention_activation_before_impression))) {
+              intervention_activation_before_impression[collection_name_short] = 0
+            }
+            if(!(collection_name_short in Object.keys(intervention_deactivation_before_impression))) {
+              intervention_deactivation_before_impression[collection_name_short] = 0
+            }
+            if(!(collection_name_short in Object.keys(interventions_off_by_default))) {
+              interventions_off_by_default[collection_name_short] = 0
+            }
+            let intervention_impressions = await get_collection_for_user(user, collection_name_short)
+            let earliest_seen = intervention_impressions[0].timestamp
+            // search for earliest time a user changed that intervention
+            let earliest_activated = await earliest_time_intervention_changed(user, collection_name_short, 
+              intervention_logs, true)
+            if(!(await is_intervention_turned_on_default(intervention_logs, collection_name_short)) {
+              interventions_off_by_default[collection_name_short] += 1
+            }
+            if(earliest_activated < earliest_seen) {
+              intervention_activation_before_impression[collection_name_short] += 1
+            }
+            /*
+            let earliest_deactivated = await earliest_time_intervention_changed(user, collection_name_short, false)
+            if(earliest_deactivated < earliest_seen) {
+              intervention_deactivation_before_impression[collection_name_short] += 1
+            } */
+          }
+        // search for earliest time a user changed each intervention
+        
+        }
+      }
+      return [
+        intervention_activation_before_impression,
+        intervention_deactivation_before_impression
+      ]
+    }
+
+    Polymer({
+      is: 'intervention-name-quality-display',
+      properties: {
+        domain_and_intervention_name_quality_list: {
+          type: Array,
+        }
+      },
+      userid_changed: async function() {
+        let users_to_install = await get_user_to_install_times_list()
+        let domain_to_intervention_to_session_lengths = await get_session_lengths_with_intervention_all_users()
+
+        let domain_and_intervention_effectiveness_list = []
+        for (let domain of Object.keys(domain_to_intervention_to_session_lengths)) {
+          let info_list = []
+          let intervention_to_session_lengths = domain_to_intervention_to_session_lengths[domain]
+          let result = get_intervention_to_change_before_impression_counts(Object.keys(users_to_install), 
+            Object.keys(intervention_to_session_lengths))
+          let intervention_activation_before_impression = result[0]
+          let intervention_deactivation_before_impression = result[1]
+          
+          for (let intervention_name of Object.keys(intervention_activation_before_impression)) {
+            let count = intervention_activation_before_impression[intervention_name]
+            let mean_session_length = prelude.mean(session_lengths)
+            let standard_deviation = math.std(session_lengths)
+            let confidence_interval = 1.645 * standard_deviation / Math.sqrt(session_lengths.length) // 90% confidence is 1.645, 95% confidence is 1.96
+            let tooltip = `
+            Intervention: ${intervention_name}<br>
+            Count: ${mean_session_length}<br>
+            Samples: ${session_lengths.length}<br>
+            `
+            info_list.push([
+              intervention_name,
+              mean_session_length,
+              tooltip
+            ])
+          }
+          domain_and_intervention_name_quality_list.push({
+            domain: domain,
+            info_list: info_list
+          })
+        }
+        console.log(domain_and_intervention_name_quality_list)
+        this.domain_and_intervention_name_quality_list = domain_and_intervention_name_quality_list
+      }
+    });
+  </script>
+
+</dom-module>
