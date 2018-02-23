@@ -36,10 +36,20 @@
     }
 
     async function is_intervention_turned_on_default(intervention_logs, intervention) {
-      if(intervention_logs[0].type == 'default_interventions_on_install') {
-        return (intervention_logs[0].enabled_interventions[intervention])
+      if(intervention_logs == undefined) return false
+      for(let log of intervention_logs) {
+        if(log.type == 'default_interventions_on_install') {
+          return log.enabled_interventions[intervention]
+        }
       }
       console.log('not expected to reach here')
+      return false
+    }
+
+    function name_in_set(name, set) {
+      for(let n of set) {
+        if(n == name) return true
+      }
       return false
     }
 
@@ -47,12 +57,16 @@
       var intervention_activation_before_impression = {}
       var intervention_deactivation_before_impression = {}
       var interventions_off_by_default = {}
+      console.log(intervention_activation_before_impression)
+      console.log(intervention_name_list)
+      var counter = 0
       for(let user of user_list) {
-        let collections_list = await list_logs_for_user(user_id)
-        for(let collection_name of collecions_list) {
-          let collection_name_short = collection_name.replace(user_id + '_', '')
-          if(collection_name_short in intervention_name_list) { // is intervention
-            let intervention_logs = await get_collection_for_user(user, 'logs:interventions')
+        let collections_list = await list_logs_for_user(user)
+        let intervention_logs = await get_collection_for_user(user, 'logs:interventions')
+        for(let collection_name of collections_list) {
+          let collection_name_short = collection_name.replace(user + '_', '')
+          if(name_in_set(collection_name_short.replace(':', '/'), intervention_name_list)) { // is intervention
+            console.log("true")
             if(!(collection_name_short in Object.keys(intervention_activation_before_impression))) {
               intervention_activation_before_impression[collection_name_short] = 0
             }
@@ -63,11 +77,12 @@
               interventions_off_by_default[collection_name_short] = 0
             }
             let intervention_impressions = await get_collection_for_user(user, collection_name_short)
+            if(collection_name_short == undefined) continue
             let earliest_seen = intervention_impressions[0].timestamp
             // search for earliest time a user changed that intervention
             let earliest_activated = await earliest_time_intervention_changed(user, collection_name_short, 
               intervention_logs, true)
-            if(!(await is_intervention_turned_on_default(intervention_logs, collection_name_short)) {
+            if(!(await is_intervention_turned_on_default(intervention_logs, collection_name_short))) {
               interventions_off_by_default[collection_name_short] += 1
             }
             if(earliest_activated < earliest_seen) {
@@ -83,9 +98,11 @@
         
         }
       }
+      console.log(intervention_activation_before_impression)
       return [
         intervention_activation_before_impression,
-        intervention_deactivation_before_impression
+        intervention_deactivation_before_impression,
+        interventions_off_by_default
       ]
     }
 
@@ -96,32 +113,37 @@
           type: Array,
         }
       },
-      userid_changed: async function() {
+      attached: async function() {
+        console.log('started')
         let users_to_install = await get_user_to_install_times_list()
         let domain_to_intervention_to_session_lengths = await get_session_lengths_with_intervention_all_users()
-
+        var counter = 0
         let domain_and_intervention_effectiveness_list = []
         for (let domain of Object.keys(domain_to_intervention_to_session_lengths)) {
           let info_list = []
           let intervention_to_session_lengths = domain_to_intervention_to_session_lengths[domain]
-          let result = get_intervention_to_change_before_impression_counts(Object.keys(users_to_install), 
+          let result = await get_intervention_to_change_before_impression_counts(Object.keys(users_to_install), 
             Object.keys(intervention_to_session_lengths))
           let intervention_activation_before_impression = result[0]
           let intervention_deactivation_before_impression = result[1]
-          
+          let interventions_off_by_default = result[2]
+
           for (let intervention_name of Object.keys(intervention_activation_before_impression)) {
+            //progress
+            if(counter % 100 == 0) console.log("Name quality " + Math.floor(100.0 * counter / n_items) + "% complete")
+            counter++
+            
             let count = intervention_activation_before_impression[intervention_name]
-            let mean_session_length = prelude.mean(session_lengths)
-            let standard_deviation = math.std(session_lengths)
-            let confidence_interval = 1.645 * standard_deviation / Math.sqrt(session_lengths.length) // 90% confidence is 1.645, 95% confidence is 1.96
+            let off_by_default = interventions_off_by_default[intervention_name]
             let tooltip = `
             Intervention: ${intervention_name}<br>
-            Count: ${mean_session_length}<br>
-            Samples: ${session_lengths.length}<br>
+            Activation before Impression: ${count}<br>
+            Normalized: ${count / off_by_default}<br>
             `
             info_list.push([
               intervention_name,
-              mean_session_length,
+              count,
+              count / off_by_default,
               tooltip
             ])
           }
