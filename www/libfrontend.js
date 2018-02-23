@@ -80,6 +80,28 @@ function memoize_to_disk_1arg(f, func_name) {
   }
 }
 
+function memoize_to_disk_2arg(f, func_name) {
+  if (func_name == null) {
+    func_name = f.name
+  }
+  let memoize_to_disk_2arg_cache = {}
+  let store = get_store('memoizedisk|' + func_name)
+  return async function(arg, arg2) {
+    if (memoize_to_disk_2arg_cache[arg] != null && memoize_to_disk_2arg_cache[arg][arg2] != null) {
+      return memoize_to_disk_2arg_cache[arg][arg2]
+    }
+    let cached_value = await store.getItem(arg + '|' + arg2)
+    if (cached_value != null) {
+      return cached_value
+    }
+    cached_value = await f(arg, arg2)
+    if (cached_value != null) {
+      await store.setItem(arg + '|' + arg2, cached_value)
+    }
+    return cached_value
+  }
+}
+
 async function geolocate_ip(ip_addr) {
   let geolocate_info = {}
   if (localStorage.getItem('geolocate_info_' + ip_addr)) {
@@ -415,6 +437,8 @@ async function get_user_to_uninstall_times() {
 async function get_collection_for_user(userid, collection_name) {
   return await getjson('/printcollection', {userid: userid, logname: collection_name})
 }
+
+let get_collection_for_user_cached = memoize_to_disk_2arg(get_collection_for_user, 'get_collection_for_user')
 
 async function get_user_max_intervention_count(userid) {
   let intervention_count_dict = Promise.resolve(get_intervention_count_dict(userid))
