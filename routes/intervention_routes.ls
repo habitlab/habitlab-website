@@ -122,13 +122,14 @@ app.get '/get_all_contributed_interventions', (ctx) ->>
   ctx.body = JSON.stringify(all_results)
   db?close()
 
-app.get '/get_contributed_interventions_for_goal', (ctx) ->>
+# MAIN FOR GETTING THE SPEARATE INTERVENTIONS
+app.get '/get_contributed_interventions_for_site', (ctx) ->>
   ctx.type = 'json'
-  {goal} = ctx.request.query
-  if need_query_property ctx, 'goal'
+  {site} = ctx.request.query
+  if need_query_property ctx, 'site'
     return
   [contributed_interventions, db] = await get_contributed_interventions()//Find these functions//
-  all_results = await n2p -> contributed_interventions.find({goal: goal}).toArray(it)
+  all_results = await n2p -> contributed_interventions.find({site: site}).toArray(it)
   ctx.body = JSON.stringify(all_results)
   db?close()
 
@@ -153,6 +154,22 @@ app.get '/get_contributed_interventions_for_params', (ctx) ->>
   ctx.body = JSON.stringify(all_results)
   db?close()
 
+# app.post '/add_logging_state', (ctx) ->>
+#   ctx.type = 'json'
+#   try
+#     [logging_states, db] = await get_logging_states()
+#     query = {} <<< ctx.request.body
+#     if query.callback?
+#       delete query.callback
+#     query.timestamp = Date.now()
+#     query.ip = ctx.request.ip_address_fixed
+#     await n2p -> logging_states.insert(fix_object(query), it)
+#   catch err
+#     console.error 'error in add_logging_state'
+#     console.error err
+#   finally
+#     db?close()
+#   ctx.body = JSON.stringify {response: 'done', success: true}
 
 export upvote_intervention = (intervention_name, userid) ->>
   [intervention_votes, db] = await get_intervention_votes()
