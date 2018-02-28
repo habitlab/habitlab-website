@@ -1,0 +1,118 @@
+<link rel="import" href="../bower_components/polymer/polymer.html">
+<link rel="import" href="../bower_components/google-chart/google-chart.html">
+
+<dom-module id="intervention-changer-display">
+  <template>
+    <style>
+      :root {
+        width: 100%;
+      }
+
+      google-chart {
+        width: 100%;
+      }
+    </style>
+    <template is="dom-repeat" items="{{change_intervention_list}}" as="active_attrition">
+      <div>Attrition curve for active users</div>
+      <google-chart type="line" id="intervention_activity_display1" cols='[{"label": "Data", "type": "string"},{"label": "Count", "type": "number"},{"label": "Num Samples", "type": "string", "role": "tooltip", "p": {"html": true}}]'
+        rows="{{active_attrition.series1}}" options='{"tooltip": {"isHtml": true}, "legend": "none"}'></google-chart>
+        <div>Attrition curve for intervention apathetic users</div>
+        <google-chart type="line" id="intervention_activity_display2" cols='[{"label": "Data", "type": "string"},{"label": "Count", "type": "number"},{"label": "Num Samples", "type": "string", "role": "tooltip", "p": {"html": true}}]'
+          rows="{{active_attrition.series2}}" options='{"tooltip": {"isHtml": true}, "legend": "none"}'></google-chart>
+      </template>
+  </template>
+  <script>
+    async function separate_active_intervention_users(users) {
+      active_users = []
+      apathetic_users = []
+      var counter = 0
+      let n_items = users.length
+      for(let user of users) {
+        if(counter % 100 == 0) console.log("Active user retention curves " + Math.floor(100.0 * counter / n_items) + "% complete")
+            counter++
+        intervention_logs = await get_collection_for_user(user, 'logs:interventions')
+        if(await user_did_change_intervention_set(intervention_logs)) {
+          active_users.push(user)
+        } else {
+          apathetic_users.push(user)
+        }
+      }
+      return {
+        active_users: active_users,
+        apathetic_users: apathetic_users
+      }
+    }
+
+    async function user_did_change_intervention_set(intervention_logs) {
+      for(let i of Object.keys(intervention_logs)) {
+        if(intervention_logs[i].type == 'intervention_set_smartly_managed') { 
+          return true
+        }
+      }
+      return false
+    }
+
+    Polymer({
+      is: 'intervention-changer-display',
+      properties: {
+        change_intervention_list: {
+          type: Array,
+        }
+      },
+      attached: async function () {
+        console.log('beginning attrition curves for active intervention users')
+        var change_intervention_list = []
+        // unnecessary for loop bc I don't want to mess with the existing google chart format
+        for (let _i = 0; _i < 1; _i++) {
+          let users = Object.keys(await get_user_to_install_times())
+          let ret = await separate_active_intervention_users(users)
+          let active_users = ret.active_users
+          let apathetic_users = ret.apathetic_users
+
+          var series1 = []
+          let TIMEFRAME = 30
+          let active_attrition = await get_retention_curves_for_users(active_users, TIMEFRAME)
+          for (let day in active_attrition) {
+            let tooltip = `
+          Active users
+          Day: ${day}<br>
+          Users at Day: ${active_attrition[day]}<br>
+          `
+            series1.push([
+              day,
+              active_attrition[day],
+              tooltip
+            ])
+          }
+
+          var series2 = []
+          let apathetic_attrition = await get_retention_curves_for_users(apathetic_users, TIMEFRAME)
+          for (let day in apathetic_attrition) {
+            let tooltip = `
+          Apathetic users
+          Day: ${day}<br>
+          Users at Day: ${apathetic_attrition[day]}<br>
+          `
+            series2.push([
+              day,
+              apathetic_attrition[day],
+              tooltip
+            ])
+          }
+
+
+          change_intervention_list.push({
+              name: "Active intervention users attrition curves",
+              series1: series1,
+              series2: series2
+            })
+
+        }
+
+        console.log(change_intervention_list)
+        this.change_intervention_list = change_intervention_list
+      }
+    });
+  </script>
+
+</dom-module>

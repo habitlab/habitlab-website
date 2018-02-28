@@ -1,0 +1,91 @@
+<link rel="import" href="../bower_components/polymer/polymer.html">
+<link rel="import" href="../bower_components/google-chart/google-chart.html">
+
+<dom-module id="onboarding-attrition-display">
+  <template>
+    <style>
+      :root {
+        width: 100%;
+      }
+
+      google-chart {
+        width: 100%;
+      }
+    </style>
+    <template is="dom-repeat" items="{{onboarding_attrition_list}}" as="onboarding_attrition">
+      <div>{{onboarding_attrition.domain}}</div>
+      <google-chart type="column" id="failure_display" cols='[{"label": "Data", "type": "string"},{"label": "Count", "type": "number"},{"label": "Num Samples", "type": "string", "role": "tooltip", "p": {"html": true}}]'
+        rows="{{onboarding_attrition.info_list}}" options='{"tooltip": {"isHtml": true}, "legend": "none"}'></google-chart>
+    </template>
+  </template>
+  <script>
+    async function count_completions(user_to_install_times) {
+      // four stages plus complete stage
+      var counter = 0
+      var onboarding_completion_counts = [0, 0, 0, 0, 0]
+          // count completion steps for each user
+          let n_items = Object.keys(user_to_install_times).length
+          for(let user of Object.keys(user_to_install_times)) {
+            if(counter % 100 == 0) console.log("Onboarding curves " + Math.floor(100.0 * counter / n_items) + "% complete")
+            counter++
+            log = await get_collection_for_user(user, 'logs:pages')
+            var found1 = false
+            var found2 = false
+            var found3 = false
+            var found4 = false
+            // counts of per user turning on intervention divided by count of times intervention turned off by default
+            for(let i of Object.keys(log)) {
+              if(log[i].tab == 'onboarding') {
+                if(log[i].slide_idx != undefined) {
+                  onboarding_completion_counts[log[i].slide_idx]++
+                }
+              }
+              if(log[i].reason == 'onboarding-complete' && log[i].from == 'onboarding') {
+                  onboarding_completion_counts[4]++
+              }
+            }
+          }
+      return onboarding_completion_counts
+    }
+
+    Polymer({
+      is: 'onboarding-attrition-display',
+      properties: {
+        onboarding_attrition_list: {
+          type: Array,
+        }
+      },
+      attached: async function () {
+        console.log('beginning onboarding attrition graph')
+        var onboarding_attrition_list = []
+        // unnecessary for loop bc I don't want to mess with the existing google chart format
+        for (let _i = 0; _i < 1; _i++) {
+          let info_list = []
+          let user_to_install_times = await get_user_to_install_times()
+          let onboarding_completion_counts = await count_completions(user_to_install_times)
+          for (let stage in onboarding_completion_counts) {
+            console.log(onboarding_completion_counts[stage])
+            let tooltip = `
+          Onboarding Stage: ${stage}<br>
+          Users at Stage: ${onboarding_completion_counts[stage]}<br>
+          `
+            info_list.push([
+              stage,
+              onboarding_completion_counts[stage],
+              tooltip
+            ])
+          }
+            onboarding_attrition_list.push({
+              name: "Onboarding attrition curve",
+              info_list: info_list
+            })
+
+        }
+
+        console.log(onboarding_attrition_list)
+        this.onboarding_attrition_list = onboarding_attrition_list
+      }
+    });
+  </script>
+
+</dom-module>
