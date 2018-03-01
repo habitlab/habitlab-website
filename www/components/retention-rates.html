@@ -12,11 +12,14 @@
         width: 100%;
       }
     </style>
-    <div>hello world</div>
     <google-chart
-  type='scatter'
-  options='{"title": "Distribution of days in 2001Q1"}'
-  cols='[{"label":"Month", "type":"number"}, {"label":"Days", "type":"number"}]'
+  type='bubble'
+  options='{"title": "P(uninstall) vs Number of times an intervention is seen"}'
+  cols='[{"label":"Whatever", "type":"string"},
+          {"label":"Number of times", "type":"number"}, 
+          {"label":"P(uninstall)", "type":"number"}, 
+          {"label":"Intervention", "type":"string"},
+          {"label":"Total # of users", "type":"number"}]'
   rows="{{retention_rates_data}}">
 </google-chart>
 
@@ -91,21 +94,63 @@
 
           let dummy = ''
 
+          // let intervention_specific = num_times_seen_vs_uninstall_rate_dict["facebook:feed_injection_timer"]
+
+          // console.log(intervention_specific)
+          let top5_interventions = [
+            "facebook:feed_injection_timer", 
+            "facebook:remove_news_feed", 
+            "facebook:remove_comments", 
+            "generic:toast_notifications",
+            "generic:show_timer_banner"]
+
+          // for (let intervention in top5_interventions) {
+          //   console.log(top5_interventions[intervention])
+            // let intervention_specific = num_times_seen_vs_uninstall_rate_dict["generic:toast_notifications"]
+            // for (let key in intervention_specific) {
+            //   let uninstall = intervention_specific[key][0]
+            //   let non_uninstall = intervention_specific[key][1]
+            //   if ((uninstall + non_uninstall) == 1) {
+            //     continue
+            //   }
+            //   let p_uninstall = uninstall / (uninstall + non_uninstall)
+            //   let count = uninstall + non_uninstall
+            //   if (parseInt(key) < 50) {
+            //     data.push(['', parseInt(key), p_uninstall, "generic:toast_notifications", count])
+            //   }
+            // }
+          // }
+          // for (let key in intervention_specific) {
+          //   let uninstall = intervention_specific[key][0]
+          //   let non_uninstall = intervention_specific[key][1]
+          //   if ((uninstall + non_uninstall) == 1) {
+          //     continue
+          //   }
+          //   let p_uninstall = uninstall / (uninstall + non_uninstall)
+          //   let count = uninstall + non_uninstall
+          //   if (parseInt(key) < 50) {
+          //     data.push(['', parseInt(key), p_uninstall, 'facebook:feed_injection_timer', count])
+          //   }
+          // }
+          console.log(data)
           for (let key in coalesced) {
-            console.log(key, coalesced[key])
+            // console.log(key, coalesced[key])
             let uninstall = coalesced[key][0]
             let non_uninstall = coalesced[key][1]
-            let p_uninstall = uninstall / (uninstall + non_uninstall)
-            if (parseInt(key) < 450) {
-              data.push([parseInt(key), p_uninstall])
+            if ((uninstall + non_uninstall) == 1) {
+              continue
             }
-            dummy += '['+ key + ',' + p_uninstall.toString() + '],'
-            console.log(dummy)
+            let p_uninstall = uninstall / (uninstall + non_uninstall)
+            let count = uninstall + non_uninstall
+            if (parseInt(key) < 450) {
+              data.push(['', parseInt(key), p_uninstall, '', count])
+            }
+            // console.log(dummy)
           }
-          console.log(data)
+          // console.log(data)
           self.retention_rates_data = data
           
-          console.log(dummy)
+          // console.log(dummy)
         })
 
         // console.log(num_times_seen_vs_uninstall_rate_dict)
