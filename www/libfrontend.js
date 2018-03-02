@@ -693,6 +693,43 @@ let get_time_until_user_changed_interventions = async function(userid) {
 
 let get_time_until_user_changed_interventions_cached = memoize_to_disk_1arg(get_time_until_user_changed_interventions, 'get_time_until_user_changed_interventions')
 
+let get_seconds_on_domain_per_day_epoch_for_user = async function(userid) {
+  let timespent_logs = await get_collection_for_user(userid, 'synced:seconds_on_domain_per_day')
+  let output = {}
+  // domain -> day (epoch) -> seconds
+  for (let x of timespent_logs) {
+    let day = x.key2
+    let domain = x.key
+    let timespent = x.val
+    if (output[domain] == null) {
+      output[domain] = {}
+    }
+    if (output[domain][day] == null) {
+      output[domain][day] = timespent
+    } else {
+      output[domain][day] = Math.max(timespent, output[domain][day])
+    }
+  }
+  return output
+}
+
+let get_seconds_on_domain_per_day_epoch_for_user_cached = memoize_to_disk_1arg(get_seconds_on_domain_per_day_epoch_for_user, 'get_seconds_on_domain_per_day_epoch_for_user')
+
+async function get_seconds_on_domain_per_day_since_install_for_user_cached(userid) {
+  let output = {}
+  let seconds_on_domain_per_epoch_for_user = await get_seconds_on_domain_per_day_epoch_for_user_cached(userid)
+  for (let domain of Object.keys(seconds_on_domain_per_epoch_for_user)) {
+    output[domain] = {}
+    let days = Object.keys(seconds_on_domain_per_epoch_for_user[domain]).map(x => parseInt(x))
+    let firstday = prelude.minimum(days)
+    for (let epoch_day of days) {
+      let days_since_install = epoch_day - firstday
+      output[domain][days_since_install] = seconds_on_domain_per_epoch_for_user[domain][epoch_day]
+    }
+  }
+  return output
+}
+
 let get_experiment_info_for_user = async function(userid) {
   let intervention_logs = await get_collection_for_user(userid, 'logs:interventions')
   for (let x of intervention_logs) {
