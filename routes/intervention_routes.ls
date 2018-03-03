@@ -35,7 +35,8 @@ all_contributed_interventions = [
         "author": "lewin",
         "text": "doubleplusgood"
       }
-    ]
+    ],
+    "code":"NA"
   },
   {
     "name": "remove_comments",
@@ -56,6 +57,7 @@ all_contributed_interventions = [
     ]
   }
 ]
+
 proposed_goals_list = [
   {
     id: 0
@@ -125,11 +127,11 @@ app.get '/get_all_contributed_interventions', (ctx) ->>
 # MAIN FOR GETTING THE SPEARATE INTERVENTIONS
 app.get '/get_contributed_interventions_for_site', (ctx) ->>
   ctx.type = 'json'
-  {site} = ctx.request.query
-  if need_query_property ctx, 'site'
+  {website} = ctx.request.query
+  if need_query_property ctx, 'website'
     return
-  [contributed_interventions, db] = await get_contributed_interventions()//Find these functions//
-  all_results = await n2p -> contributed_interventions.find({site: site}).toArray(it)
+  [contributed_interventions, db] = await get_contributed_interventions()/*Find these functions*/
+  all_results = await n2p -> contributed_interventions.find({website: website}).toArray(it)
   ctx.body = JSON.stringify(all_results)
   db?close()
 
