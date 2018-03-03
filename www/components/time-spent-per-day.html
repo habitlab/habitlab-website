@@ -1,0 +1,54 @@
+<link rel="import" href="../bower_components/polymer/polymer.html">
+<link rel="import" href="../bower_components/google-chart/google-chart.html">
+
+<dom-module id="time-spent-per-day">
+  <template>
+    <style>
+      #retention_curve_general {
+        width: 100%;
+        height: 600px;
+      }
+    </style>
+    <google-chart
+      type="line"
+      id="retention_curve_general"
+      cols='[{"label": "Day", "type": "number"},{"label": "Number of users retained", "type": "number"},{"label": "Fraction of users retained", "type": "number", "role": "tooltip", "p": {"html": true}}]'
+      rows="{{data}}"
+      options='{"tooltip": {"isHtml": true}, "legend": "none"}'
+    ></google-chart>
+  </template>
+  <script>
+    Polymer({
+      is: 'time-spent-per-day',
+      properties: {
+
+      },
+      ready: async function() {
+        let user_to_first_active_since_today = await list_first_active_date_for_all_users_since_today()
+        let all_user_list = Object.keys(user_to_first_active_since_today)
+        let user_list = []
+        let num_times_fb_visited_in_first_week = [0,0,0,0,0,0,0,0]
+        let user_to_interventions_seen = await list_intervention_logs_for_all_users_cached()
+        for (let userid of all_user_list) {
+          let seconds_on_domain = await get_seconds_on_domain_per_day_since_install_for_user_cached(userid)
+          let seconds_on_facebook = seconds_on_domain['www.facebook.com']
+          let num_times_fb_visited = 0
+          for (var i = 0; i < 7; ++i) {
+            if (seconds_on_facebook && seconds_on_facebook[i]) {
+              num_times_fb_visited += 1
+            }
+          }
+          num_times_fb_visited_in_first_week += 1
+          console.log(userid)
+          //let interventions_seen = user_to_interventions_seen[userid]
+          //if (interventions_seen == null || interventions_seen.length == 0) continue
+          //user_list.push(userid)
+        }
+        //let days_to_analyze = 90
+        //let retention_data = await get_retention_curves_for_users(user_list, days_to_analyze)
+        //this.data = math.range(0, days_to_analyze + 1).map((i) => [i, retention_data[i] / retention_data[0], retention_data[i]]).toArray()
+        console.log(num_times_fb_visited_in_first_week)
+      },
+    })
+  </script>
+</dom-module>
