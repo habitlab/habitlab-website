@@ -417,7 +417,7 @@ async function get_collection_for_user(userid, collection_name) {
 }
 
 async function get_user_max_intervention_count(userid) {
-  let intervention_count_dict = Promise.resolve(get_intervention_count_dict(userid))
+  let intervention_count_dict = await get_intervention_count_dict(userid)
   // let curr = 0
   // intervention_count_dict.then(function(x) {
   //   for ([k, v] of x){
@@ -430,19 +430,15 @@ async function get_user_max_intervention_count(userid) {
 }
 
 async function get_intervention_count_dict(userid) {
-  let combined_collection = Promise.resolve(get_combined_collection_for_user(userid))
-
+  let combined_collection = await get_combined_collection_for_user(userid)
   let intervention_count_dict = {}
-  combined_collection.then(function(value) {
-    for (let entry of value) {
-      let intervention_name = entry["intervention"]
-      if (intervention_count_dict[intervention_name] == null) {
-        intervention_count_dict[intervention_name] = 0
-      }
-      intervention_count_dict[intervention_name] += 1
+  for (let entry of combined_collection) {
+    let intervention_name = entry["intervention"]
+    if (intervention_count_dict[intervention_name] == null) {
+      intervention_count_dict[intervention_name] = 0
     }
-  })
-  return intervention_count_dict
+    intervention_count_dict[intervention_name] += 1
+  }
 }
 
 async function get_combined_collection_for_user(userid) {
