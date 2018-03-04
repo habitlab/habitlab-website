@@ -65,6 +65,35 @@ app.post '/add_logging_state', (ctx) ->>
     db?close()
   ctx.body = JSON.stringify {response: 'done', success: true}
 
+is_valid_collection_name = (name) ->
+  if name.length > 90
+    return false
+  valid_collection_characters = 'abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789-_'
+  for x in name
+    if valid_collection_characters.indexOf(x) == -1
+      return false
+  return true
+
+app.post '/add_feature_state', (ctx) ->>
+  ctx.type = 'json'
+  try
+    query = {} <<< ctx.request.body
+    if query.callback?
+      delete query.callback
+    if (not query.feature?) or (not is_valid_collection_name(query.feature))
+      ctx.body = JSON.stringify {response: 'need feature name', success: false}
+      return
+    [feature_states, db] = await get_collection('features:' + query.feature)
+    query.timestamp = Date.now()
+    query.ip = ctx.request.ip_address_fixed
+    await n2p -> feature_states.insert(fix_object(query), it)
+  catch err
+    console.error 'error in add_feature_state'
+    console.error err
+  finally
+    db?close()
+  ctx.body = JSON.stringify {response: 'done', success: true}
+
 app.get '/add_install', (ctx) ->>
   ctx.type = 'json'
   try

@@ -58,6 +58,7 @@ import_component(component_name).then(function() {
     new_elem.attr(key, value)
   }
   $('#container').append(new_elem)
+  window.basetag = new_elem[0]
 })
 </script>
 

@@ -1,0 +1,419 @@
+<link rel="import" href="../bower_components/polymer/polymer.html">
+<link rel="import" href="../bower_components/google-chart/google-chart.html">
+
+<dom-module id="intervention-effectiveness-experiment">
+  <template>
+    <style>
+      #retention_curve_experiment {
+        width: 100%;
+        height: 600px;
+      }
+      #retention_curve_experiment2 {
+        width: 100%;
+        height: 600px;
+      }
+    </style>
+    <google-chart
+      id='retention_curve_experiment'
+      cols='[{"label": "Data", "type": "string"},{"label": "all", "type": "number"},{"label": "half", "type": "number"},{"label": "one", "type": "number"}]'
+      rows='{{rows}}'
+    ></google-chart>
+    <google-chart
+      id='retention_curve_experiment2'
+      cols='[{"label": "Data", "type": "string"},{"label": "all", "type": "number"},{"label": "half", "type": "number"},{"label": "one", "type": "number"}]'
+      rows='{{rows2}}'
+    ></google-chart>
+  </template>
+  <script>
+    Polymer({
+      is: 'intervention-effectiveness-experiment',
+      properties: {
+
+      },
+      ready: async function() {
+        let user_to_install_data = await get_user_to_install_data_cached()
+        console.log('user_to_install_data')
+        console.log(user_to_install_data)
+        let user_to_first_active_since_today = await list_first_active_date_for_all_users_since_today()
+        let all_user_list = Object.keys(user_to_first_active_since_today)
+        let condition_to_users = {}
+        let user_to_interventions_seen = await list_intervention_logs_for_all_users_cached()
+        let user_to_install_dates = await get_user_to_install_dates_list_cached()
+        let user_list_historic = []
+        for (let userid of all_user_list) {
+          let interventions_seen = user_to_interventions_seen[userid]
+          if (interventions_seen == null || interventions_seen.length == 0) continue
+          user_list_historic.push(userid)
+        }
+        //let user_list_historic_twoweeks = []
+        //for (let userid of all_user_list ) {
+          
+        //}
+        let exp_conditions = [
+          'all_of_defaults',
+          'half_of_defaults',
+          'one',
+        ]
+        let facebook_condition_names_set = {}
+        let facebook_condition_names = []
+        let facebook_interventions_to_plot = [
+          'facebook/show_timer_banner',
+          'facebook/remove_news_feed',
+          'facebook/remove_comments',
+          'facebook/feed_injection_timer',
+          'facebook/toast_notifications',
+        ]
+        let youtube_interventions_to_plot = [
+          'youtube/remove_comment_section',
+          'youtube/remove_sidebar_links',
+          'youtube/prompt_before_watch',
+        ]
+        let facebook_interventions_to_condition_to_session_lengths = {}
+        for (let intervention_name of facebook_interventions_to_plot) {
+          facebook_interventions_to_condition_to_session_lengths[intervention_name] = {}
+          for (let condition of exp_conditions) {
+            facebook_interventions_to_condition_to_session_lengths[intervention_name][condition] = []
+          }
+        }
+        let youtube_interventions_to_condition_to_session_lengths = {}
+        for (let intervention_name of youtube_interventions_to_plot) {
+          youtube_interventions_to_condition_to_session_lengths[intervention_name] = {}
+          for (let condition of exp_conditions) {
+            youtube_interventions_to_condition_to_session_lengths[intervention_name][condition] = []
+          }
+        }
+        for (let userid of all_user_list) {
+          let install_info = user_to_install_data[userid]
+          if (install_info == null) {
+            // don't have install event logged
+            continue
+          }
+          if (install_info.chrome_runtime_id != "obghclocpdgcekcognpkblghkedcpdgd") {
+            // not running production version
+            continue
+          }
+          if (install_info.last_visit_to_chrome_store == -1 && install_info.last_visit_to_website == -1) {
+            // fake user or autoinstall
+            continue
+          }
+          let install_dates = user_to_install_dates[userid]
+          if (install_dates.length != 1) {
+            // extra device of an existing user
+            continue
+          }
+          let install_date = install_dates[0]
+          //console.log(userid)
+          let interventions_seen = user_to_interventions_seen[userid]
+          if (interventions_seen == null || interventions_seen.length == 0) continue
+          let condition = await get_experiment_condition_for_user_cached(userid)
+          if (condition == 'none') continue
+          let experiment_date = await get_experiment_date_for_user_cached(userid)
+          if (experiment_date != install_date) {
+            // was an existing user to whom the experiment was accidentally deployed
+            continue
+          }
+          let times_interventions_changed = await get_time_until_user_changed_interventions_cached(userid)
+          console.log('times interventions changed')
+          console.log(times_interventions_changed)
+          let did_user_change_interventions = times_interventions_changed.milliseconds_until_first_intervention_changed != null
+          let did_user_enable_interventions = times_interventions_changed.milliseconds_until_first_intervention_enabled != null
+          let did_user_disable_interventions = times_interventions_changed.milliseconds_until_first_intervention_disabled != null
+          let did_user_change_interventions_5min = times_interventions_changed.milliseconds_until_first_intervention_changed < 5*60*1000
+          let did_user_enable_interventions_5min = times_interventions_changed.milliseconds_until_first_intervention_enabled != 5*60*1000
+          let did_user_disable_interventions_5min = times_interventions_changed.milliseconds_until_first_intervention_disabled != 5*60*1000
+          //let default_interventions = await get_default_interventions_for_user(userid)
+          //console.log('default interventions are')
+          //console.log(default_interventions)
+          let onboarding_completed = await get_did_user_complete_onboarding_cached(userid)
+          if (!onboarding_completed) continue
+          let intervention_to_num_times_seen = await get_intervention_to_num_times_seen(userid)
+          let total_interventions_seen = 0
+          let total_facebook_interventions_seen = 0
+          for (let intervention_name of Object.keys(intervention_to_num_times_seen)) {
+            let num_times_seen = intervention_to_num_times_seen[intervention_name]
+            total_interventions_seen += num_times_seen
+            if (intervention_name.startsWith('facebook:')) {
+              total_facebook_interventions_seen += num_times_seen
+            }
+          }
+
+          //if (did_user_change_interventions) {
+          //  continue
+          //}
+          if (did_user_enable_interventions) {
+            continue
+          }
+
+          if (total_interventions_seen < 10) {
+            continue
+          }
+
+          session_lengths_with_intervention = await get_session_lengths_with_intervention(userid)
+          let facebook_intervention_to_session_lengths = session_lengths_with_intervention['www.facebook.com']
+          if (facebook_intervention_to_session_lengths != null) {
+            for (let intervention_name of facebook_interventions_to_plot) {
+              let session_lengths = facebook_intervention_to_session_lengths[intervention_name]
+              if (session_lengths != null) {
+                //let avg_length = prelude.mean(session_lengths)
+                session_lengths = session_lengths.map(Math.log)
+                let avg_length = prelude.sort(session_lengths)[Math.floor(session_lengths.length / 2)]
+                facebook_interventions_to_condition_to_session_lengths[intervention_name][condition].push(avg_length)
+              }
+            }
+          }
+
+          console.log(session_lengths_with_intervention)
+          let youtube_intervention_to_session_lengths = session_lengths_with_intervention['www.youtube.com']
+          if (youtube_intervention_to_session_lengths != null) {
+            for (let intervention_name of youtube_interventions_to_plot) {
+              let session_lengths = youtube_intervention_to_session_lengths[intervention_name]
+              if (session_lengths != null) {
+                //let avg_length = prelude.mean(session_lengths)
+                session_lengths = session_lengths.map(Math.log)
+                let avg_length = prelude.sort(session_lengths)[Math.floor(session_lengths.length / 2)]
+                youtube_interventions_to_condition_to_session_lengths[intervention_name][condition].push(avg_length)
+              }
+            }
+          }
+          /*
+          let youtube_intervention_to_session_lengths = session_lengths_with_intervention['www.youtube.com']
+          if (youtube_intervention_to_session_lengths != null) {
+            
+          }
+          */
+
+          console.log(userid)
+          continue // TODO end
+
+          if (total_interventions_seen < 10) {
+            continue
+          }
+          if (total_facebook_interventions_seen < 1) {
+            //continue
+          }
+          if (condition_to_users[condition] == null) {
+            condition_to_users[condition] = []
+          }
+          condition_to_users[condition].push(userid)
+
+          if (!did_user_enable_interventions) {
+            if (condition_to_users[condition + '_defaultinterventions'] == null) {
+              condition_to_users[condition + '_defaultinterventions'] = []
+            }
+            condition_to_users[condition + '_defaultinterventions'].push(userid)
+          }
+          
+          if (did_user_change_interventions) {
+            if (condition_to_users['changed_interventions'] == null)
+              condition_to_users['changed_interventions'] = []
+            condition_to_users['changed_interventions'].push(userid)
+          } else {
+            if (condition_to_users['no_changed_interventions'] == null)
+              condition_to_users['no_changed_interventions'] = []
+            condition_to_users['no_changed_interventions'].push(userid)
+          }
+          if (did_user_enable_interventions) {
+            if (condition_to_users['enabled_interventions'] == null)
+              condition_to_users['enabled_interventions'] = []
+            condition_to_users['enabled_interventions'].push(userid)
+          } else {
+            if (condition_to_users['no_enabled_interventions'] == null)
+              condition_to_users['no_enabled_interventions'] = []
+            condition_to_users['no_enabled_interventions'].push(userid)
+          }
+          if (did_user_disable_interventions) {
+            if (condition_to_users['disabled_interventions'] == null)
+              condition_to_users['disabled_interventions'] = []
+            condition_to_users['disabled_interventions'].push(userid)
+          } else {
+            if (condition_to_users['no_disabled_interventions'] == null)
+              condition_to_users['no_disabled_interventions'] = []
+            condition_to_users['no_disabled_interventions'].push(userid)
+          }
+
+          if (did_user_change_interventions_5min) {
+            if (condition_to_users['changed_interventions_5min'] == null)
+              condition_to_users['changed_interventions_5min'] = []
+            condition_to_users['changed_interventions_5min'].push(userid)
+          } else {
+            if (condition_to_users['no_changed_interventions_5min'] == null)
+              condition_to_users['no_changed_interventions_5min'] = []
+            condition_to_users['no_changed_interventions_5min'].push(userid)
+          }
+          if (did_user_enable_interventions_5min) {
+            if (condition_to_users['enabled_interventions_5min'] == null)
+              condition_to_users['enabled_interventions_5min'] = []
+            condition_to_users['enabled_interventions_5min'].push(userid)
+          } else {
+            if (condition_to_users['no_enabled_interventions_5min'] == null)
+              condition_to_users['no_enabled_interventions_5min'] = []
+            condition_to_users['no_enabled_interventions_5min'].push(userid)
+          }
+          if (did_user_disable_interventions_5min) {
+            if (condition_to_users['disabled_interventions_5min'] == null)
+              condition_to_users['disabled_interventions_5min'] = []
+            condition_to_users['disabled_interventions_5min'].push(userid)
+          } else {
+            if (condition_to_users['no_disabled_interventions_5min'] == null)
+              condition_to_users['no_disabled_interventions_5min'] = []
+            condition_to_users['no_disabled_interventions_5min'].push(userid)
+          }
+
+          // now break up one condition further
+          if (condition == 'one') {
+            let default_interventions = await get_default_interventions_for_user_cached(userid)
+            let facebook_interventions = []
+            for (intervention_name of Object.keys(default_interventions)) {
+              if (default_interventions[intervention_name] == true && intervention_name.startsWith('facebook/')) {
+                facebook_interventions.push(intervention_name)
+              }
+            }
+            if (facebook_interventions.length != 1) {
+              console.log('wrong number of facebook interventions for user ' + userid)
+              continue
+            }
+            let condition_name = 'one_' + facebook_interventions[0]
+            if (facebook_condition_names_set[condition_name] == null) {
+              facebook_condition_names.push(condition_name)
+              facebook_condition_names_set[condition_name] = true
+            }
+            if (condition_to_users[condition_name] == null) {
+              condition_to_users[condition_name] = []
+            }
+            condition_to_users[condition_name].push(userid)
+          }
+        }
+
+        let rows = []
+        console.log('sample sizes')
+        for (let intervention_name of facebook_interventions_to_plot) {
+          let cur_row = [intervention_name]
+          for (let condition of exp_conditions) {
+            let session_lengths = facebook_interventions_to_condition_to_session_lengths[intervention_name][condition]
+            console.log(condition + ' ' + intervention_name + ' : ' + session_lengths.length)
+            //let avg_session = prelude.mean(session_lengths)
+            let avg_session = prelude.sort(session_lengths)[Math.floor(session_lengths.length / 2)]
+            cur_row.push(avg_session)
+          }
+          rows.push(cur_row)
+        }
+        this.rows = rows
+        console.log(facebook_interventions_to_condition_to_session_lengths)
+
+        let rows2 = []
+        console.log('sample sizes')
+        for (let intervention_name of youtube_interventions_to_plot) {
+          let cur_row = [intervention_name]
+          for (let condition of exp_conditions) {
+            let session_lengths = youtube_interventions_to_condition_to_session_lengths[intervention_name][condition]
+            console.log(condition + ' ' + intervention_name + ' : ' + session_lengths.length)
+            //let avg_session = prelude.mean(session_lengths)
+            let avg_session = prelude.sort(session_lengths)[Math.floor(session_lengths.length / 2)]
+            cur_row.push(avg_session)
+          }
+          rows2.push(cur_row)
+        }
+        this.rows2 = rows2
+        console.log(youtube_interventions_to_condition_to_session_lengths)
+
+        return // TODO end
+
+        condition_to_users['pre-experiment'] = user_list_historic
+        let condition_list_base = [
+          'all_of_defaults',
+          'half_of_defaults',
+          'one',
+          'pre-experiment'
+        ]
+        let condition_list_intervention_changing = [
+          'changed_interventions',
+          'no_changed_interventions',
+          'enabled_interventions',
+          'no_enabled_interventions',
+          'disabled_interventions',
+          'no_disabled_interventions',
+        ]
+        let condition_list_intervention_changing_5min = [
+          'changed_interventions_5min',
+          'no_changed_interventions_5min',
+          //'enabled_interventions_5min',
+          //'no_enabled_interventions_5min',
+          //'disabled_interventions_5min',
+          //'no_disabled_interventions_5min',
+        ]
+        let condition_list_defaultinterventions = [
+          'all_of_defaults_defaultinterventions',
+          'half_of_defaults_defaultinterventions',
+          'one_defaultinterventions',
+          //'enabled_interventions_5min',
+          //'no_enabled_interventions_5min',
+          //'disabled_interventions_5min',
+          //'no_disabled_interventions_5min',
+        ]
+        let condition_list = condition_list_base.concat(facebook_condition_names).concat(condition_list_intervention_changing).concat(condition_list_intervention_changing_5min).concat(condition_list_defaultinterventions)
+        let condition_list_graph4 = condition_list_base
+        let condition_list_graph5 = condition_list_base.concat(facebook_condition_names)
+        let condition_list_graph6 = condition_list_base.concat(condition_list_intervention_changing)
+        let condition_list_graph7 = condition_list_base.concat(condition_list_intervention_changing_5min)
+        let condition_list_graph8 = [].concat(condition_list_defaultinterventions)
+        let days_to_analyze = 7
+        let condition_to_retention_data = {}
+        let condition_to_retention_graph_data = {}
+        for (let condition of condition_list) {
+          console.log('getting retention curves for condition ' + condition)
+          console.log('user list is:')
+          console.log(condition_to_users[condition])
+          let retention_data = await get_retention_curves_for_users(condition_to_users[condition], days_to_analyze)
+          condition_to_retention_data[condition] = retention_data
+          condition_to_retention_graph_data[condition] = math.range(0, days_to_analyze + 1).map((i) => [i, retention_data[i] / retention_data[0], retention_data[i]]).toArray()
+        }
+        console.log('sample sizes:')
+        for (condition of condition_list) {
+          console.log(condition + ' : ' + condition_to_retention_data[condition][0])
+        }
+        this.data = condition_to_retention_graph_data['all_of_defaults']
+        this.data2 = condition_to_retention_graph_data['half_of_defaults']
+        this.data3 = condition_to_retention_graph_data['one']
+        this.cols4 = [{"label": "Day", "type": "number"}].concat(condition_list_graph4.map(x => { return {'label': x, 'type': 'number'}}))
+        this.data4 = math.range(0, days_to_analyze + 1).map((i) => {
+          return [i].concat(condition_list_graph4.map(condition => {
+            return condition_to_retention_data[condition][i] / condition_to_retention_data[condition][0]
+          }))
+        }).toArray()
+        this.cols5 = [{"label": "Day", "type": "number"}].concat(condition_list_graph5.map(x => { return {'label': x, 'type': 'number'}}))
+        this.data5 = math.range(0, days_to_analyze + 1).map((i) => {
+          return [i].concat(condition_list_graph5.map(condition => {
+            return condition_to_retention_data[condition][i] / condition_to_retention_data[condition][0]
+          }))
+        }).toArray()
+        this.cols6 = [{"label": "Day", "type": "number"}].concat(condition_list_graph6.map(x => { return {'label': x, 'type': 'number'}}))
+        this.data6 = math.range(0, days_to_analyze + 1).map((i) => {
+          return [i].concat(condition_list_graph6.map(condition => {
+            return condition_to_retention_data[condition][i] / condition_to_retention_data[condition][0]
+          }))
+        }).toArray()
+        this.cols7 = [{"label": "Day", "type": "number"}].concat(condition_list_graph7.map(x => { return {'label': x, 'type': 'number'}}))
+        this.data7 = math.range(0, days_to_analyze + 1).map((i) => {
+          return [i].concat(condition_list_graph7.map(condition => {
+            return condition_to_retention_data[condition][i] / condition_to_retention_data[condition][0]
+          }))
+        }).toArray()
+        this.cols8 = [{"label": "Day", "type": "number"}].concat(condition_list_graph8.map(x => { return {'label': x, 'type': 'number'}}))
+        this.data8 = math.range(0, days_to_analyze + 1).map((i) => {
+          return [i].concat(condition_list_graph8.map(condition => {
+            return condition_to_retention_data[condition][i] / condition_to_retention_data[condition][0]
+          }))
+        }).toArray()
+        console.log('data for making logrank test')
+        let lifetimes1 = await get_lifetimes_and_whether_attrition_was_observed_for_users(condition_to_users['all_of_defaults_defaultinterventions'])
+        let lifetimes2 = await get_lifetimes_and_whether_attrition_was_observed_for_users(condition_to_users['half_of_defaults_defaultinterventions'])
+        let lifetimes3 = await get_lifetimes_and_whether_attrition_was_observed_for_users(condition_to_users['one_defaultinterventions'])
+        console.log(JSON.stringify({
+          all_of_defaults: lifetimes1,
+          half_of_defaults: lifetimes2,
+          one: lifetimes3,
+        }))
+      }
+    })
+  </script>
+</dom-module>

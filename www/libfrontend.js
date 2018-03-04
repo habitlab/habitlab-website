@@ -80,6 +80,28 @@ function memoize_to_disk_1arg(f, func_name) {
   }
 }
 
+function memoize_to_disk_2arg(f, func_name) {
+  if (func_name == null) {
+    func_name = f.name
+  }
+  let memoize_to_disk_2arg_cache = {}
+  let store = get_store('memoizedisk|' + func_name)
+  return async function(arg, arg2) {
+    if (memoize_to_disk_2arg_cache[arg] != null && memoize_to_disk_2arg_cache[arg][arg2] != null) {
+      return memoize_to_disk_2arg_cache[arg][arg2]
+    }
+    let cached_value = await store.getItem(arg + '|' + arg2)
+    if (cached_value != null) {
+      return cached_value
+    }
+    cached_value = await f(arg, arg2)
+    if (cached_value != null) {
+      await store.setItem(arg + '|' + arg2, cached_value)
+    }
+    return cached_value
+  }
+}
+
 async function geolocate_ip(ip_addr) {
   let geolocate_info = {}
   if (localStorage.getItem('geolocate_info_' + ip_addr)) {
@@ -416,6 +438,8 @@ async function get_collection_for_user(userid, collection_name) {
   return await getjson('/printcollection', {userid: userid, logname: collection_name})
 }
 
+let get_collection_for_user_cached = memoize_to_disk_2arg(get_collection_for_user, 'get_collection_for_user')
+
 async function get_user_max_intervention_count(userid) {
   let intervention_count_dict = await get_intervention_count_dict(userid)
   // let curr = 0
@@ -664,6 +688,43 @@ let get_time_until_user_changed_interventions = async function(userid) {
 }
 
 let get_time_until_user_changed_interventions_cached = memoize_to_disk_1arg(get_time_until_user_changed_interventions, 'get_time_until_user_changed_interventions')
+
+let get_seconds_on_domain_per_day_epoch_for_user = async function(userid) {
+  let timespent_logs = await get_collection_for_user(userid, 'synced:seconds_on_domain_per_day')
+  let output = {}
+  // domain -> day (epoch) -> seconds
+  for (let x of timespent_logs) {
+    let day = x.key2
+    let domain = x.key
+    let timespent = x.val
+    if (output[domain] == null) {
+      output[domain] = {}
+    }
+    if (output[domain][day] == null) {
+      output[domain][day] = timespent
+    } else {
+      output[domain][day] = Math.max(timespent, output[domain][day])
+    }
+  }
+  return output
+}
+
+let get_seconds_on_domain_per_day_epoch_for_user_cached = memoize_to_disk_1arg(get_seconds_on_domain_per_day_epoch_for_user, 'get_seconds_on_domain_per_day_epoch_for_user')
+
+async function get_seconds_on_domain_per_day_since_install_for_user_cached(userid) {
+  let output = {}
+  let seconds_on_domain_per_epoch_for_user = await get_seconds_on_domain_per_day_epoch_for_user_cached(userid)
+  for (let domain of Object.keys(seconds_on_domain_per_epoch_for_user)) {
+    output[domain] = {}
+    let days = Object.keys(seconds_on_domain_per_epoch_for_user[domain]).map(x => parseInt(x))
+    let firstday = prelude.minimum(days)
+    for (let epoch_day of days) {
+      let days_since_install = epoch_day - firstday
+      output[domain][days_since_install] = seconds_on_domain_per_epoch_for_user[domain][epoch_day]
+    }
+  }
+  return output
+}
 
 let get_experiment_info_for_user = async function(userid) {
   let intervention_logs = await get_collection_for_user(userid, 'logs:interventions')
