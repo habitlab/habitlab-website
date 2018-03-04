@@ -10,12 +10,25 @@
       }
     </style>
     <div>All Users with experiment_vars set</div>
+
     <template is="dom-repeat" items="{{users_with_experiment_vars}}" as="userid">
       <div>
         <a href="/viewuser.html?userid={{userid}}">{{userid}}</a>
       </div>
     </template>
-    <div id="all_users_with_experiment_vars"></div>
+
+    <br><br>
+
+    <template is="dom-repeat" items="{{selection_algorithm_and_users_list}}" as="selection_algorithm_and_users">
+      <div>Algorithm: {{selection_algorithm_and_users.algorithm}}</div>
+      <template is="dom-repeat" items="{{selection_algorithm_and_users.users}}" as="userid">
+          <div>
+              <a href="/viewuser.html?userid={{userid}}">{{userid}}</a>
+            </div>
+      </template>
+      <br><br>
+    </template>
+
   </template>
   <script>
     Polymer({
@@ -35,6 +48,9 @@
       ready: async function() {
         let all_collections = await listcollections()
         let users_with_experiment_vars = []
+        let user_to_selection_algorithm = {}
+        let selection_algorithm_and_users_list = []
+        let selection_algorithm_to_idx = {}
         for (let collection_fullname of all_collections) {
           let underscore_index = collection_fullname.indexOf('_')
           let username = collection_fullname.substr(0, underscore_index)
@@ -44,7 +60,23 @@
           }
         }
         this.users_with_experiment_vars = users_with_experiment_vars
-        
+        for (let userid of users_with_experiment_vars) {
+          let experiment_vars_list = await get_collection_for_user(userid, 'synced:experiment_vars')
+          for (let x of experiment_vars_list) {
+            if (x.key == 'selection_algorithm_for_visit') {
+              user_to_selection_algorithm[userid] = x.val
+              if (selection_algorithm_to_idx[x.val] == null) {
+                selection_algorithm_to_idx[x.val] = selection_algorithm_and_users_list.length
+                selection_algorithm_and_users_list.push({
+                  algorithm: x.val,
+                  users: [],
+                })
+              }
+              selection_algorithm_and_users_list[selection_algorithm_to_idx[x.val]].users.push(userid)
+            }
+          }
+        }
+        this.selection_algorithm_and_users_list = selection_algorithm_and_users_list
       },
     })
   </script>
