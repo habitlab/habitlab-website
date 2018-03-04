@@ -22,13 +22,12 @@
     <template is="dom-repeat" items="{{selection_algorithm_and_users_list}}" as="selection_algorithm_and_users">
       <div>Algorithm: {{selection_algorithm_and_users.algorithm}}</div>
       <template is="dom-repeat" items="{{selection_algorithm_and_users.users}}" as="userid">
-          <div>
-              <a href="/viewuser.html?userid={{userid}}">{{userid}}</a>
-            </div>
+        <div>
+          <a href="/viewuser.html?userid={{userid}}">{{userid}}</a>
+        </div>
       </template>
       <br><br>
     </template>
-
   </template>
   <script>
     Polymer({
