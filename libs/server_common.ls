@@ -210,6 +210,17 @@ memoizeSingleAsync = (func) ->
     cached_val := result
     return result
 
+memoizeOneArgAsync = (func) ->
+  debounced_func = debounce func
+  cached_vals = {}
+  return (x) ->>
+    cached_val = cached_vals[x]
+    if cached_val?
+      return cached_val
+    result = await debounced_func(x)
+    cached_vals[x] = result
+    return result
+
 export list_collections_real = ->>
   ndb = await get_mongo_db()
   #collections_list = await n2p -> ndb.listCollections().toArray(it)
@@ -219,20 +230,50 @@ export list_collections_real = ->>
 
 export list_collections = memoizeSingleAsync list_collections_real
 
-export list_log_collections_for_user = (userid) ->>
+export list_log_collections_for_user_real = (userid) ->>
   all_collections = await list_collections()
   return all_collections.filter -> it.startsWith("#{userid}_")
 
-export list_intervention_collections_for_user = (userid) ->>
+/*
+export list_log_collections_for_user_real = (userid) ->>
+  ndb = await get_mongo_db()
+  collections_list = await n2p -> ndb.collection('collections').find({userid: userid}, {_id: 1}).toArray(it)
+  return collections_list.map (._id)
+*/
+
+export list_log_collections_for_user = memoizeOneArgAsync list_log_collections_for_user_real
+
+export list_intervention_collections_for_user_real = (userid) ->>
   all_collections = await list_collections()
   return all_collections.filter(-> it.startsWith("#{userid}_")).filter(->
     entry_key = it.replace("#{userid}_", '')
     return !entry_key.startsWith('synced:') and !entry_key.startsWith('logs:')
   )
 
-export list_log_collections_for_logname = (logname) ->>
+/*
+export list_intervention_collections_for_user_real = (userid) ->>
+  all_collections = await list_log_collections_for_user(userid)
+  return all_collections.filter(-> it.startsWith("#{userid}_")).filter(->
+    entry_key = it.replace("#{userid}_", '')
+    return !entry_key.startsWith('synced:') and !entry_key.startsWith('logs:')
+  )
+*/
+
+export list_intervention_collections_for_user = memoizeOneArgAsync list_intervention_collections_for_user_real
+
+export list_log_collections_for_logname_real = (logname) ->>
   all_collections = await list_collections()
   return all_collections.filter -> it.endsWith("_#{logname}")
+
+/*
+export list_log_collections_for_logname_real = (collection) ->>
+  ndb = await get_mongo_db()
+  collections_list = await n2p -> ndb.collection('collections').find({collection: collection}, {_id: 1}).toArray(it)
+  return collections_list.map (._id)
+
+*/
+
+export list_log_collections_for_logname = memoizeOneArgAsync list_log_collections_for_logname_real
 
 export get_collection_for_user_and_logname = (userid, logname) ->>
   return await get_collection("#{userid}_#{logname}")

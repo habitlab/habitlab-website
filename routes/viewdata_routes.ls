@@ -146,6 +146,7 @@ app.get '/getactiveusers', auth, (ctx) ->>
   ctx.body = JSON.stringify users
   #db.close()
   return
+*/
 
 app.get '/get_time_last_log_was_sent_for_user', auth, (ctx) ->>
   ctx.type = 'json'
@@ -173,7 +174,6 @@ app.get '/get_time_last_log_was_sent_for_user', auth, (ctx) ->>
           latest_timestamp = timestamp
   ctx.body = latest_timestamp
   #db.close()
-*/
 
 export get_intervention_to_time_most_recently_seen = (user_id) ->>
   collections = await list_intervention_collections_for_user(user_id)
@@ -842,6 +842,7 @@ app.get '/getactiveusers_week', auth, (ctx) ->>
   output = await list_active_users_week()
   ctx.body = JSON.stringify output
 
+/*
 export get_user_to_dates_active_oldlogs = ->>
   users = []
   users_set = {}
@@ -881,6 +882,7 @@ export get_user_to_dates_active_oldlogs = ->>
   return user_to_days_active
 
 expose_get_auth get_user_to_dates_active_oldlogs
+*/
 
 app.get '/get_daily_active_counts', auth, (ctx) ->>
   ctx.type = 'json'
