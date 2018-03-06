@@ -113,6 +113,7 @@ app.get '/get_version_for_user', auth, (ctx) ->>
   ctx.body = user_to_version[userid]
   #db.close()
 
+/*
 app.get '/getactiveusers', auth, (ctx) ->>
   ctx.type = 'json'
   users = []
@@ -172,6 +173,7 @@ app.get '/get_time_last_log_was_sent_for_user', auth, (ctx) ->>
           latest_timestamp = timestamp
   ctx.body = latest_timestamp
   #db.close()
+*/
 
 export get_intervention_to_time_most_recently_seen = (user_id) ->>
   collections = await list_intervention_collections_for_user(user_id)
@@ -255,7 +257,7 @@ export get_time_intervention_was_most_recently_seen = (user_id, intervention_nam
 
 export get_is_logging_enabled_for_user = (user_id) ->>
   [collection, db] = await get_logging_states()
-  results = await n2p -> collection.find({user_id}, {sort: {timestamp: -1}}).toArray(it)
+  results = await n2p -> collection.find({user_id}, {sort: {timestamp: -1}, limit: 1}).toArray(it)
   db.close()
   return results[0]
 
