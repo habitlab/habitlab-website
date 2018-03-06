@@ -43,6 +43,7 @@ app.get '/feedback', auth, (ctx) ->>
   #db.close()
   return
 
+/*
 app.get '/getactiveusers_withversion', auth, (ctx) ->>
   ctx.type = 'json'
   user_to_version = {}
@@ -78,6 +79,7 @@ app.get '/getactiveusers_withversion', auth, (ctx) ->>
   ctx.body = JSON.stringify user_to_version
   #db.close()
   return
+*/
 
 app.get '/get_version_for_user', auth, (ctx) ->>
   ctx.type = 'json'

@@ -85,11 +85,39 @@ export get_mongo_db2 = ->>
     console.error err
     return
 
+/*
+export create_collection_indexes = ->>
+  db = await get_mongo_db()
+  collections = db.collection('collections')
+  await n2p -> collections.ensureIndex({name: 1}, it)
+  await n2p -> collections.ensureIndex({collection: 1}, {sparse: true}, it)
+  await n2p -> collections.ensureIndex({userid: 1}, {sparse: true}, it)
+  return
+*/
+
+export log_collection_exists = (collection_name) ->>
+  db = await get_mongo_db()
+  collections = db.collection('collections')
+  underscore_index = collection_name.indexOf('_')
+  if underscore_index == -1
+    data = {_id: collection_name}
+  else
+    userid = collection_name.slice(0, underscore_index)
+    collection = collection_name.slice(underscore_index + 1)
+    data = {
+      _id: collection_name,
+      userid: userid,
+      collection: collection
+    }
+  await n2p -> collections.update({_id: collection_name}, data, {upsert: true}, it)
+  return
+
 export get_collection = (collection_name) ->>
   db = await get_mongo_db()
   fakedb = {
     close: ->
   }
+  log_collection_exists(collection_name)
   return [db.collection(collection_name), fakedb]
 
 export get_collection2 = (collection_name) ->>
