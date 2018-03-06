@@ -177,9 +177,10 @@ memoizeSingleAsync = (func) ->
 
 export list_collections_real = ->>
   ndb = await get_mongo_db()
-  collections_list = await n2p -> ndb.listCollections().toArray(it)
+  #collections_list = await n2p -> ndb.listCollections().toArray(it)
+  collections_list = await n2p -> ndb.collection('collections').find({}, {_id: 1}).toArray(it)
   #ndb.close()
-  return collections_list.map (.name)
+  return collections_list.map (._id)
 
 export list_collections = memoizeSingleAsync list_collections_real
 
