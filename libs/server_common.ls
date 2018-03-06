@@ -109,7 +109,9 @@ export log_collection_exists = (collection_name) ->>
       userid: userid,
       collection: collection
     }
-  await n2p -> collections.update({_id: collection_name}, data, {upsert: true}, it)
+  item = await n2p -> collections.findOne({_id: collection_name}, it)
+  if item == null
+    await n2p -> collections.insert(data, it)
   return
 
 export get_collection = (collection_name) ->>

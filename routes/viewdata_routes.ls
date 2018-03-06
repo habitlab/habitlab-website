@@ -259,7 +259,7 @@ export get_is_logging_enabled_for_user = (user_id) ->>
   [collection, db] = await get_logging_states()
   results = await n2p -> collection.find({user_id}, {sort: {timestamp: -1}, limit: 1}).toArray(it)
   db.close()
-  return results[0]
+  return results[0].logging_enabled
 
 expose_get_auth get_is_logging_enabled_for_user, 'userid'
 
