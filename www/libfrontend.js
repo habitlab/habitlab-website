@@ -397,10 +397,12 @@ async function get_logging_states() {
   return logging_info_list
 }
 
+/*
 async function list_active_users() {
   let active_users_list = await getjson('/getactiveusers')
   return active_users_list
 }
+*/
 
 async function list_active_users_week() {
   let active_users_list = await getjson('/getactiveusers_week')

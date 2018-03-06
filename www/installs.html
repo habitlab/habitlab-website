@@ -293,7 +293,7 @@ async function show_install_country() {
 }
 
 async function show_install_duration_for_active_users() {
-  let active_users_list = await list_active_users()
+  let active_users_list = await list_active_users_week()
   let user_to_install_times = await get_user_to_install_times()
   let active_users_to_duration_installed = {}
   let current_time = Date.now()
