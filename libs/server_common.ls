@@ -95,7 +95,25 @@ export create_collection_indexes = ->>
   return
 */
 
+export does_collection_exist = (collection_name) ->>
+  db = await get_mongo_db()
+  collections = db.collection('collections')
+  item = await n2p -> collections.findOne({_id: collection_name}, it)
+  return item?
+
+collections_already_logged = {}
+
+export remove_collection_exists = (collection_name) ->>
+  delete collections_already_logged[collection_name]
+  db = await get_mongo_db()
+  collections = db.collection('collections')
+  await n2p -> collections.remove({_id: collection_name}, it)
+  return
+
 export log_collection_exists = (collection_name) ->>
+  if collections_already_logged[collection_name]?
+    return
+  collections_already_logged[collection_name] = true
   db = await get_mongo_db()
   collections = db.collection('collections')
   underscore_index = collection_name.indexOf('_')
@@ -119,8 +137,23 @@ export get_collection = (collection_name) ->>
   fakedb = {
     close: ->
   }
-  log_collection_exists(collection_name)
-  return [db.collection(collection_name), fakedb]
+  collection = db.collection(collection_name)
+  proxy_func = (obj, methodname) ->
+    orig_method = obj[methodname]
+    new_method = ->
+      log_collection_exists(collection_name)
+      return orig_method.apply(obj, arguments)
+    obj[methodname] = new_method.bind(obj)
+  proxy_func(collection, 'insert')
+  proxy_func(collection, 'insertMany')
+  proxy_func(collection, 'insertOne')
+  proxy_func(collection, 'update')
+  proxy_func(collection, 'updateMany')
+  proxy_func(collection, 'updateOne')
+  proxy_func(collection, 'save')
+  #proxy_func(collection, 'findAndModify')
+  #proxy_func(collection, 'findAndUpdate')
+  return [collection, fakedb]
 
 export get_collection2 = (collection_name) ->>
   db = await get_mongo_db2()
