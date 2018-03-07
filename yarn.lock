@@ -1089,7 +1089,7 @@ interpret@^1.0.0:
   version "1.0.1"
   resolved "https://registry.yarnpkg.com/interpret/-/interpret-1.0.1.tgz#d579fb7f693b858004947af39fa0db49f795602c"
 
-is-absolute@^0.2.3:
+is-absolute@^0.2.3, is-absolute@^0.2.6:
   version "0.2.6"
   resolved "https://registry.yarnpkg.com/is-absolute/-/is-absolute-0.2.6.tgz#20de69f3db942ef2d87b9c2da36f172235b1b5eb"
   dependencies:
@@ -1634,7 +1634,7 @@ minimist@^1.1.0:
   version "1.2.0"
   resolved "https://registry.yarnpkg.com/minimist/-/minimist-1.2.0.tgz#a35008b20f41383eec1fb914f4cd5df79a264284"
 
-mkdirp@^0.5.0:
+mkdirp@^0.5.0, mkdirp@~0.5.1:
   version "0.5.1"
   resolved "https://registry.yarnpkg.com/mkdirp/-/mkdirp-0.5.1.tgz#30057438eac6cf7f8c4767f38648d6697d75c903"
   dependencies:
@@ -1709,6 +1709,14 @@ node-gitter@^2.0.5:
     gitter-faye "^1.1.0-e"
     q "~1.0.1"
     qs "~1.2.1"
+
+node-persist@^2.1.0:
+  version "2.1.0"
+  resolved "https://registry.yarnpkg.com/node-persist/-/node-persist-2.1.0.tgz#e652bbf3885a04dad6a353d74176177c83914707"
+  dependencies:
+    is-absolute "^0.2.6"
+    mkdirp "~0.5.1"
+    q "~1.1.1"
 
 node-status-codes@^2.0.0:
   version "2.0.1"
@@ -1909,6 +1917,10 @@ q@1.4.x:
 q@~1.0.1:
   version "1.0.1"
   resolved "https://registry.yarnpkg.com/q/-/q-1.0.1.tgz#11872aeedee89268110b10a718448ffb10112a14"
+
+q@~1.1.1:
+  version "1.1.2"
+  resolved "https://registry.yarnpkg.com/q/-/q-1.1.2.tgz#6357e291206701d99f197ab84e57e8ad196f2a89"
 
 qs@^6.4.0, qs@~6.4.0:
   version "6.4.0"
