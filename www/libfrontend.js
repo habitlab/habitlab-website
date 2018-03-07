@@ -426,16 +426,6 @@ async function list_intervention_logs(userid) {
   return log_name_list_filtered
 }
 
-async function get_user_to_install_times() {
-  let user_to_install_times = await getjson('/get_user_to_install_times')
-  return user_to_install_times
-}
-
-async function get_user_to_uninstall_times() {
-  let user_to_uninstall_times = await getjson('/get_user_to_uninstall_times')
-  return user_to_uninstall_times
-}
-
 async function get_collection_for_user(userid, collection_name) {
   return await getjson('/printcollection', {userid: userid, logname: collection_name})
 }
@@ -1014,6 +1004,16 @@ expose_getjson('get_last_interventions_for_former_users')
 expose_getjson('get_last_interventions_and_num_impressions_for_former_users')
 
 expose_getjson('get_user_to_dates_active')
+
+expose_getjson('get_user_to_install_times')
+
+expose_getjson('get_user_to_uninstall_times')
+
+expose_getjson('get_user_to_all_install_times')
+
+expose_getjson('get_user_to_all_uninstall_times')
+
+expose_getjson('get_user_to_all_install_ids')
 
 //expose_getjson('get_last_interventions_and_num_impressions_for_former_users')
 

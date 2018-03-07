@@ -499,6 +499,45 @@ app.get '/get_user_to_install_times', auth, (ctx) ->>
   finally
     db?close()
 
+app.get '/get_user_to_all_install_times', auth, (ctx) ->>
+  ctx.type = 'json'
+  try
+    [installs, db] = await get_installs()
+    all_results = await n2p -> installs.find({}).toArray(it)
+    output = {}
+    for install_info in all_results
+      userid = install_info.user_id
+      if not output[userid]?
+        output[userid] = []
+      output[userid].push(install_info.timestamp)
+    ctx.body = JSON.stringify(output)
+  catch err
+    console.log 'error in get_user_to_all_install_times'
+    console.log err
+    ctx.body = JSON.stringify {response: 'error', error: 'error in get_user_to_all_install_times'}
+  finally
+    db?close()
+
+app.get '/get_user_to_all_install_ids', auth, (ctx) ->>
+  ctx.type = 'json'
+  try
+    [installs, db] = await get_installs()
+    all_results = await n2p -> installs.find({}).toArray(it)
+    output = {}
+    for install_info in all_results
+      userid = install_info.user_id
+      install_id = install_info.install_id
+      if not output[userid]?
+        output[userid] = []
+      output[userid].push(install_id)
+    ctx.body = JSON.stringify(output)
+  catch err
+    console.log 'error in get_user_to_all_install_ids'
+    console.log err
+    ctx.body = JSON.stringify {response: 'error', error: 'error in get_user_to_all_install_ids'}
+  finally
+    db?close()
+
 app.get '/get_user_to_uninstall_times', auth, (ctx) ->>
   ctx.type = 'json'
   try
@@ -512,6 +551,25 @@ app.get '/get_user_to_uninstall_times', auth, (ctx) ->>
     console.log 'error in get_user_to_uninstall_times'
     console.log err
     ctx.body = JSON.stringify {response: 'error', error: 'error in get_user_to_uninstall_times'}
+  finally
+    db?close()
+
+app.get '/get_user_to_all_uninstall_times', auth, (ctx) ->>
+  ctx.type = 'json'
+  try
+    [uninstalls, db] = await get_uninstalls()
+    all_results = await n2p -> uninstalls.find({}).toArray(it)
+    output = {}
+    for uninstall_info in all_results
+      userid = uninstall_info.u
+      if not output[userid]?
+        output[userid] = []
+      output[userid].push(uninstall_info.timestamp)
+    ctx.body = JSON.stringify(output)
+  catch err
+    console.log 'error in get_user_to_uninstall_times'
+    console.log err
+    ctx.body = JSON.stringify {response: 'error', error: 'error in get_user_to_all_uninstall_times'}
   finally
     db?close()
 
@@ -884,6 +942,7 @@ export get_user_to_dates_active_oldlogs = ->>
 expose_get_auth get_user_to_dates_active_oldlogs
 */
 
+/*
 app.get '/get_daily_active_counts', auth, (ctx) ->>
   ctx.type = 'json'
   user_to_days_active = await get_user_to_dates_active_oldlogs()
@@ -896,5 +955,6 @@ app.get '/get_daily_active_counts', auth, (ctx) ->>
   ctx.body = JSON.stringify day_to_users_active
   db.close()
   return
+*/
 
 require('libs/globals').add_globals(module.exports)

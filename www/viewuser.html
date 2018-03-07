@@ -44,8 +44,9 @@
 </style>
 
 <div>User ID: <span id="display_user_id"></span></div>
-<div>Install time: <span id="display_install_time"></span></div>
-<div>Uninstall time: <span id="display_uninstall_time"></span></div>
+<div>Install times: <span id="display_install_time"></span></div>
+<div>Install ids: <span id="display_install_ids"></span></div>
+<div>Uninstall times: <span id="display_uninstall_time"></span></div>
 <div>Last intervention seen: <span id="display_last_intervention_seen"></span></div>
 <div>Last log sent: <span id="display_last_log_sent_time"></span></div>
 <div>Is logging enabled: <span id="display_is_logging_enabled"></span></div>
@@ -98,19 +99,26 @@ let user_id = geturlparameters().userid
 
 async function show_basic_stats() {
   $('#display_user_id').text(user_id)
-  let user_to_install_times = await get_user_to_install_times()
-  let user_to_uninstall_times = await get_user_to_uninstall_times()
-  let install_time = user_to_install_times[user_id]
-  let uninstall_time = user_to_uninstall_times[user_id]
-  if (install_time != null) {
-    $('#display_install_time').text(moment(install_time).toString())
+  let user_to_install_times = await get_user_to_all_install_times()
+  let user_to_uninstall_times = await get_user_to_all_uninstall_times()
+  let user_to_install_ids = await get_user_to_all_install_ids()
+  let install_times = user_to_install_times[user_id]
+  let uninstall_times = user_to_uninstall_times[user_id]
+  let install_ids = user_to_install_ids[user_id]
+  if (install_times != null) {
+    $('#display_install_time').text(JSON.stringify(install_times.map(x => moment(x).toString())))
   } else {
     $('#display_install_time').text('No install record')
   }
-  if (uninstall_time != null) {
-    $('#display_uninstall_time').text(moment(uninstall_time).toString())
+  if (uninstall_times != null) {
+    $('#display_uninstall_time').text(JSON.stringify(uninstall_times.map(x => moment(x).toString())))
   } else {
     $('#display_uninstall_time').text('No uninstall record')
+  }
+  if (install_ids != null) {
+    $('#display_install_ids').text(JSON.stringify(install_ids))
+  } else {
+    $('#display_install_ids').text('No install ids record')
   }
 }
 
