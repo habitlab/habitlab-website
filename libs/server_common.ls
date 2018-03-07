@@ -57,7 +57,15 @@ export get_mongo_db = ->>
     return local_cache_db
   getdb_running := true
   try
-    local_cache_db := await n2p -> mongodb.MongoClient.connect mongourl, it
+    local_cache_db := await n2p -> mongodb.MongoClient.connect(
+      mongourl,
+      {
+        db: {
+          readPreference: mongodb.ReadPreference.SECONDARY
+        }
+      },
+      it
+    )
     return local_cache_db
   catch err
     console.error 'error getting mongodb'
