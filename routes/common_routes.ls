@@ -31,7 +31,7 @@ app.get '/app_version', (ctx) ->>
   if userid?
     current_date = moment().tz("America/Los_Angeles").format('YYYYMMDD')
     [user_active_dates, db] = await get_user_active_dates()
-    user_active_dates.update({day: current_date, user: userid}, {day: current_date, user: userid}, {upsert: true}).then ->
+    user_active_dates.update({_id: current_date + '_' + userid}, {day: current_date, user: userid}, {upsert: true}).then ->
       db.close()
   if time_checked + 1000*60*20 > current_time # within the past 20 minutes
     ctx.body = {response: 'success', version: appid_to_last_version[appid]}
