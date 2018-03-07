@@ -60,9 +60,7 @@ export get_mongo_db = ->>
     local_cache_db := await n2p -> mongodb.MongoClient.connect(
       mongourl,
       {
-        db: {
-          readPreference: mongodb.ReadPreference.SECONDARY
-        }
+        readPreference: mongodb.ReadPreference.SECONDARY_PREFERRED
       },
       it
     )
