@@ -99,13 +99,13 @@ sync_all_in_collection_fresh = (collection_name, db_src, db_dst) ->>
 
 list_collections = (db_src) ->>
   collections_src = db_src.collection('collections')
-  all_items_src = await n2p -> c_src.find({}).toArray(it)
+  all_items_src = await n2p -> collections_src.find({}).toArray(it)
   return all_items_src.map (._id)
 
 do ->>
   db_src = await get_mongo_db()
   db_dst = await get_mongo_db2()
-  if not fs.existsFileSync('listcollections')
+  if not fs.existsSync('listcollections')
     all_collections = await list_collections(db_src)
     fs.writeFileSync('listcollections', JSON.stringify(all_collections), 'utf-8')
   else

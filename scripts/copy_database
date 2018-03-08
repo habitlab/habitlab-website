@@ -141,7 +141,7 @@
     var collections_src, all_items_src, this$ = this;
     collections_src = db_src.collection('collections');
     all_items_src = (await n2p(function(it){
-      return c_src.find({}).toArray(it);
+      return collections_src.find({}).toArray(it);
     }));
     return all_items_src.map(function(it){
       return it._id;
@@ -151,7 +151,7 @@
     var db_src, db_dst, all_collections, dst_collections, dst_collections_set, num_to_sync, num_threads, resumable, start_thread, i$, threadnum, results$ = [];
     db_src = (await get_mongo_db());
     db_dst = (await get_mongo_db2());
-    if (!fs.existsFileSync('listcollections')) {
+    if (!fs.existsSync('listcollections')) {
       all_collections = (await list_collections(db_src));
       fs.writeFileSync('listcollections', JSON.stringify(all_collections), 'utf-8');
     } else {
