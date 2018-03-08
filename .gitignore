@@ -9,3 +9,6 @@ desktop.ini
 .getsecret.yaml
 /mongodata
 scripts_secret
+.node-persist
+.node-persist-old
+listcollections
