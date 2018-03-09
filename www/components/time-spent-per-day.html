@@ -78,8 +78,13 @@
         let seconds_on_facebook_first_week_median = seconds_on_facebook_first_week_allsamples.map(x => {
           return prelude.sort(x)[Math.floor(x.length / 2)]
         })
+        console.log('overall time on facebook during first ' + period_to_analyze + ' days')
+        console.log('means')
         console.log(seconds_on_facebook_first_week_mean)
+        console.log('medians')
         console.log(seconds_on_facebook_first_week_median)
+        console.log('raw data')
+        console.log(JSON.stringify(seconds_on_facebook_first_week_allsamples))
       },
     })
   </script>

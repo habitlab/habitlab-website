@@ -1,0 +1,123 @@
+<link rel="import" href="../bower_components/polymer/polymer.html">
+<link rel="import" href="../bower_components/google-chart/google-chart.html">
+
+<dom-module id="visualize-experiment-conditions">
+  <template>
+    <style>
+      #retention_curve_general {
+        width: 100%;
+        height: 600px;
+      }
+    </style>
+    <div>All Users with experiment_vars set</div>
+
+    <br><br>
+
+    
+  </template>
+  <script>
+    function convert_date_to_epoch(date) {
+      let start_of_epoch = moment().year(2016).month(0).date(1).hours(0).minutes(0).seconds(0).milliseconds(0)
+      let year = parseInt(date.substr(0, 4))
+      let month = parseInt(date.substr(4, 2)) - 1
+      let day = parseInt(date.substr(6, 2))
+      let date_moment = moment().year(year).month(month).date(day).hours(0).minutes(0).seconds(0).milliseconds(0)
+      return date_moment.diff(start_of_epoch, 'days')
+    }
+
+    Polymer({
+      is: 'time-spent-daily-experiment',
+      properties: {
+        
+      },
+      /*
+      display_user_list: function(user_list, container) {
+        $('#num_active_users').text(user_ids.length)
+        for (let user_id of user_ids) {
+          $(container).append($('<a href="/viewuser.html?userid=' + user_id + '">' + user_id + '</a>'))
+          $('#user_list').append($('<br>'))
+        }
+      },
+      */
+      ready: async function() {
+        let all_collections = await listcollections()
+        let users_with_experiment_vars = []
+        let user_to_selection_algorithm = {}
+        let selection_algorithm_and_users_list = []
+        let selection_algorithm_to_idx = {}
+        for (let collection_fullname of all_collections) {
+          let underscore_index = collection_fullname.indexOf('_')
+          let username = collection_fullname.substr(0, underscore_index)
+          let collection_name = collection_fullname.substr(underscore_index + 1)
+          if (collection_name == 'synced:experiment_vars') {
+            users_with_experiment_vars.push(username)
+          }
+        }
+        this.users_with_experiment_vars = users_with_experiment_vars
+        for (let userid of users_with_experiment_vars) {
+          let experiment_vars_list = await get_collection_for_user_cached(userid, 'synced:experiment_vars')
+          for (let x of experiment_vars_list) {
+            if (x.key == 'selection_algorithm_for_visit') {
+              user_to_selection_algorithm[userid] = x.val
+              if (selection_algorithm_to_idx[x.val] == null) {
+                selection_algorithm_to_idx[x.val] = selection_algorithm_and_users_list.length
+                selection_algorithm_and_users_list.push({
+                  algorithm: x.val,
+                  users: [],
+                })
+              }
+              selection_algorithm_and_users_list[selection_algorithm_to_idx[x.val]].users.push(userid)
+            }
+          }
+        }
+        let users_in_experiment = selection_algorithm_and_users_list[selection_algorithm_to_idx['experiment_alternate_between_same_vs_random_daily_deterministic']].users
+        //console.log('num users in experiment ' + users_in_experiment.length)
+        let same_samples = []
+        let random_samples = []
+        for (let userid of users_in_experiment) {
+          //console.log(userid)
+          let experiment_vars_list = await get_collection_for_user_cached(userid, 'synced:experiment_vars')
+          let domain_to_epoch_to_seconds = await get_seconds_on_domain_per_day_epoch_for_user_cached(userid)
+          if (domain_to_epoch_to_seconds['www.facebook.com'] == null) {
+            continue
+          }
+          let time_on_facebook = domain_to_epoch_to_seconds['www.facebook.com']
+          for (let experiment_info_entry of experiment_vars_list) {
+            if (experiment_info_entry.key != 'experiment_alternate_between_same_vs_random_daily_deterministic') {
+              continue
+            }
+            let experiment_info = JSON.parse(experiment_info_entry.val)
+            //console.log(experiment_info)
+            let same_epoch
+            let random_epoch
+            if (experiment_info.conditions[0] == 'same') {
+              same_epoch = convert_date_to_epoch(experiment_info.day)
+              random_epoch = convert_date_to_epoch(experiment_info.day) + 1
+            } else {
+              random_epoch = convert_date_to_epoch(experiment_info.day)
+              same_epoch = convert_date_to_epoch(experiment_info.day) + 1
+            }
+            let same_seconds = time_on_facebook[same_epoch]
+            let random_seconds = time_on_facebook[random_epoch]
+            if (same_seconds == null || random_seconds == null) {
+              continue
+            }
+            same_samples.push(same_seconds)
+            random_samples.push(random_seconds)
+          }
+        }
+        console.log('same samples mean')
+        console.log(prelude.mean(same_samples))
+        console.log('random samples mean')
+        console.log(prelude.mean(random_samples))
+        console.log('same samples median')
+        console.log(prelude.sort(same_samples)[Math.floor(same_samples.length / 2)])
+        console.log('random samples median')
+        console.log(prelude.sort(random_samples)[Math.floor(same_samples.length / 2)])
+        console.log(JSON.stringify(same_samples))
+        console.log(JSON.stringify(random_samples))
+        //this.selection_algorithm_and_users_list = selection_algorithm_and_users_list
+      },
+    })
+  </script>
+</dom-module>
