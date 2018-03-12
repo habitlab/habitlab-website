@@ -16,14 +16,6 @@
     
   </template>
   <script>
-    function convert_date_to_epoch(date) {
-      let start_of_epoch = moment().year(2016).month(0).date(1).hours(0).minutes(0).seconds(0).milliseconds(0)
-      let year = parseInt(date.substr(0, 4))
-      let month = parseInt(date.substr(4, 2)) - 1
-      let day = parseInt(date.substr(6, 2))
-      let date_moment = moment().year(year).month(month).date(day).hours(0).minutes(0).seconds(0).milliseconds(0)
-      return date_moment.diff(start_of_epoch, 'days')
-    }
 
     Polymer({
       is: 'time-spent-daily-experiment',
@@ -74,6 +66,8 @@
         //console.log('num users in experiment ' + users_in_experiment.length)
         let same_samples = []
         let random_samples = []
+        let same_day_num_interventions_seen = []
+        let random_day_num_interventions_seen = []
         for (let userid of users_in_experiment) {
           //console.log(userid)
           let experiment_vars_list = await get_collection_for_user_cached(userid, 'synced:experiment_vars')
@@ -82,6 +76,7 @@
             continue
           }
           let time_on_facebook = domain_to_epoch_to_seconds['www.facebook.com']
+          let epoch_day_to_num_intervention_impressions = await get_num_intervention_impressions_on_domain_per_epoch_day(userid, 'www.facebook.com')
           for (let experiment_info_entry of experiment_vars_list) {
             if (experiment_info_entry.key != 'experiment_alternate_between_same_vs_random_daily_deterministic') {
               continue
@@ -102,10 +97,25 @@
             if (same_seconds == null || random_seconds == null) {
               continue
             }
+            let num_intervention_impressions_same_day = epoch_day_to_num_intervention_impressions[same_epoch]
+            let num_intervention_impressions_random_day = epoch_day_to_num_intervention_impressions[random_epoch]
+            if (num_intervention_impressions_same_day == null || num_intervention_impressions_random_day == null) {
+              continue
+            }
             same_samples.push(same_seconds)
             random_samples.push(random_seconds)
+            same_day_num_interventions_seen.push(num_intervention_impressions_same_day)
+            random_day_num_interventions_seen.push(num_intervention_impressions_random_day)
           }
         }
+        console.log('same day num interventions seen mean')
+        console.log(prelude.mean(same_day_num_interventions_seen))
+        console.log('random day num interventions seen mean')
+        console.log(prelude.mean(random_day_num_interventions_seen))
+        console.log('same day num interventions seen median')
+        console.log(prelude.sort(same_day_num_interventions_seen)[Math.floor(same_day_num_interventions_seen.length / 2)])
+        console.log('random day num interventions seen median')
+        console.log(prelude.sort(random_day_num_interventions_seen)[Math.floor(random_day_num_interventions_seen.length / 2)])
         console.log('same samples mean')
         console.log(prelude.mean(same_samples))
         console.log('random samples mean')

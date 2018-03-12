@@ -858,6 +858,52 @@ async function list_last_active_date_for_user_since_today(userid) {
   return Math.round(moment.duration(today.diff(last_active)).asDays())
 }
 
+async function get_num_intervention_impressions_on_domain_per_day(userid, domain) {
+  let interventions_active_for_domain_and_session = await get_collection_for_user_cached('synced:interventions_active_for_domain_and_session')
+  let day_to_num_impressions = {}
+  for (let session_info of interventions_active_for_domain_and_session) {
+    if (session_info.key != domain) {
+      continue
+    }
+    let date = moment(session_info.timestamp).tz("America/Los_Angeles").format('YYYYMMDD')
+    if (day_to_num_impressions[date] == null) {
+      day_to_num_impressions[date] = 0
+    }
+    day_to_num_impressions[date] += 1
+  }
+  return day_to_num_impressions
+}
+
+function convert_date_to_epoch(date) {
+  let start_of_epoch = moment().year(2016).month(0).date(1).hours(0).minutes(0).seconds(0).milliseconds(0)
+  let year = parseInt(date.substr(0, 4))
+  let month = parseInt(date.substr(4, 2)) - 1
+  let day = parseInt(date.substr(6, 2))
+  let date_moment = moment().year(year).month(month).date(day).hours(0).minutes(0).seconds(0).milliseconds(0)
+  return date_moment.diff(start_of_epoch, 'days')
+}
+
+function timestamp_to_epoch(timestamp) {
+  let start_of_epoch = moment().year(2016).month(0).date(1).hours(0).minutes(0).seconds(0).milliseconds(0)
+  return moment(timestamp).diff(start_of_epoch, 'days')
+}
+
+async function get_num_intervention_impressions_on_domain_per_epoch_day(userid, domain) {
+  let interventions_active_for_domain_and_session = await get_collection_for_user_cached(userid, 'synced:interventions_active_for_domain_and_session')
+  let day_to_num_impressions = {}
+  for (let session_info of interventions_active_for_domain_and_session) {
+    if (session_info.key != domain) {
+      continue
+    }
+    let date = timestamp_to_epoch(session_info.timestamp)
+    if (day_to_num_impressions[date] == null) {
+      day_to_num_impressions[date] = 0
+    }
+    day_to_num_impressions[date] += 1
+  }
+  return day_to_num_impressions
+}
+
 async function get_retention_curves_for_users(user_list, days_to_analyze) {
   let user_to_first_active_since_today = await list_first_active_date_for_all_users_since_today()
   let user_to_last_active_since_today = await list_last_active_date_for_all_users_since_today()
