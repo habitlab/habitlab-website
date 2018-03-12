@@ -41,6 +41,10 @@
   width: 100%;
 }
 
+#days_ago_to_num_attritions {
+  width: 100%;
+}
+
 #install_primary_language {
   width: 100%;
 }
@@ -93,6 +97,8 @@
 <google-chart id="days_ago_to_num_installs" cols='[{"label": "Data", "type": "string"},{"label": "Installs", "type": "number"}]' rows='[["Something", 1]]'></google-chart>
 
 <google-chart id="days_ago_to_num_uninstalls" cols='[{"label": "Data", "type": "string"},{"label": "Uninstalls", "type": "number"}]' rows='[["Something", 1]]'></google-chart>
+
+<google-chart id="days_ago_to_num_attritions" cols='[{"label": "Data", "type": "string"},{"label": "Attritions", "type": "number"}]' rows='[["Something", 1]]'></google-chart>
 
 <google-chart id="install_primary_language" cols='[{"label": "Data", "type": "string"},{"label": "Languages", "type": "number"}]' rows='[["Something", 1]]'></google-chart>
 
@@ -223,7 +229,6 @@ async function show_retention_curve() {
 
 async function show_uninstalls() {
   let install_info_list = await get_uninstall_data()
-  console.log(install_info_list)
   let current_time = moment()
   let days_ago_to_num_installs = {}
   for (let install_info of install_info_list) {
@@ -240,6 +245,27 @@ async function show_uninstalls() {
   }
   days_ago_to_num_installs_data.reverse()
   $('#days_ago_to_num_uninstalls').prop('rows', days_ago_to_num_installs_data)
+}
+
+async function show_attritions() {
+  let user_to_day_last_seen = await get_user_to_day_last_seen_cached()
+  let date_to_days_ago = {}
+  for (let i = 0; i < 14; ++i) {
+    day_as_date = moment().subtract(i, 'day').format('YYYYMMDD')
+    date_to_days_ago[day_as_date] = i
+  }
+  let days_ago_to_num_attritions = math.zeros(14).toArray()
+  for (let userid of Object.keys(user_to_day_last_seen)) {
+    let day_last_seen = user_to_day_last_seen[userid]
+    let days_ago_last_seen = date_to_days_ago[day_last_seen]
+    if (days_ago_last_seen == null || days_ago_last_seen == 0) {
+      continue
+    }
+    days_ago_to_num_attritions[days_ago_last_seen] += 1
+  }
+  let output = days_ago_to_num_attritions.map((x,i) => [i + 'days ago', x])
+  output.reverse()
+  $('#days_ago_to_num_attritions').prop('rows', output)
 }
 
 async function show_install_primary_language() {
@@ -497,6 +523,7 @@ async function main() {
   show_web_install_accepts()
   show_web_install_rejects()
   show_uninstalls()
+  show_attritions()
   show_install_primary_language()
   show_install_source()
   show_install_source_new()

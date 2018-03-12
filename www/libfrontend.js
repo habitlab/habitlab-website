@@ -985,6 +985,8 @@ expose_getjson('list_logs_for_user', 'userid')
 
 expose_getjson('get_dates_active_for_user', 'userid')
 
+expose_getjson('get_user_to_day_last_seen', 'userid')
+
 expose_getjson('get_is_logging_enabled_for_user', 'userid')
 
 expose_getjson('get_user_to_is_logging_enabled')
