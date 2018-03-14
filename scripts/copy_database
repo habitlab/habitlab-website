@@ -160,7 +160,7 @@
     dst_collections = (await list_collections(db_dst));
     dst_collections_set = new Set(dst_collections);
     num_to_sync = all_collections.length;
-    num_threads = 4;
+    num_threads = 2;
     resumable = true;
     if (resumable) {
       storage.initSync();
