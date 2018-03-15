@@ -9,11 +9,43 @@
         height: 600px;
       }
     </style>
-    <div>All Users in using experiment_alternate_between_same_vs_random_varlength_deterministic_latinsquare</div>
+    <h1>All Users with selection algorithm experiment_alternate_between_same_vs_random_varlength_deterministic_latinsquare</h1>
 
     <template is="dom-repeat" items="{{latinsquare_users}}" as="userid">
       <div>
         <a href="/viewuser.html?userid={{userid}}">{{userid}}</a>
+        <div>first active {{getkey(userid, first_active_date_for_all_users)}}</div>
+        <div>last active {{getkey(userid, last_active_date_for_all_users)}}</div>
+        <div>{{initial_condition_info_for_user_printable(userid, user_to_initial_condition_info)}}</div>
+        <br>
+      </div>
+    </template>
+
+    <br><br>
+
+    <h1>All users who completed at least one block</h1>
+
+    <template is="dom-repeat" items="{{latinsquare_users_completed_at_least_one_block}}" as="userid">
+      <div>
+        <a href="/viewuser.html?userid={{userid}}">{{userid}}</a>
+        <div>first active {{getkey(userid, first_active_date_for_all_users)}}</div>
+        <div>last active {{getkey(userid, last_active_date_for_all_users)}}</div>
+        <div>{{initial_condition_info_for_user_printable(userid, user_to_initial_condition_info)}}</div>
+        <br>
+      </div>
+    </template>
+
+    <br><br>
+
+    <h1>All users who completed no blocks</h1>
+
+    <template is="dom-repeat" items="{{latinsquare_users_completed_no_blocks}}" as="userid">
+      <div>
+        <a href="/viewuser.html?userid={{userid}}">{{userid}}</a>
+        <div>first active {{getkey(userid, first_active_date_for_all_users)}}</div>
+        <div>last active {{getkey(userid, last_active_date_for_all_users)}}</div>
+        <div>{{initial_condition_info_for_user_printable(userid, user_to_initial_condition_info)}}</div>
+        <br>
       </div>
     </template>
 
@@ -33,6 +65,12 @@
         }
       },
       */
+      getkey: function(userid, user_to_initial_condition_info) {
+        return user_to_initial_condition_info[userid]
+      },
+      initial_condition_info_for_user_printable: function(userid, user_to_initial_condition_info) {
+        return JSON.stringify(user_to_initial_condition_info[userid])
+      },
       ready: async function() {
         let all_collections = await listcollections()
         let users_with_experiment_vars = []
@@ -64,23 +102,66 @@
         this.latinsquare_users = latinsquare_users
         console.log(latinsquare_users)
         let user_id_to_completed_condition_idx = {}
+        let user_id_to_completed_durations = {}
+        let completed_condition_idx_to_user_id = []
         //this.selection_algorithm_and_users_list = selection_algorithm_and_users_list
         for (let userid of users_with_experiment_vars) {
           let experiment_vars_list = await get_collection_for_user_cached(userid, 'synced:experiment_vars')
           for (let x of experiment_vars_list) {
             if (x.key == 'experiment_alternate_between_same_vs_random_varlength_deterministic_latinsquare') {
               let condition_info = JSON.parse(x.val)
-              console.log(condition_info)
+              //console.log(condition_info)
               let duration_idx = condition_info.duration_idx
               if (user_id_to_completed_condition_idx[userid] == null) {
                 user_id_to_completed_condition_idx[userid] = duration_idx
               } else {
                 user_id_to_completed_condition_idx[userid] = Math.max(duration_idx, user_id_to_completed_condition_idx[userid])
               }
+              while (completed_condition_idx_to_user_id.length <= duration_idx) {
+                completed_condition_idx_to_user_id.push([])
+              }
+              completed_condition_idx_to_user_id[duration_idx].push(userid)
             }
           }
         }
+        let user_to_initial_condition_info = {}
+        for (let userid of users_with_experiment_vars) {
+          let experiment_vars_list = await get_collection_for_user_cached(userid, 'synced:experiment_vars')
+          for (let x of experiment_vars_list) {
+            if (x.key == 'experiment_alternate_between_same_vs_random_varlength_deterministic_latinsquare') {
+              let condition_info = JSON.parse(x.val)
+              if (user_to_initial_condition_info[userid] == null) {
+                user_to_initial_condition_info[userid] = condition_info
+              }
+              let duration_idx = condition_info.duration_idx
+              //console.log(condition_info)
+              let max_duration_idx = user_id_to_completed_condition_idx[userid]
+              let duration = condition_info.duration_order[duration_idx]
+              console.log(duration)
+              if (duration_idx < max_duration_idx) {
+                if (user_id_to_completed_durations[userid] == null) {
+                  user_id_to_completed_durations[userid] = []
+                }
+                user_id_to_completed_durations[userid].push(duration)
+              }
+              
+            }
+          }
+        }
+        this.user_to_initial_condition_info = user_to_initial_condition_info
+        this.latinsquare_users_completed_at_least_one_block = Object.keys(user_id_to_completed_durations)
+        console.log(user_id_to_completed_durations)
+        console.log(completed_condition_idx_to_user_id)
         console.log(user_id_to_completed_condition_idx)
+        let latinsquare_users_completed_no_blocks = []
+        for (let userid of latinsquare_users) {
+          if (user_id_to_completed_durations[userid] == null) {
+            latinsquare_users_completed_no_blocks.push(userid)
+          }
+        }
+        this.latinsquare_users_completed_no_blocks = latinsquare_users_completed_no_blocks
+        this.first_active_date_for_all_users = await list_first_active_date_for_all_users()
+        this.last_active_date_for_all_users = await list_last_active_date_for_all_users()
       },
     })
   </script>
