@@ -1,7 +1,7 @@
 <link rel="import" href="../bower_components/polymer/polymer.html">
 <link rel="import" href="../bower_components/google-chart/google-chart.html">
 
-<dom-module id="visualize-experiment-conditions">
+<dom-module id="time-spent-daily-experiment">
   <template>
     <style>
       #retention_curve_general {
@@ -9,7 +9,7 @@
         height: 600px;
       }
     </style>
-    <div>All Users with experiment_vars set</div>
+    <div>Check console log</div>
 
     <br><br>
 
@@ -68,6 +68,7 @@
         let random_samples = []
         let same_day_num_interventions_seen = []
         let random_day_num_interventions_seen = []
+        let only_one_sample_per_user = false
         for (let userid of users_in_experiment) {
           //console.log(userid)
           let experiment_vars_list = await get_collection_for_user_cached(userid, 'synced:experiment_vars')
@@ -106,6 +107,9 @@
             random_samples.push(random_seconds)
             same_day_num_interventions_seen.push(num_intervention_impressions_same_day)
             random_day_num_interventions_seen.push(num_intervention_impressions_random_day)
+            if (only_one_sample_per_user) {
+              break
+            }
           }
         }
         console.log('same day num interventions seen mean')

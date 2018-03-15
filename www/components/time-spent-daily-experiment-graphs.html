@@ -1,0 +1,252 @@
+<link rel="import" href="../bower_components/polymer/polymer.html">
+<link rel="import" href="../bower_components/google-chart/google-chart.html">
+
+<dom-module id="time-spent-daily-experiment-graphs">
+  <template>
+    <style>
+      google-chart {
+        width: 100%;
+        height: 600px;
+      }
+    </style>
+
+    <br><br>
+    <div>same condition start same times</div>
+    <google-chart
+      type="scatter"
+      id="same_condition_start_same_times"
+      cols='[{"label": "Day", "type": "number"},{"label": "Number of seconds spent on Facebook", "type": "number"}]'
+      rows="{{same_condition_start_same_times_data}}"
+      options='{"tooltip": {"isHtml": true}, "legend": "none", "trendlines": {"0": {} }}'
+    ></google-chart>
+   
+    <br><br>
+    <div>same condition start random times</div>
+    <google-chart
+      type="scatter"
+      id="same_condition_start_random_times"
+      cols='[{"label": "Day", "type": "number"},{"label": "Number of seconds spent on Facebook", "type": "number"}]'
+      rows="{{same_condition_start_random_times_data}}"
+      options='{"tooltip": {"isHtml": true}, "legend": "none", "trendlines": {"0": {} }}'
+    ></google-chart>
+
+    <br><br>
+    <div>random condition start same times</div>
+    <google-chart
+      type="scatter"
+      id="random_condition_start_same_times"
+      cols='[{"label": "Day", "type": "number"},{"label": "Number of seconds spent on Facebook", "type": "number"}]'
+      rows="{{random_condition_start_same_times_data}}"
+      options='{"tooltip": {"isHtml": true}, "legend": "none", "trendlines": {"0": {} }}'
+    ></google-chart>
+   
+    <br><br>
+    <div>random condition start random times</div>
+    <google-chart
+      type="scatter"
+      id="random_condition_start_random_times"
+      cols='[{"label": "Day", "type": "number"},{"label": "Number of seconds spent on Facebook", "type": "number"}]'
+      rows="{{random_condition_start_random_times_data}}"
+      options='{"tooltip": {"isHtml": true}, "legend": "none", "trendlines": {"0": {} }}'
+    ></google-chart>
+
+    <br><br>
+    <div>both condition start same times</div>
+    <google-chart
+      type="scatter"
+      id="both_condition_start_same_times"
+      cols='[{"label": "Day", "type": "number"},{"label": "Number of seconds spent on Facebook", "type": "number"}]'
+      rows="{{both_condition_start_same_times_data}}"
+      options='{"tooltip": {"isHtml": true}, "legend": "none", "trendlines": {"0": {} }}'
+    ></google-chart>
+
+    <br><br>
+    <div>both condition start random times</div>
+    <google-chart
+      type="scatter"
+      id="both_condition_start_random_times"
+      cols='[{"label": "Day", "type": "number"},{"label": "Number of seconds spent on Facebook", "type": "number"}]'
+      rows="{{both_condition_start_random_times_data}}"
+      options='{"tooltip": {"isHtml": true}, "legend": "none", "trendlines": {"0": {} }}'
+    ></google-chart>
+
+  </template>
+  <script>
+
+    Polymer({
+      is: 'time-spent-daily-experiment-graphs',
+      properties: {
+        
+      },
+      /*
+      display_user_list: function(user_list, container) {
+        $('#num_active_users').text(user_ids.length)
+        for (let user_id of user_ids) {
+          $(container).append($('<a href="/viewuser.html?userid=' + user_id + '">' + user_id + '</a>'))
+          $('#user_list').append($('<br>'))
+        }
+      },
+      */
+      ready: async function() {
+        let all_collections = await listcollections()
+        let users_with_experiment_vars = []
+        let user_to_selection_algorithm = {}
+        let selection_algorithm_and_users_list = []
+        let selection_algorithm_to_idx = {}
+        for (let collection_fullname of all_collections) {
+          let underscore_index = collection_fullname.indexOf('_')
+          let username = collection_fullname.substr(0, underscore_index)
+          let collection_name = collection_fullname.substr(underscore_index + 1)
+          if (collection_name == 'synced:experiment_vars') {
+            users_with_experiment_vars.push(username)
+          }
+        }
+        this.users_with_experiment_vars = users_with_experiment_vars
+        for (let userid of users_with_experiment_vars) {
+          let experiment_vars_list = await get_collection_for_user_cached(userid, 'synced:experiment_vars')
+          for (let x of experiment_vars_list) {
+            if (x.key == 'selection_algorithm_for_visit') {
+              user_to_selection_algorithm[userid] = x.val
+              if (selection_algorithm_to_idx[x.val] == null) {
+                selection_algorithm_to_idx[x.val] = selection_algorithm_and_users_list.length
+                selection_algorithm_and_users_list.push({
+                  algorithm: x.val,
+                  users: [],
+                })
+              }
+              selection_algorithm_and_users_list[selection_algorithm_to_idx[x.val]].users.push(userid)
+            }
+          }
+        }
+        let users_in_experiment = selection_algorithm_and_users_list[selection_algorithm_to_idx['experiment_alternate_between_same_vs_random_daily_deterministic']].users
+        //console.log('num users in experiment ' + users_in_experiment.length)
+        let same_samples = []
+        let random_samples = []
+        let same_day_num_interventions_seen = []
+        let random_day_num_interventions_seen = []
+        let only_one_sample_per_user = false
+        let same_condition_start_same_times = []
+        let same_condition_start_random_times = []
+        let random_condition_start_same_times = []
+        let random_condition_start_random_times = []
+        for (let userid of users_in_experiment) {
+          //console.log(userid)
+          let experiment_vars_list = await get_collection_for_user_cached(userid, 'synced:experiment_vars')
+          let domain_to_epoch_to_seconds = await get_seconds_on_domain_per_day_epoch_for_user_cached(userid)
+          if (domain_to_epoch_to_seconds['www.facebook.com'] == null) {
+            continue
+          }
+          let time_on_facebook = domain_to_epoch_to_seconds['www.facebook.com']
+          let epoch_day_to_num_intervention_impressions = await get_num_intervention_impressions_on_domain_per_epoch_day(userid, 'www.facebook.com')
+          let first_epoch_for_user = null
+          // find first day of exposure
+          for (let experiment_info_entry of experiment_vars_list) {
+            if (experiment_info_entry.key != 'experiment_alternate_between_same_vs_random_daily_deterministic') {
+              continue
+            }
+            let experiment_info = JSON.parse(experiment_info_entry.val)
+            let same_epoch
+            let random_epoch
+            let is_same_condition = experiment_info.conditions[0] == 'same'
+            if (is_same_condition) {
+              same_epoch = convert_date_to_epoch(experiment_info.day)
+              random_epoch = convert_date_to_epoch(experiment_info.day) + 1
+            } else {
+              random_epoch = convert_date_to_epoch(experiment_info.day)
+              same_epoch = convert_date_to_epoch(experiment_info.day) + 1
+            }
+            let same_seconds = time_on_facebook[same_epoch]
+            let random_seconds = time_on_facebook[random_epoch]
+            if (same_seconds == null || random_seconds == null) {
+              continue
+            }
+            let num_intervention_impressions_same_day = epoch_day_to_num_intervention_impressions[same_epoch]
+            let num_intervention_impressions_random_day = epoch_day_to_num_intervention_impressions[random_epoch]
+            if (num_intervention_impressions_same_day == null || num_intervention_impressions_random_day == null) {
+              continue
+            }
+            let epoch = Math.min(same_epoch, random_epoch)
+            if (first_epoch_for_user == null || epoch < first_epoch_for_user) {
+              first_epoch_for_user = epoch
+            }
+          }
+          for (let experiment_info_entry of experiment_vars_list) {
+            if (experiment_info_entry.key != 'experiment_alternate_between_same_vs_random_daily_deterministic') {
+              continue
+            }
+            let experiment_info = JSON.parse(experiment_info_entry.val)
+            //console.log(experiment_info)
+            let same_epoch
+            let random_epoch
+            let is_same_condition = experiment_info.conditions[0] == 'same'
+            if (is_same_condition) {
+              same_epoch = convert_date_to_epoch(experiment_info.day)
+              random_epoch = convert_date_to_epoch(experiment_info.day) + 1
+            } else {
+              random_epoch = convert_date_to_epoch(experiment_info.day)
+              same_epoch = convert_date_to_epoch(experiment_info.day) + 1
+            }
+            let same_seconds = time_on_facebook[same_epoch]
+            let random_seconds = time_on_facebook[random_epoch]
+            if (same_seconds == null || random_seconds == null) {
+              continue
+            }
+            let num_intervention_impressions_same_day = epoch_day_to_num_intervention_impressions[same_epoch]
+            let num_intervention_impressions_random_day = epoch_day_to_num_intervention_impressions[random_epoch]
+            if (num_intervention_impressions_same_day == null || num_intervention_impressions_random_day == null) {
+              continue
+            }
+            same_samples.push(same_seconds)
+            random_samples.push(random_seconds)
+            same_day_num_interventions_seen.push(num_intervention_impressions_same_day)
+            random_day_num_interventions_seen.push(num_intervention_impressions_random_day)
+            let same_condition_days_since_start = same_epoch - first_epoch_for_user
+            let random_condition_days_since_start = random_epoch - first_epoch_for_user
+            if (is_same_condition) {
+              same_condition_start_same_times.push([same_condition_days_since_start, same_seconds])
+              same_condition_start_random_times.push([random_condition_days_since_start, random_seconds])
+            } else {
+              random_condition_start_same_times.push([same_condition_days_since_start, same_seconds])
+              random_condition_start_random_times.push([random_condition_days_since_start, random_seconds])
+            }
+          }
+        }
+        console.log('same_condition_start_same_times')
+        console.log(same_condition_start_same_times)
+        this.same_condition_start_same_times_data = same_condition_start_same_times
+        console.log('same_condition_start_random_times')
+        console.log(same_condition_start_random_times)
+        this.same_condition_start_random_times_data = same_condition_start_random_times
+        console.log('random_condition_start_same_times')
+        console.log(random_condition_start_same_times)
+        this.random_condition_start_same_times_data = random_condition_start_same_times
+        console.log('random_condition_start_random_times')
+        console.log(random_condition_start_random_times)
+        this.random_condition_start_random_times_data = random_condition_start_random_times
+        this.both_condition_start_same_times_data = same_condition_start_same_times.concat(random_condition_start_same_times)
+        this.both_condition_start_random_times_data = same_condition_start_random_times.concat(random_condition_start_random_times)
+        /*
+        console.log('same day num interventions seen mean')
+        console.log(prelude.mean(same_day_num_interventions_seen))
+        console.log('random day num interventions seen mean')
+        console.log(prelude.mean(random_day_num_interventions_seen))
+        console.log('same day num interventions seen median')
+        console.log(prelude.sort(same_day_num_interventions_seen)[Math.floor(same_day_num_interventions_seen.length / 2)])
+        console.log('random day num interventions seen median')
+        console.log(prelude.sort(random_day_num_interventions_seen)[Math.floor(random_day_num_interventions_seen.length / 2)])
+        console.log('same samples mean')
+        console.log(prelude.mean(same_samples))
+        console.log('random samples mean')
+        console.log(prelude.mean(random_samples))
+        console.log('same samples median')
+        console.log(prelude.sort(same_samples)[Math.floor(same_samples.length / 2)])
+        console.log('random samples median')
+        console.log(prelude.sort(random_samples)[Math.floor(same_samples.length / 2)])
+        console.log(JSON.stringify(same_samples))
+        console.log(JSON.stringify(random_samples))
+        //this.selection_algorithm_and_users_list = selection_algorithm_and_users_list
+        */
+      },
+    })
+  </script>
+</dom-module>
