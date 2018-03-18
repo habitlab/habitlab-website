@@ -27,7 +27,7 @@ export get_mongo_db = ->>
     local_cache_db := await n2p -> mongodb.MongoClient.connect(
       mongourl,
       {
-        readPreference: mongodb.ReadPreference.SECONDARY_PREFERRED,
+        readPreference: mongodb.ReadPreference.SECONDARY,
         w: 0,
       },
       it
@@ -55,7 +55,7 @@ export get_mongo_db2 = ->>
     local_cache_db2 := await n2p -> mongodb.MongoClient.connect(
       mongourl2,
       {
-        readPreference: mongodb.ReadPreference.SECONDARY_PREFERRED,
+        readPreference: mongodb.ReadPreference.SECONDARY,
         w: 0,
       },
       it
@@ -113,7 +113,7 @@ do ->>
   dst_collections = await list_collections(db_dst)
   dst_collections_set = new Set(dst_collections)
   num_to_sync = all_collections.length
-  num_threads = 2
+  num_threads = 1
   resumable = true
   if resumable
     storage.initSync()
