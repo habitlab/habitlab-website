@@ -10,6 +10,29 @@ require! {
   'n2p'
 }
 
+debounce = require('promise-debounce')
+
+memoizeSingleAsync = (func) ->
+  debounced_func = debounce func
+  cached_val = null
+  return ->>
+    if cached_val?
+      return cached_val
+    result = await debounced_func()
+    cached_val := result
+    return result
+
+memoizeOneArgAsync = (func) ->
+  debounced_func = debounce func
+  cached_vals = {}
+  return (x) ->>
+    cached_val = cached_vals[x]
+    if cached_val?
+      return cached_val
+    result = await debounced_func(x)
+    cached_vals[x] = result
+    return result
+
 export mongodb
 export prelude = require 'prelude-ls'
 
@@ -146,7 +169,7 @@ export log_collection_exists = (collection_name) ->>
     await n2p -> collections.insert(data, it)
   return
 
-export get_collection = (collection_name) ->>
+export get_collection_real = (collection_name) ->>
   db = await get_mongo_db()
   fakedb = {
     close: ->
@@ -168,6 +191,8 @@ export get_collection = (collection_name) ->>
   #proxy_func(collection, 'findAndModify')
   #proxy_func(collection, 'findAndUpdate')
   return [collection, fakedb]
+
+export get_collection = memoizeOneArgAsync(get_collection_real)
 
 export get_collection2 = (collection_name) ->>
   db = await get_mongo_db2()
@@ -211,29 +236,6 @@ export get_intervention_votes_total = ->>
 
 export get_webvisits = ->>
   return await get_collection('webvisits')
-
-debounce = require('promise-debounce')
-
-memoizeSingleAsync = (func) ->
-  debounced_func = debounce func
-  cached_val = null
-  return ->>
-    if cached_val?
-      return cached_val
-    result = await debounced_func()
-    cached_val := result
-    return result
-
-memoizeOneArgAsync = (func) ->
-  debounced_func = debounce func
-  cached_vals = {}
-  return (x) ->>
-    cached_val = cached_vals[x]
-    if cached_val?
-      return cached_val
-    result = await debounced_func(x)
-    cached_vals[x] = result
-    return result
 
 export list_collections_real = ->>
   ndb = await get_mongo_db()
