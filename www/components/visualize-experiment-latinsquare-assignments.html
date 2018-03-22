@@ -14,6 +14,7 @@
     <template is="dom-repeat" items="{{latinsquare_users}}" as="userid">
       <div>
         <a href="/viewuser.html?userid={{userid}}">{{userid}}</a>
+        <div>completed durations {{getkey(userid, user_id_to_completed_durations)}}</div>
         <div>first active {{getkey(userid, first_active_date_for_all_users)}}</div>
         <div>last active {{getkey(userid, last_active_date_for_all_users)}}</div>
         <div>{{initial_condition_info_for_user_printable(userid, user_to_initial_condition_info)}}</div>
@@ -28,6 +29,7 @@
     <template is="dom-repeat" items="{{latinsquare_users_completed_at_least_one_block}}" as="userid">
       <div>
         <a href="/viewuser.html?userid={{userid}}">{{userid}}</a>
+        <div>completed durations {{getkey(userid, user_id_to_completed_durations)}}</div>
         <div>first active {{getkey(userid, first_active_date_for_all_users)}}</div>
         <div>last active {{getkey(userid, last_active_date_for_all_users)}}</div>
         <div>{{initial_condition_info_for_user_printable(userid, user_to_initial_condition_info)}}</div>
@@ -42,6 +44,7 @@
     <template is="dom-repeat" items="{{latinsquare_users_completed_no_blocks}}" as="userid">
       <div>
         <a href="/viewuser.html?userid={{userid}}">{{userid}}</a>
+        <div>completed durations {{getkey(userid, user_id_to_completed_durations)}}</div>
         <div>first active {{getkey(userid, first_active_date_for_all_users)}}</div>
         <div>last active {{getkey(userid, last_active_date_for_all_users)}}</div>
         <div>{{initial_condition_info_for_user_printable(userid, user_to_initial_condition_info)}}</div>
@@ -66,7 +69,12 @@
       },
       */
       getkey: function(userid, user_to_initial_condition_info) {
-        return user_to_initial_condition_info[userid]
+        let output = user_to_initial_condition_info[userid]
+        if (typeof(output) == 'string') {
+          return output
+        } else {
+          return JSON.stringify(output)
+        }
       },
       initial_condition_info_for_user_printable: function(userid, user_to_initial_condition_info) {
         return JSON.stringify(user_to_initial_condition_info[userid])
@@ -162,6 +170,7 @@
         this.latinsquare_users_completed_no_blocks = latinsquare_users_completed_no_blocks
         this.first_active_date_for_all_users = await list_first_active_date_for_all_users()
         this.last_active_date_for_all_users = await list_last_active_date_for_all_users()
+        this.user_id_to_completed_durations = user_id_to_completed_durations
       },
     })
   </script>
