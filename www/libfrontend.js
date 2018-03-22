@@ -199,6 +199,48 @@ async function getjson(path, data) {
   return await fetch(path + querystring).then(x => x.json())
 }
 
+async function get_selection_algorithm_and_users_list() {
+  let all_collections = await listcollections()
+  let users_with_experiment_vars = []
+  let user_to_selection_algorithm = {}
+  let selection_algorithm_and_users_list = []
+  let selection_algorithm_to_idx = {}
+  for (let collection_fullname of all_collections) {
+    let underscore_index = collection_fullname.indexOf('_')
+    let username = collection_fullname.substr(0, underscore_index)
+    let collection_name = collection_fullname.substr(underscore_index + 1)
+    if (collection_name == 'synced:experiment_vars') {
+      users_with_experiment_vars.push(username)
+    }
+  }
+  for (let userid of users_with_experiment_vars) {
+    let experiment_vars_list = await get_collection_for_user_cached(userid, 'synced:experiment_vars')
+    for (let x of experiment_vars_list) {
+      if (x.key == 'selection_algorithm_for_visit') {
+        user_to_selection_algorithm[userid] = x.val
+        if (selection_algorithm_to_idx[x.val] == null) {
+          selection_algorithm_to_idx[x.val] = selection_algorithm_and_users_list.length
+          selection_algorithm_and_users_list.push({
+            algorithm: x.val,
+            users: [],
+          })
+        }
+        selection_algorithm_and_users_list[selection_algorithm_to_idx[x.val]].users.push(userid)
+      }
+    }
+  }
+  return selection_algorithm_and_users_list
+}
+
+async function get_selection_algorithm_to_users_list() {
+  let output = {}
+  let selection_algorithm_and_users_list = await get_selection_algorithm_and_users_list()
+  for (let {algorithm, users} of selection_algorithm_and_users_list) {
+    output[algorithm] = users
+  }
+  return output
+}
+
 async function get_user_to_install_times_list() {
   let install_info_list = await get_installs()
   let output = {}
