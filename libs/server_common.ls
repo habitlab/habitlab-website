@@ -83,7 +83,7 @@ export get_mongo_db = ->>
     w: 0
   }
   if process.env.PORT? # on heroku
-    connection_options.readPreference = mongodb.ReadPreference.NEAREST
+    connection_options.readPreference = mongodb.ReadPreference.PRIMARY_PREFERRED
   else # local machine
     connection_options.readPreference = mongodb.ReadPreference.SECONDARY
   try
@@ -115,7 +115,7 @@ export get_mongo_db2 = ->>
     w: 0
   }
   if process.env.PORT? # on heroku
-    connection_options.readPreference = mongodb.ReadPreference.NEAREST
+    connection_options.readPreference = mongodb.ReadPreference.PRIMARY_PREFERRED
   else # local machine
     connection_options.readPreference = mongodb.ReadPreference.SECONDARY
   try
