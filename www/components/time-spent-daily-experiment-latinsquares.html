@@ -1,7 +1,7 @@
 <link rel="import" href="../bower_components/polymer/polymer.html">
 <link rel="import" href="../bower_components/google-chart/google-chart.html">
 
-<dom-module id="time-spent-daily-experiment">
+<dom-module id="time-spent-daily-experiment-latinsquares">
   <template>
     <style>
       #retention_curve_general {
@@ -18,7 +18,7 @@
   <script>
 
     Polymer({
-      is: 'time-spent-daily-experiment',
+      is: 'time-spent-daily-experiment-latinsquares',
       properties: {
         
       },
@@ -62,7 +62,7 @@
             }
           }
         }
-        let users_in_experiment = selection_algorithm_and_users_list[selection_algorithm_to_idx['experiment_alternate_between_same_vs_random_daily_deterministic']].users
+        let users_in_experiment = selection_algorithm_and_users_list[selection_algorithm_to_idx['experiment_alternate_between_same_vs_random_varlength_deterministic_latinsquare']].users
         //console.log('num users in experiment ' + users_in_experiment.length)
         let same_samples = []
         let random_samples = []
@@ -79,11 +79,15 @@
           let time_on_facebook = domain_to_epoch_to_seconds['www.facebook.com']
           let epoch_day_to_num_intervention_impressions = await get_num_intervention_impressions_on_domain_per_epoch_day(userid, 'www.facebook.com')
           for (let experiment_info_entry of experiment_vars_list) {
-            if (experiment_info_entry.key != 'experiment_alternate_between_same_vs_random_daily_deterministic') {
+            if (experiment_info_entry.key != 'experiment_alternate_between_same_vs_random_varlength_deterministic_latinsquare') {
               continue
             }
             let experiment_info = JSON.parse(experiment_info_entry.val)
-            //console.log(experiment_info)
+            let duration = experiment_info.duration_order[experiment_info.duration_idx]
+            if (duration != 1) {
+              // only consider duration 1 for now
+              continue
+            }
             let same_epoch
             let random_epoch
             if (experiment_info.conditions[0] == 'same') {
