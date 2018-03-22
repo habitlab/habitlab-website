@@ -4,6 +4,8 @@ from flask import Flask, request, jsonify
 from inspect import signature
 from datetime import datetime
 import json
+from functools import wraps
+
 
 class CustomEncoder(json.JSONEncoder):
   def default(self, o):
@@ -14,9 +16,22 @@ class CustomEncoder(json.JSONEncoder):
 app = Flask(__name__)
 app.json_encoder = CustomEncoder
 
+def support_jsonp(f):
+  """Wraps JSONified output for JSONP"""
+  @wraps(f)
+  def decorated_function(*args, **kwargs):
+    callback = request.args.get('callback', False)
+    if callback:
+      content = str(callback) + '(' + f(*args,**kwargs).data.decode('utf-8') + ')'
+      return app.response_class(content, mimetype='application/javascript')
+    else:
+      return f(*args, **kwargs)
+  return decorated_function
+
 def route(func):
   func_name = func.__name__
   num_parameters = len(signature(func).parameters)
+  @wraps(func)
   def new_func():
     print(request)
     data = request.get_json(force=True, silent=True)
@@ -35,8 +50,7 @@ def route(func):
     if len(data) != num_parameters:
       return jsonify({'error': 'wrong number of parameters', 'method': func_name, 'expected_parameters': num_parameters, 'received_parameters': len(data)})
     return jsonify(func(*data))
-  new_func.__name__ = func.__name__
-  return app.route('/' + func_name, methods=['POST', 'GET'])(new_func)
+  return app.route('/' + func_name, methods=['POST', 'GET'])(support_jsonp(new_func))
 
 import scipy.stats
 

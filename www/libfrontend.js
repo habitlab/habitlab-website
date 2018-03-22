@@ -102,6 +102,26 @@ function memoize_to_disk_2arg(f, func_name) {
   }
 }
 
+async function pyfunc(funcname, ...args) {
+  //return await fetch('http://localhost:9999/' + funcname + '?' + $.param({args: JSON.stringify(args)}))
+  //console.log(args)
+  //console.log('args=' + JSON.stringify(args))
+  return await $.ajax({
+    //url: 'http://localhost:9999/' + funcname + '?'  + $.param({'args': args}),
+    url: 'http://localhost:9999/' + funcname + '?args=' + JSON.stringify(args),
+    jsonp: 'callback',
+    dataType: 'jsonp'
+  })
+  //return await $.getJSON('http://localhost:9999/' + funcname + '?args='  + JSON.stringify(args) + '&callback=?')
+  /*
+  await $.ajax({
+    url: 'http://localhost:9999/' + funcname + '?'  + $.param({'args': args}),
+    jsonp: 'callback',
+    dataType: 'jsonp'
+  })
+  */
+}
+
 async function geolocate_ip(ip_addr) {
   let geolocate_info = {}
   if (localStorage.getItem('geolocate_info_' + ip_addr)) {
