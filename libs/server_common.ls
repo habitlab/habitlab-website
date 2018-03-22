@@ -79,13 +79,17 @@ export get_mongo_db = ->>
       await sleep(1)
     return local_cache_db
   getdb_running := true
+  connection_options = {
+    w: 0
+  }
+  if process.env.PORT? # on heroku
+    connection_options.readPreference = mongodb.ReadPreference.NEAREST
+  else # local machine
+    connection_options.readPreference = mongodb.ReadPreference.SECONDARY
   try
     local_cache_db := await n2p -> mongodb.MongoClient.connect(
       mongourl,
-      {
-        readPreference: mongodb.ReadPreference.SECONDARY_PREFERRED,
-        w: 0,
-      },
+      connection_options,
       it
     )
     return local_cache_db
@@ -107,13 +111,17 @@ export get_mongo_db2 = ->>
       await sleep(1)
     return local_cache_db2
   getdb_running2 := true
+  connection_options = {
+    w: 0
+  }
+  if process.env.PORT? # on heroku
+    connection_options.readPreference = mongodb.ReadPreference.NEAREST
+  else # local machine
+    connection_options.readPreference = mongodb.ReadPreference.SECONDARY
   try
     local_cache_db2 := await n2p -> mongodb.MongoClient.connect(
       mongourl2,
-      {
-        readPreference: mongodb.ReadPreference.SECONDARY_PREFERRED,
-        w: 0,
-      },
+      connection_options,
       it
     )
     return local_cache_db2
