@@ -142,13 +142,11 @@ do ->>
   dst_collections_set = new Set(dst_collections)
   num_to_sync = all_collections.length
   num_threads = 1
-  resumable = false
+  resumable = true
   if resumable
     storage.initSync()
   start_thread = (threadnum) ->>
     for x,idx in all_collections
-      if x == 'user_active_dates'
-        continue
       if idx % num_threads != threadnum
         continue
       if resumable and storage.getItemSync(x)
