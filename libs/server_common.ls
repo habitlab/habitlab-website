@@ -91,6 +91,9 @@ export get_mongo_db = ->>
     connection_options.readPreference = mongodb.ReadPreference.PRIMARY_PREFERRED
   else # local machine
     connection_options.readPreference = mongodb.ReadPreference.SECONDARY
+    connection_options.readConcern = {
+      level: 'available'
+    }
   try
     local_cache_db := await n2p -> mongodb.MongoClient.connect(
       mongourl,
@@ -125,6 +128,9 @@ export get_mongo_db2 = ->>
     connection_options.readPreference = mongodb.ReadPreference.PRIMARY_PREFERRED
   else # local machine
     connection_options.readPreference = mongodb.ReadPreference.SECONDARY
+    connection_options.readConcern = {
+      level: 'available'
+    }
   try
     local_cache_db2 := await n2p -> mongodb.MongoClient.connect(
       mongourl2,
