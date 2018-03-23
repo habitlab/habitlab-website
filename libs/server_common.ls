@@ -23,14 +23,19 @@ memoizeSingleAsync = (func) ->
     return result
 
 memoizeOneArgAsync = (func) ->
-  debounced_func = debounce func
   cached_vals = {}
+  cached_funcs = {}
   return (x) ->>
     cached_val = cached_vals[x]
     if cached_val?
       return cached_val
-    result = await debounced_func(x)
+    cached_func = cached_funcs[x]
+    if not cached_func?
+      cached_func = debounce ->> return await func(x)
+      cached_funcs[x] = cached_func
+    result = await cached_func()
     cached_vals[x] = result
+    delete cached_funcs[x]
     return result
 
 export mongodb
@@ -113,6 +118,8 @@ export get_mongo_db2 = ->>
   getdb_running2 := true
   connection_options = {
     w: 0
+    j: false
+    #readConcern: ''
   }
   if process.env.PORT? # on heroku
     connection_options.readPreference = mongodb.ReadPreference.PRIMARY_PREFERRED

@@ -97,24 +97,24 @@ sync_all_in_collection = (collection_name, db_src, db_dst) ->>
   all_ids_which_need_to_be_inserted = all_ids_src.filter((x) -> not dst_id_set.has(x.toString!)) # can be string or object
   if all_ids_which_need_to_be_inserted.length == 0
     return
-  console.log 'incrementally inserting ' + all_ids_which_need_to_be_inserted.length + ' items'
-  for idname in all_ids_which_need_to_be_inserted
-    item_src = await keep_trying -> c_src.find({_id: idname}).toArray(it)
-    if not item_src? # should never happen
-      console.log 'could not find item with id ' + idname + ' in collection ' + collection_name
-      process.exit()
-    await keep_trying -> c_dst.insert(item_src, it)
+  if all_ids_which_need_to_be_inserted.length * 2 >= all_ids_src.length # size more than doubled - get all the items
+    console.log 'bulk incrementally inserting ' + all_ids_which_need_to_be_inserted.length + ' items'
+    all_items_src = await keep_trying -> c_src.find({}).toArray(it)
+    if all_items_src.length == 0
+      return
+    all_items_which_need_to_be_inserted = all_items_src.filter((x) -> not dst_id_set.has(x._id.toString()))
+    if all_items_which_need_to_be_inserted.length == 0
+      return
+    await keep_trying -> c_dst.insertMany(all_items_which_need_to_be_inserted, it)
+  else
+    console.log 'individually incrementally inserting ' + all_ids_which_need_to_be_inserted.length + ' items'
+    for idname in all_ids_which_need_to_be_inserted
+      item_src = await keep_trying -> c_src.find({_id: idname}).toArray(it)
+      if not item_src? # should never happen
+        console.log 'could not find item with id ' + idname + ' in collection ' + collection_name
+        process.exit()
+      await keep_trying -> c_dst.insert(item_src, it)
   return
-  /*
-  all_items_src = await keep_trying -> c_src.find({}).toArray(it)
-  if all_items_src.length == 0
-    return
-  all_items_which_need_to_be_inserted = all_items_src.filter((x) -> not dst_id_set.has(x._id.toString()))
-  if all_items_which_need_to_be_inserted.length == 0
-    return
-  console.log 'incrementally inserting ' + all_items_which_need_to_be_inserted.length + ' items'
-  await keep_trying -> c_dst.insertMany(all_items_which_need_to_be_inserted, it)
-  */
 
 sync_all_in_collection_fresh = (collection_name, db_src, db_dst) ->>
   c_src = db_src.collection(collection_name)
@@ -133,16 +133,36 @@ list_collections = (db_src) ->>
 do ->>
   db_src = await get_mongo_db()
   db_dst = await get_mongo_db2()
-  if not fs.existsSync('listcollections')
-    all_collections = await list_collections(db_src)
-    fs.writeFileSync('listcollections', JSON.stringify(all_collections), 'utf-8')
+  argv = require('yargs')
+  .option('collection', {
+    describe: 'collection to sync. if empty all collections are synced'
+  })
+  .option('resumable', {
+    describe: 'should be resumable (state is stored in the .node-persist directory)'
+    default: true
+  })
+  .option('threads', {
+    describe: 'number of threads to use for syncing'
+    default: 1
+  })
+  #.option('fresh', {
+  #  describe: 'perform a fresh sync (deleting the listcio )'
+  #})
+  .strict()
+  .argv
+  if argv.collection?
+    all_collections = [argv.collection]
   else
-    all_collections = JSON.parse(fs.readFileSync('listcollections', 'utf-8'))
+    if not fs.existsSync('listcollections')
+      all_collections = await list_collections(db_src)
+      fs.writeFileSync('listcollections', JSON.stringify(all_collections), 'utf-8')
+    else
+      all_collections = JSON.parse(fs.readFileSync('listcollections', 'utf-8'))
   dst_collections = await list_collections(db_dst)
   dst_collections_set = new Set(dst_collections)
   num_to_sync = all_collections.length
-  num_threads = 1
-  resumable = true
+  num_threads = argv.threads
+  resumable = argv.resumable
   if resumable
     storage.initSync()
   start_thread = (threadnum) ->>

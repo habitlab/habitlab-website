@@ -92,7 +92,7 @@
     return output;
   };
   sync_all_in_collection = async function(collection_name, db_src, db_dst){
-    var c_src, c_dst, all_ids_src, all_ids_dst, all_ids_dst_str, dst_id_set, all_ids_which_need_to_be_inserted, i$, len$, idname, item_src, this$ = this;
+    var c_src, c_dst, all_ids_src, all_ids_dst, all_ids_dst_str, dst_id_set, all_ids_which_need_to_be_inserted, all_items_src, all_items_which_need_to_be_inserted, i$, len$, idname, item_src, this$ = this;
     c_src = db_src.collection(collection_name);
     c_dst = db_dst.collection(collection_name);
     all_ids_src = (await keep_trying(function(it){
@@ -124,15 +124,34 @@
     if (all_ids_which_need_to_be_inserted.length === 0) {
       return;
     }
-    console.log('incrementally inserting ' + all_ids_which_need_to_be_inserted.length + ' items');
-    for (i$ = 0, len$ = all_ids_which_need_to_be_inserted.length; i$ < len$; ++i$) {
-      idname = all_ids_which_need_to_be_inserted[i$];
-      item_src = (await keep_trying(fn$));
-      if (item_src == null) {
-        console.log('could not find item with id ' + idname + ' in collection ' + collection_name);
-        process.exit();
+    if (all_ids_which_need_to_be_inserted.length * 2 >= all_ids_src.length) {
+      console.log('bulk incrementally inserting ' + all_ids_which_need_to_be_inserted.length + ' items');
+      all_items_src = (await keep_trying(function(it){
+        return c_src.find({}).toArray(it);
+      }));
+      if (all_items_src.length === 0) {
+        return;
       }
-      (await keep_trying(fn1$));
+      all_items_which_need_to_be_inserted = all_items_src.filter(function(x){
+        return !dst_id_set.has(x._id.toString());
+      });
+      if (all_items_which_need_to_be_inserted.length === 0) {
+        return;
+      }
+      (await keep_trying(function(it){
+        return c_dst.insertMany(all_items_which_need_to_be_inserted, it);
+      }));
+    } else {
+      console.log('individually incrementally inserting ' + all_ids_which_need_to_be_inserted.length + ' items');
+      for (i$ = 0, len$ = all_ids_which_need_to_be_inserted.length; i$ < len$; ++i$) {
+        idname = all_ids_which_need_to_be_inserted[i$];
+        item_src = (await keep_trying(fn$));
+        if (item_src == null) {
+          console.log('could not find item with id ' + idname + ' in collection ' + collection_name);
+          process.exit();
+        }
+        (await keep_trying(fn1$));
+      }
     }
     function fn$(it){
       return c_src.find({
@@ -169,20 +188,33 @@
     });
   };
   (async function(){
-    var db_src, db_dst, all_collections, dst_collections, dst_collections_set, num_to_sync, num_threads, resumable, start_thread, i$, threadnum, results$ = [];
+    var db_src, db_dst, argv, all_collections, dst_collections, dst_collections_set, num_to_sync, num_threads, resumable, start_thread, i$, threadnum, results$ = [];
     db_src = (await get_mongo_db());
     db_dst = (await get_mongo_db2());
-    if (!fs.existsSync('listcollections')) {
-      all_collections = (await list_collections(db_src));
-      fs.writeFileSync('listcollections', JSON.stringify(all_collections), 'utf-8');
+    argv = require('yargs').option('collection', {
+      describe: 'collection to sync. if empty all collections are synced'
+    }).option('resumable', {
+      describe: 'should be resumable (state is stored in the .node-persist directory)',
+      'default': true
+    }).option('threads', {
+      describe: 'number of threads to use for syncing',
+      'default': 1
+    }).strict().argv;
+    if (argv.collection != null) {
+      all_collections = [argv.collection];
     } else {
-      all_collections = JSON.parse(fs.readFileSync('listcollections', 'utf-8'));
+      if (!fs.existsSync('listcollections')) {
+        all_collections = (await list_collections(db_src));
+        fs.writeFileSync('listcollections', JSON.stringify(all_collections), 'utf-8');
+      } else {
+        all_collections = JSON.parse(fs.readFileSync('listcollections', 'utf-8'));
+      }
     }
     dst_collections = (await list_collections(db_dst));
     dst_collections_set = new Set(dst_collections);
     num_to_sync = all_collections.length;
-    num_threads = 1;
-    resumable = true;
+    num_threads = argv.threads;
+    resumable = argv.resumable;
     if (resumable) {
       storage.initSync();
     }
