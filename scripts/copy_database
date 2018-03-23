@@ -30,6 +30,9 @@
       local_cache_db = (await n2p(function(it){
         return mongodb.MongoClient.connect(mongourl, {
           readPreference: mongodb.ReadPreference.SECONDARY,
+          readConcern: {
+            level: 'available'
+          },
           w: 0
         }, it);
       }));
@@ -61,6 +64,9 @@
       local_cache_db2 = (await n2p(function(it){
         return mongodb.MongoClient.connect(mongourl2, {
           readPreference: mongodb.ReadPreference.SECONDARY,
+          readConcern: {
+            level: 'available'
+          },
           w: 0
         }, it);
       }));

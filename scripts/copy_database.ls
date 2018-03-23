@@ -28,6 +28,7 @@ export get_mongo_db = ->>
       mongourl,
       {
         readPreference: mongodb.ReadPreference.SECONDARY,
+        readConcern: {level: 'available'},
         w: 0,
       },
       it
@@ -56,6 +57,7 @@ export get_mongo_db2 = ->>
       mongourl2,
       {
         readPreference: mongodb.ReadPreference.SECONDARY,
+        readConcern: {level: 'available'},
         w: 0,
       },
       it
