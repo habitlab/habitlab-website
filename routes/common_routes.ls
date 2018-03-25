@@ -1,6 +1,7 @@
 {
   app
   get_user_active_dates
+  get_install_active_dates
 } = require 'libs/server_common'
 
 require! {
@@ -19,7 +20,7 @@ appid_to_last_version = {}
 
 app.get '/app_version', (ctx) ->>
   ctx.type = 'json'
-  {appid, userid} = ctx.request.query
+  {appid, userid, installid} = ctx.request.query
   if not appid?
     ctx.body = {response: 'error', error: 'need appid'}
     return
@@ -33,6 +34,10 @@ app.get '/app_version', (ctx) ->>
     [user_active_dates, db] = await get_user_active_dates()
     user_active_dates.update({_id: current_date + '_' + userid}, {day: current_date, user: userid}, {upsert: true}).then ->
       db.close()
+    if installid?
+      [install_active_dates, db2] = await get_install_active_dates()
+      install_active_dates.update({_id: current_date + '_' + installid}, {day: current_date, user: userid, install: installid}, {upsert: true}).then ->
+        db2.close()
   if time_checked + 1000*60*20 > current_time # within the past 20 minutes
     ctx.body = {response: 'success', version: appid_to_last_version[appid]}
     return
