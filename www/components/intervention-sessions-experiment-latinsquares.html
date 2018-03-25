@@ -34,9 +34,17 @@
       ready: async function() {
         //let users_in_experiment = (await get_selection_algorithm_to_users_list())['experiment_alternate_between_same_vs_random_varlength_deterministic_latinsquare']
         //console.log('num users in experiment ' + users_in_experiment.length)
+        /*
         let users_in_experiment = ['7c99e2e54ebb770ba9ac519f']
         for (let userid of users_in_experiment) {
           let session_info_list = await get_session_info_list_for_user(userid)
+          console.log(session_info_list)
+        }
+        */
+        let install_ids_in_experiment = (await get_selection_algorithm_to_install_ids_list())['experiment_alternate_between_same_vs_random_varlength_deterministic_latinsquare']
+        console.log('num install ids in experiment ' + install_ids_in_experiment.length)
+        for (let install_id of install_ids_in_experiment) {
+          let session_info_list = await get_session_info_list_for_install_id(install_id)
           console.log(session_info_list)
         }
         console.log('finished')

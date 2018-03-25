@@ -696,6 +696,15 @@ async function get_disabled_interventions_for_user(userid) {
   return output
 }
 
+async function get_session_info_list_for_install_id(install_id) {
+  let user_id = await get_userid_from_install_id(install_id)
+  if (user_id == null) {
+    return null
+  }
+  let session_info_list = await get_session_info_list_for_user(user_id)
+  return session_info_list.filter((x) => x.install_id == install_id)
+}
+
 async function get_session_info_list_for_user(userid) {
   let output = []
   let interventions_active_for_domain_and_session = await get_collection_for_user_cached(userid, 'synced:interventions_active_for_domain_and_session')
