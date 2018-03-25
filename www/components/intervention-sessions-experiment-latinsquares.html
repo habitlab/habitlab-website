@@ -1,0 +1,124 @@
+<link rel="import" href="../bower_components/polymer/polymer.html">
+<link rel="import" href="../bower_components/google-chart/google-chart.html">
+
+<dom-module id="intervention-sessions-experiment-latinsquares">
+  <template>
+    <style>
+      #retention_curve_general {
+        width: 100%;
+        height: 600px;
+      }
+    </style>
+    <div>Check console log</div>
+
+    <br><br>
+
+    
+  </template>
+  <script>
+
+    Polymer({
+      is: 'intervention-sessions-experiment-latinsquares',
+      properties: {
+        
+      },
+      /*
+      display_user_list: function(user_list, container) {
+        $('#num_active_users').text(user_ids.length)
+        for (let user_id of user_ids) {
+          $(container).append($('<a href="/viewuser.html?userid=' + user_id + '">' + user_id + '</a>'))
+          $('#user_list').append($('<br>'))
+        }
+      },
+      */
+      ready: async function() {
+        //let users_in_experiment = (await get_selection_algorithm_to_users_list())['experiment_alternate_between_same_vs_random_varlength_deterministic_latinsquare']
+        //console.log('num users in experiment ' + users_in_experiment.length)
+        let users_in_experiment = ['7c99e2e54ebb770ba9ac519f']
+        for (let userid of users_in_experiment) {
+          let session_info_list = await get_session_info_list_for_user(userid)
+          console.log(session_info_list)
+        }
+        console.log('finished')
+        return
+        let same_samples = []
+        let random_samples = []
+        let same_day_num_interventions_seen = []
+        let random_day_num_interventions_seen = []
+        let only_one_sample_per_user = false
+        for (let userid of users_in_experiment) {
+          //console.log(userid)
+          let experiment_vars_list = await get_collection_for_user_cached(userid, 'synced:experiment_vars')
+          let domain_to_epoch_to_seconds = await get_seconds_on_domain_per_day_epoch_for_user_cached(userid)
+          if (domain_to_epoch_to_seconds['www.facebook.com'] == null) {
+            continue
+          }
+          let time_on_facebook = domain_to_epoch_to_seconds['www.facebook.com']
+          let epoch_day_to_num_intervention_impressions = await get_num_intervention_impressions_on_domain_per_epoch_day(userid, 'www.facebook.com')
+          for (let experiment_info_entry of experiment_vars_list) {
+            if (experiment_info_entry.key != 'experiment_alternate_between_same_vs_random_varlength_deterministic_latinsquare') {
+              continue
+            }
+            let experiment_info = JSON.parse(experiment_info_entry.val)
+            let duration = experiment_info.duration_order[experiment_info.duration_idx]
+            if (duration != 1) {
+              // only consider duration 1 for now
+              continue
+            }
+            let same_epoch
+            let random_epoch
+            if (experiment_info.conditions[0] == 'same') {
+              same_epoch = convert_date_to_epoch(experiment_info.day)
+              random_epoch = convert_date_to_epoch(experiment_info.day) + 1
+            } else {
+              random_epoch = convert_date_to_epoch(experiment_info.day)
+              same_epoch = convert_date_to_epoch(experiment_info.day) + 1
+            }
+            let same_seconds = time_on_facebook[same_epoch]
+            let random_seconds = time_on_facebook[random_epoch]
+            if (same_seconds == null || random_seconds == null) {
+              continue
+            }
+            let num_intervention_impressions_same_day = epoch_day_to_num_intervention_impressions[same_epoch]
+            let num_intervention_impressions_random_day = epoch_day_to_num_intervention_impressions[random_epoch]
+            if (num_intervention_impressions_same_day == null || num_intervention_impressions_random_day == null) {
+              continue
+            }
+            same_samples.push(same_seconds)
+            random_samples.push(random_seconds)
+            same_day_num_interventions_seen.push(num_intervention_impressions_same_day)
+            random_day_num_interventions_seen.push(num_intervention_impressions_random_day)
+            if (only_one_sample_per_user) {
+              break
+            }
+          }
+        }
+        console.log('same day num interventions seen mean')
+        console.log(prelude.mean(same_day_num_interventions_seen))
+        console.log('random day num interventions seen mean')
+        console.log(prelude.mean(random_day_num_interventions_seen))
+        console.log('same day num interventions seen median')
+        console.log(prelude.sort(same_day_num_interventions_seen)[Math.floor(same_day_num_interventions_seen.length / 2)])
+        console.log('random day num interventions seen median')
+        console.log(prelude.sort(random_day_num_interventions_seen)[Math.floor(random_day_num_interventions_seen.length / 2)])
+        console.log('same samples mean')
+        console.log(prelude.mean(same_samples))
+        console.log('random samples mean')
+        console.log(prelude.mean(random_samples))
+        console.log('same samples median')
+        console.log(prelude.sort(same_samples)[Math.floor(same_samples.length / 2)])
+        console.log('random samples median')
+        console.log(prelude.sort(random_samples)[Math.floor(same_samples.length / 2)])
+        console.log(JSON.stringify(same_samples))
+        console.log(JSON.stringify(random_samples))
+        //this.selection_algorithm_and_users_list = selection_algorithm_and_users_list
+        console.log('ttest_rel results')
+        console.log(await pyfunc('ttest_rel', same_samples, random_samples))
+        console.log('mannwhitneyu results')
+        console.log(await pyfunc('mannwhitneyu', same_samples, random_samples))
+        console.log('wilcoxon results')
+        console.log(await pyfunc('wilcoxon', same_samples, random_samples))
+      },
+    })
+  </script>
+</dom-module>

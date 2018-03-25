@@ -202,7 +202,6 @@ async function getjson(path, data) {
 async function get_selection_algorithm_and_users_list() {
   let all_collections = await listcollections()
   let users_with_experiment_vars = []
-  let user_to_selection_algorithm = {}
   let selection_algorithm_and_users_list = []
   let selection_algorithm_to_idx = {}
   for (let collection_fullname of all_collections) {
@@ -217,7 +216,6 @@ async function get_selection_algorithm_and_users_list() {
     let experiment_vars_list = await get_collection_for_user_cached(userid, 'synced:experiment_vars')
     for (let x of experiment_vars_list) {
       if (x.key == 'selection_algorithm_for_visit') {
-        user_to_selection_algorithm[userid] = x.val
         if (selection_algorithm_to_idx[x.val] == null) {
           selection_algorithm_to_idx[x.val] = selection_algorithm_and_users_list.length
           selection_algorithm_and_users_list.push({
@@ -232,6 +230,38 @@ async function get_selection_algorithm_and_users_list() {
   return selection_algorithm_and_users_list
 }
 
+async function get_selection_algorithm_and_install_ids_list() {
+  let all_collections = await listcollections()
+  let users_with_experiment_vars = []
+  let selection_algorithm_and_users_list = []
+  let selection_algorithm_to_idx = {}
+  for (let collection_fullname of all_collections) {
+    let underscore_index = collection_fullname.indexOf('_')
+    let username = collection_fullname.substr(0, underscore_index)
+    let collection_name = collection_fullname.substr(underscore_index + 1)
+    if (collection_name == 'synced:experiment_vars') {
+      users_with_experiment_vars.push(username)
+    }
+  }
+  for (let userid of users_with_experiment_vars) {
+    let experiment_vars_list = await get_collection_for_user_cached(userid, 'synced:experiment_vars')
+    for (let x of experiment_vars_list) {
+      if (x.key == 'selection_algorithm_for_visit') {
+        let install_id = x.install_id
+        if (selection_algorithm_to_idx[x.val] == null) {
+          selection_algorithm_to_idx[x.val] = selection_algorithm_and_users_list.length
+          selection_algorithm_and_users_list.push({
+            algorithm: x.val,
+            install_ids: [],
+          })
+        }
+        selection_algorithm_and_users_list[selection_algorithm_to_idx[x.val]].install_ids.push(install_id)
+      }
+    }
+  }
+  return selection_algorithm_and_users_list
+}
+
 async function get_selection_algorithm_to_users_list() {
   let output = {}
   let selection_algorithm_and_users_list = await get_selection_algorithm_and_users_list()
@@ -239,6 +269,37 @@ async function get_selection_algorithm_to_users_list() {
     output[algorithm] = users
   }
   return output
+}
+
+async function get_selection_algorithm_to_install_ids_list() {
+  let output = {}
+  let selection_algorithm_and_users_list = await get_selection_algorithm_and_install_ids_list()
+  for (let {algorithm, install_ids} of selection_algorithm_and_users_list) {
+    output[algorithm] = install_ids
+  }
+  return output
+}
+
+async function get_install_id_to_user_id() {
+  user_to_all_install_ids = await get_user_to_all_install_ids_cached()
+  let output = {}
+  for (let userid of Object.keys(user_to_all_install_ids)) {
+    let install_ids = user_to_all_install_ids[userid]
+    for (let install_id of install_ids) {
+      if (install_id == null) {
+        continue
+      }
+      output[install_id] = userid
+    }
+  }
+  return output
+}
+
+let get_install_id_to_user_id_cached = memoize_to_disk_0arg(get_install_id_to_user_id, 'get_install_id_to_user_id')
+
+async function get_userid_from_install_id(install_id) {
+  let install_id_to_user_id = await get_install_id_to_user_id_cached()
+  return install_id_to_user_id[install_id]
 }
 
 async function get_user_to_install_times_list() {
@@ -631,6 +692,56 @@ async function get_disabled_interventions_for_user(userid) {
     } else if (info.val == false) {
       output[name] = false
     }
+  }
+  return output
+}
+
+async function get_session_info_list_for_user(userid) {
+  let output = []
+  let interventions_active_for_domain_and_session = await get_collection_for_user_cached(userid, 'synced:interventions_active_for_domain_and_session')
+  let seconds_on_domain_per_session = await get_collection_for_user_cached(userid, 'synced:seconds_on_domain_per_session')
+  let domain_to_session_id_to_time_spent = {}
+  for (let item of seconds_on_domain_per_session) {
+    let domain = item.key
+    let session_id = item.key2
+    let seconds_spent = item.val
+    if (domain_to_session_id_to_time_spent[domain] == null) {
+      domain_to_session_id_to_time_spent[domain] = {}
+    }
+    if (domain_to_session_id_to_time_spent[domain][session_id] == null) {
+      domain_to_session_id_to_time_spent[domain][session_id] = seconds_spent
+    } else {
+      domain_to_session_id_to_time_spent[domain][session_id] = Math.max(seconds_spent, domain_to_session_id_to_time_spent[domain][session_id])
+    }
+  }
+  for (let item of interventions_active_for_domain_and_session) {
+    let session_id = item.key2
+    let domain = item.key
+    let userid_inlog = item.userid
+    let interventions_active = JSON.parse(item.val)
+    let intervention = interventions_active[0]
+    let timestamp = item.timestamp
+    let timestamp_local = item.timestamp_local
+    let install_id = item.install_id
+    if (userid_inlog != userid) {
+      console.log('mismatch between userid and userid_inlog for userid ' + userid)
+      continue
+    }
+    if (domain_to_session_id_to_time_spent[domain] == null || domain_to_session_id_to_time_spent[domain][session_id] == null) {
+      //console.log('warning: missing session duration for session id ' + session_id + ' on domain ' + domain)
+      continue
+    }
+    let time_spent = domain_to_session_id_to_time_spent[domain][session_id]
+    output.push({
+      time_spent,
+      session_id,
+      domain,
+      interventions_active,
+      intervention,
+      timestamp,
+      timestamp_local,
+      install_id,
+    })
   }
   return output
 }
