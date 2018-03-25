@@ -32,12 +32,14 @@ app.get '/app_version', (ctx) ->>
   if userid?
     current_date = moment().tz("America/Los_Angeles").format('YYYYMMDD')
     [user_active_dates, db] = await get_user_active_dates()
-    user_active_dates.update({_id: current_date + '_' + userid}, {day: current_date, user: userid}, {upsert: true}).then ->
-      db.close()
+    user_active_dates.findOne({_id: current_date + '_' + userid}).then (logged_user_active_date) ->
+      if not logged_user_active_date?
+        user_active_dates.insert({_id: current_date + '_' + userid, day: current_date, user: userid})
     if installid?
       [install_active_dates, db2] = await get_install_active_dates()
-      install_active_dates.update({_id: current_date + '_' + installid}, {day: current_date, user: userid, install: installid}, {upsert: true}).then ->
-        db2.close()
+      install_active_dates.findOne({_id: current_date + '_' + installid}).then (logged_install_active_date) ->
+        if not logged_install_active_date?
+          install_active_dates.insert({_id: current_date + '_' + installid, day: current_date, user: userid, install: installid})
   if time_checked + 1000*60*20 > current_time # within the past 20 minutes
     ctx.body = {response: 'success', version: appid_to_last_version[appid]}
     return
