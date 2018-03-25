@@ -190,7 +190,7 @@ export log_collection_exists = (collection_name) ->>
     await n2p -> collections.insert(data, it)
   return
 
-export get_collection_real = (collection_name) ->>
+export get_collection = (collection_name) ->>
   db = await get_mongo_db()
   fakedb = {
     close: ->
@@ -213,7 +213,7 @@ export get_collection_real = (collection_name) ->>
   #proxy_func(collection, 'findAndUpdate')
   return [collection, fakedb]
 
-export get_collection = memoizeOneArgAsync(get_collection_real)
+#export get_collection = memoizeOneArgAsync(get_collection_real)
 
 export get_collection2 = (collection_name) ->>
   db = await get_mongo_db2()
