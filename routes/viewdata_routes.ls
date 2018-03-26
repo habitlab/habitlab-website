@@ -792,21 +792,20 @@ app.get '/get_dates_active_for_user', auth, (ctx) ->>
   finally
     db?close()
 
-
-app.get '/get_dates_active_for_install_id', auth, (ctx) ->>
-  ctx.type = 'json'
-  {userid} = ctx.request.query
-  if need_query_property(ctx, 'install_id')
-    return
+app.get '/lookupintervention', auth, (ctx) ->>
+  {share, id} = ctx.request.query
+  console.log {share, id}
   try
-    [install_active_dates, db] = await get_install_active_dates()
-    all_results = await n2p -> install_active_dates.find({install: install_id}).toArray(it)
-    output = []
-    for {day} in all_results
-      output.push(day)
-    ctx.body = JSON.stringify output
+    if share == 'y'
+      [collection,db] = await get_collection_share_intervention()
+      all_results = await n2p -> collection.find({key: id}).toArray(it)
+      ctx.body = all_results[0].code
+    else
+      [collection,db] = await get_collection_non_share_intervention()
+      all_results = await n2p -> collection.find({key: id}).toArray(it)
+      ctx.body = all_results[0].code
   catch err
-    console.log 'error in get_dates_active_for_install_id'
+    console.log 'error in get_collection_non_share_intervention'
     console.log err
   finally
     db?close()

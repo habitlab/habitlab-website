@@ -268,7 +268,17 @@ export get_intervention_votes_total = ->>
 export get_webvisits = ->>
   return await get_collection('webvisits')
 
+<<<<<<< HEAD
 export list_collections_real = ->>
+=======
+export get_collection_share_intervention = ->>
+  return await get_collection('share_intervention_repo')
+
+export get_collection_non_share_intervention = ->>
+  return await get_collection('non_share_intervention_repo')
+
+export list_collections = ->>
+>>>>>>> dfc2a29... implemented share button on server side
   ndb = await get_mongo_db()
   #collections_list = await n2p -> ndb.listCollections().toArray(it)
   collections_list = await n2p -> ndb.collection('collections').find({}, {_id: 1}).toArray(it)

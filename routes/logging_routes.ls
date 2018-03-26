@@ -305,6 +305,7 @@ app.post '/sharedintervention', (ctx) ->>
       db?close()
   ctx.body = JSON.stringify {response: 'success', success: true}
 
+<<<<<<< HEAD
 # TODO: These routes might be consolidated with others in the future
 app.get '/get_sharedinterventions_for_site', (ctx) ->>
   ctx.type = 'json'
@@ -331,4 +332,6 @@ app.get '/delete_shared_intervention', (ctx) ->>
   ctx.body = JSON.stringify {response: 'success', success: true}
 db?close()
 
+=======
+>>>>>>> dfc2a29... implemented share button on server side
 require('libs/globals').add_globals(module.exports)
