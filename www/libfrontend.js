@@ -806,8 +806,15 @@ async function get_session_info_list_for_user_detailed(userid) {
       console.log('warning: missing session duration')
       continue
     }
+    // TODO when calling from the install id version we might get the wrong session?
     let is_unofficial = await get_is_session_nonofficial_release(userid, intervention, session_id)
+    if (is_unofficial) {
+      continue
+    }
     let localtime = await get_session_start_localtime(userid, intervention, session_id)
+    if (localtime == null) {
+      continue
+    }
     let localdate = moment(localtime).format('YYYYMMDD')
     let localepoch = convert_date_to_epoch(localdate)
     let is_preview = await get_is_session_preview(userid, intervention, session_id)
@@ -827,6 +834,71 @@ async function get_session_info_list_for_user_detailed(userid) {
       is_unofficial,
       is_preview,
     })
+  }
+  return output
+}
+
+function group_list_into_dict_by_key(list, key) {
+  let output = {}
+  for (let x of list) {
+    let val = x[key]
+    if (output[val] == null) {
+      output[val] = []
+    }
+    output[val].push(x)
+  }
+  return output
+}
+
+function group_together_session_info_list_with_experiment_info_list(session_info_list, experiment_info_list) {
+  let output = []
+  let localepoch_to_session_info_list = group_list_into_dict_by_key(session_info_list, 'localepoch')
+  for (let experiment_idx = 0; experiment_idx < experiment_info_list.length; ++experiment_idx) {
+    let experiment_info = experiment_info_list[experiment_idx]
+    let experiment_start_date = experiment_info.day
+    let experiment_start_epoch = convert_date_to_epoch(experiment_start_date)
+    let conditionduration = experiment_info.conditionduration
+    let condition_info_list = []
+    let cur_experiment = {
+      day: experiment_start_date,
+      epoch: experiment_start_epoch,
+      duration_order: experiment_info.duration_order,
+      duration_idx: experiment_info.duration_idx,
+      experiment_idx: experiment_idx,
+      conditionduration: conditionduration,
+      conditions: experiment_info.conditions,
+      condition_info_list: condition_info_list,
+    }
+    for (let condition_idx = 0; condition_idx < experiment_info.conditions.length; ++condition_idx) {
+      let condition = experiment_info.conditions[condition_idx]
+      let condition_start_epoch = experiment_start_epoch + conditionduration * condition_idx
+      let day_info_list = []
+      let condition_info = {
+        conditionduration: conditionduration,
+        condition_idx: condition_idx,
+        condition: condition,
+        condition_start_epoch: condition_start_epoch,
+        condition_start_date: convert_epoch_to_date(condition_start_epoch),
+        day_info_list: day_info_list,
+      }
+      for (let day_idx = 0; day_idx < conditionduration; ++day_idx) {
+        let epoch = condition_start_epoch + day_idx
+        let day = convert_epoch_to_date(epoch)
+        let session_info_list = []
+        if (localepoch_to_session_info_list[epoch] != null) {
+          session_info_list = localepoch_to_session_info_list[epoch]
+        }
+        let day_info = {
+          day_idx,
+          epoch,
+          day,
+          session_info_list,
+        }
+        day_info_list.push(day_info)
+      }
+      condition_info_list.push(condition_info)
+    }
+    output.push(cur_experiment)
   }
   return output
 }
@@ -866,9 +938,13 @@ async function get_intervention_first_entry_in_session(userid, intervention_name
     if (timestamp == null) {
       continue
     }
+    let cur_session_id = x.session_id
+    if (cur_session_id == null) {
+      continue
+    }
     let existing_item = cache_get_intervention_first_entry_in_session[userid][intervention_name][session_id]
     if (existing_item == null || timestamp < existing_item.timestamp) {
-      cache_get_intervention_first_entry_in_session[userid][intervention_name][session_id] = x
+      cache_get_intervention_first_entry_in_session[userid][intervention_name][cur_session_id] = x
     }
   }
   return cache_get_intervention_first_entry_in_session[userid][intervention_name][session_id]
@@ -1222,6 +1298,12 @@ function convert_date_to_epoch(date) {
   let day = parseInt(date.substr(6, 2))
   let date_moment = moment().year(year).month(month).date(day).hours(0).minutes(0).seconds(0).milliseconds(0)
   return date_moment.diff(start_of_epoch, 'days')
+}
+
+function convert_epoch_to_date(epoch) {
+  let start_of_epoch = moment().year(2016).month(0).date(1).hours(0).minutes(0).seconds(0).milliseconds(0)
+  start_of_epoch.add(epoch, 'days')
+  return start_of_epoch.format('YYYYMMDD')
 }
 
 function timestamp_to_epoch(timestamp) {

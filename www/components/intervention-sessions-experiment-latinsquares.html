@@ -51,7 +51,8 @@
           console.log(experiment_info_list)
           let session_info_list = await get_session_info_list_for_install_id_detailed(install_id)
           console.log(session_info_list)
-          //let experiment_info_with_sessions = 
+          let experiment_info_with_sessions = await group_together_session_info_list_with_experiment_info_list(session_info_list, experiment_info_list)
+          console.log(experiment_info_with_sessions)
           //return
         }
         console.log('finished')
