@@ -11,6 +11,8 @@
   list_log_collections_for_user
   list_log_collections_for_logname
   get_collection_for_user_and_logname
+  get_collection_share_intervention
+  get_collection_non_share_intervention
   mongodb
   need_query_properties
   get_webvisits
@@ -236,5 +238,42 @@ app.get '/logwebvisit', (ctx) ->>
   finally
     db?close()
   ctx.body = JSON.stringify {response: 'done', success: true}
+
+# specifically for adding shared intervention accross users
+app.post '/sharedintervention', (ctx) ->>
+  ctx.type = 'json'
+  # construct new sharable item
+  # console.log ctx.request.body
+  # the user generated unique id will be the key to retrieve code
+  {auther_email, auther_id, description, 
+  goals, name, code, is_sharing, preview, key} = ctx.request.body
+  new_share_item = {auther_email, auther_id, description, 
+  goals, name, code, preview, key}
+  # inject into database
+  if is_sharing
+    # sharable
+    try
+      [collection,db] = await get_collection_share_intervention()
+      await n2p -> collection.insert(fix_object(new_share_item), it)
+      ctx.body = JSON.stringify {response: 'success', success: true}
+    catch err
+      console.error 'error in get_collection_share_intervention'
+      console.error err
+      ctx.body = JSON.stringify {response: 'failure', success: false}
+    finally
+      db?close()
+  else
+    # non-sharable
+    try
+      [collection,db] = await get_collection_non_share_intervention()
+      await n2p -> collection.insert(fix_object(new_share_item), it)
+      ctx.body = JSON.stringify {response: 'success', success: true}
+    catch err
+      console.error 'error in get_collection_non_share_intervention'
+      console.error err
+      ctx.body = JSON.stringify {response: 'failure', success: false}
+    finally
+      db?close()
+  ctx.body = JSON.stringify {response: 'success', success: true}
 
 require('libs/globals').add_globals(module.exports)

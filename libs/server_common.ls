@@ -99,6 +99,12 @@ export get_intervention_votes_total = ->>
 export get_webvisits = ->>
   return await get_collection('webvisits')
 
+export get_collection_share_intervention = ->>
+  return await get_collection('share_intervention_repo')
+
+export get_collection_non_share_intervention = ->>
+  return await get_collection('non_share_intervention_repo')
+
 export list_collections = ->>
   ndb = await get_mongo_db()
   collections_list = await n2p -> ndb.listCollections().toArray(it)

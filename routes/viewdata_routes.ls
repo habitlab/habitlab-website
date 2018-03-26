@@ -577,6 +577,24 @@ app.get '/get_dates_active_for_user', auth, (ctx) ->>
   finally
     db?close()
 
+app.get '/lookupintervention', auth, (ctx) ->>
+  {share, id} = ctx.request.query
+  console.log {share, id}
+  try
+    if share == 'y'
+      [collection,db] = await get_collection_share_intervention()
+      all_results = await n2p -> collection.find({key: id}).toArray(it)
+      ctx.body = all_results[0].code
+    else
+      [collection,db] = await get_collection_non_share_intervention()
+      all_results = await n2p -> collection.find({key: id}).toArray(it)
+      ctx.body = all_results[0].code
+  catch err
+    console.log 'error in get_collection_non_share_intervention'
+    console.log err
+  finally
+    db?close()
+
 export get_users_to_days_active = ->>
   [user_active_dates, db] = await get_user_active_dates()
   all_results = await n2p -> user_active_dates.find({}).toArray(it)
