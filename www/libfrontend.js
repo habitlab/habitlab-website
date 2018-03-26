@@ -555,6 +555,11 @@ async function get_collection_for_user(userid, collection_name) {
 
 let get_collection_for_user_cached = memoize_to_disk_2arg(get_collection_for_user, 'get_collection_for_user')
 
+async function get_intervention_logs_for_user(userid, intervention_name) {
+  intervention_name = intervention_name.split('/').join(':')
+  return await get_collection_for_user_cached(userid, intervention_name)
+}
+
 async function get_user_max_intervention_count(userid) {
   let intervention_count_dict = await get_intervention_count_dict(userid)
   // let curr = 0
@@ -705,9 +710,7 @@ async function get_session_info_list_for_install_id(install_id) {
   return session_info_list.filter((x) => x.install_id == install_id)
 }
 
-async function get_session_info_list_for_user(userid) {
-  let output = []
-  let interventions_active_for_domain_and_session = await get_collection_for_user_cached(userid, 'synced:interventions_active_for_domain_and_session')
+async function get_domain_to_session_id_to_time_spent(userid) {
   let seconds_on_domain_per_session = await get_collection_for_user_cached(userid, 'synced:seconds_on_domain_per_session')
   let domain_to_session_id_to_time_spent = {}
   for (let item of seconds_on_domain_per_session) {
@@ -723,6 +726,14 @@ async function get_session_info_list_for_user(userid) {
       domain_to_session_id_to_time_spent[domain][session_id] = Math.max(seconds_spent, domain_to_session_id_to_time_spent[domain][session_id])
     }
   }
+  return domain_to_session_id_to_time_spent
+}
+
+async function get_session_info_list_for_user(userid) {
+  let output = []
+  let interventions_active_for_domain_and_session = await get_collection_for_user_cached(userid, 'synced:interventions_active_for_domain_and_session')
+  let domain_to_session_id_to_time_spent = await get_domain_to_session_id_to_time_spent(userid)
+  console.log(domain_to_session_id_to_time_spent)
   for (let item of interventions_active_for_domain_and_session) {
     let session_id = item.key2
     let domain = item.key
@@ -750,9 +761,157 @@ async function get_session_info_list_for_user(userid) {
       timestamp,
       timestamp_local,
       install_id,
+      userid,
     })
   }
   return output
+}
+
+async function get_session_info_list_for_install_id_detailed(install_id) {
+  let user_id = await get_userid_from_install_id(install_id)
+  if (user_id == null) {
+    return null
+  }
+  let session_info_list = await get_session_info_list_for_user_detailed(user_id)
+  return session_info_list.filter((x) => x.install_id == install_id)
+}
+
+async function get_session_info_list_for_user_detailed(userid) {
+  let output = []
+  let interventions_active_for_domain_and_session = await get_collection_for_user_cached(userid, 'synced:interventions_active_for_domain_and_session')
+  let domain_to_session_id_to_time_spent = await get_domain_to_session_id_to_time_spent(userid)
+  for (let item of interventions_active_for_domain_and_session) {
+    let session_id = item.key2
+    let domain = item.key
+    let userid_inlog = item.userid
+    let interventions_active = JSON.parse(item.val)
+    let intervention = interventions_active[0]
+    let timestamp = item.timestamp
+    let timestamp_local = item.timestamp_local
+    let install_id = item.install_id
+    if (userid_inlog != userid) {
+      console.log('mismatch between userid and userid_inlog for userid ' + userid)
+      continue
+    }
+    if (domain_to_session_id_to_time_spent[domain] == null || domain_to_session_id_to_time_spent[domain][session_id] == null) {
+      //console.log('warning: missing session duration for session id ' + session_id + ' on domain ' + domain)
+      continue
+    }
+    if (intervention == null) {
+      console.log('warning: missing intervention name')
+      continue
+    }
+    let time_spent = domain_to_session_id_to_time_spent[domain][session_id]
+    if (time_spent == null) {
+      console.log('warning: missing session duration')
+      continue
+    }
+    let is_unofficial = await get_is_session_nonofficial_release(userid, intervention, session_id)
+    let localtime = await get_session_start_localtime(userid, intervention, session_id)
+    let localdate = moment(localtime).format('YYYYMMDD')
+    let localepoch = convert_date_to_epoch(localdate)
+    let is_preview = await get_is_session_preview(userid, intervention, session_id)
+    output.push({
+      time_spent,
+      session_id,
+      domain,
+      interventions_active,
+      intervention,
+      timestamp,
+      timestamp_local,
+      localtime,
+      localdate,
+      localepoch,
+      install_id,
+      userid,
+      is_unofficial,
+      is_preview,
+    })
+  }
+  return output
+}
+
+async function get_experiment_info_same_vs_random_varlength_deterministic_latinsquare_for_install_id(install_id) {
+  let userid = await get_userid_from_install_id(install_id)
+  let experiment_vars_list = await get_collection_for_user_cached(userid, 'synced:experiment_vars')
+  let output = experiment_vars_list.filter((x) => x.key == 'experiment_alternate_between_same_vs_random_varlength_deterministic_latinsquare')
+  output = output.filter((x) => x.install_id == install_id)
+  output = output.map((x) => JSON.parse(x.val))
+  return output
+}
+
+async function get_experiment_info_same_vs_random_varlength_deterministic_latinsquare_for_userid(userid) {
+  let experiment_vars_list = await get_collection_for_user_cached(userid, 'synced:experiment_vars')
+  let output = experiment_vars_list.filter((x) => x.key == 'experiment_alternate_between_same_vs_random_varlength_deterministic_latinsquare')
+  output = output.map((x) => JSON.parse(x.val))
+  return output
+}
+
+let cache_get_intervention_first_entry_in_session = {}
+
+async function get_intervention_first_entry_in_session(userid, intervention_name, session_id) {
+  if (cache_get_intervention_first_entry_in_session[userid] != null && cache_get_intervention_first_entry_in_session[userid][intervention_name] != null) {
+    return cache_get_intervention_first_entry_in_session[userid][intervention_name][session_id]
+  }
+  if (cache_get_intervention_first_entry_in_session[userid] == null) {
+    cache_get_intervention_first_entry_in_session[userid] = {}
+  }
+  if (cache_get_intervention_first_entry_in_session[userid][intervention_name] == null) {
+    cache_get_intervention_first_entry_in_session[userid][intervention_name] = {}
+  }
+  let intervention_logs = await get_intervention_logs_for_user(userid, intervention_name)
+  //intervention_logs = intervention_logs.filter((x) => x.session_id == session_id)
+  for (let x of intervention_logs) {
+    let timestamp = x.timestamp
+    if (timestamp == null) {
+      continue
+    }
+    let existing_item = cache_get_intervention_first_entry_in_session[userid][intervention_name][session_id]
+    if (existing_item == null || timestamp < existing_item.timestamp) {
+      cache_get_intervention_first_entry_in_session[userid][intervention_name][session_id] = x
+    }
+  }
+  return cache_get_intervention_first_entry_in_session[userid][intervention_name][session_id]
+}
+
+async function get_session_start_localtime(userid, intervention_name, session_id) {
+  /*
+  let intervention_logs = await get_intervention_logs_for_user(userid, intervention_name)
+  intervention_logs = intervention_logs.filter((x) => x.session_id == session_id)
+  let firstentry = prelude.minimumBy((x) => x.timestamp, intervention_logs)
+  */
+  let firstentry = await get_intervention_first_entry_in_session(userid, intervention_name, session_id)
+  if (firstentry == null) {
+    return null
+  }
+  return firstentry.localtime
+}
+
+async function get_is_session_preview(userid, intervention_name, session_id) {
+  /*
+  let intervention_logs = await get_intervention_logs_for_user(userid, intervention_name)
+  intervention_logs = intervention_logs.filter((x) => x.session_id == session_id)
+  let firstentry = prelude.minimumBy((x) => x.timestamp, intervention_logs)
+  */
+  let firstentry = await get_intervention_first_entry_in_session(userid, intervention_name, session_id)
+  if (firstentry == null) {
+    return null
+  }
+  return firstentry.is_preview_mode
+}
+
+async function get_is_session_nonofficial_release(userid, intervention_name, session_id) {
+  let firstentry = await get_intervention_first_entry_in_session(userid, intervention_name, session_id)
+  if (firstentry == null) {
+    return false
+  }
+  if (firstentry.developer_mode) {
+    return true
+  }
+  if (firstentry.unofficial_version) {
+    return true
+  }
+  return false
 }
 
 /*
@@ -1499,7 +1658,7 @@ async function get_session_lengths_with_intervention_all_users() {
 
 async function get_session_lengths_with_intervention(user_id) {
   seconds_on_domain_per_session = await get_collection_for_user(user_id, 'synced:seconds_on_domain_per_session')
-  interventions_active_for_domain_and_session = await get_collection_for_user(user_id, 'synced:interventions_active_for_domain_and_session')
+  let interventions_active_for_domain_and_session = await get_collection_for_user(user_id, 'synced:interventions_active_for_domain_and_session')
   let domain_to_intervention_to_session_lengths = {}
   let domain_to_session_to_intervention = {}
   for (let x of interventions_active_for_domain_and_session) {
