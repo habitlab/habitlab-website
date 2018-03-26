@@ -43,10 +43,15 @@
         */
         
         //return
-        let install_ids_in_experiment = (await get_selection_algorithm_to_install_ids_list())['experiment_alternate_between_same_vs_random_varlength_deterministic_latinsquare']
+        //let install_ids_in_experiment = (await get_selection_algorithm_to_install_ids_list())['experiment_alternate_between_same_vs_random_varlength_deterministic_latinsquare']
+        let install_ids_in_experiment = ['433c345412712b1c71708ddb']
         for (let install_id of install_ids_in_experiment) {
+          console.log(install_id)
           let experiment_info_list = await get_experiment_info_same_vs_random_varlength_deterministic_latinsquare_for_install_id(install_id)
           console.log(experiment_info_list)
+          let session_info_list = await get_session_info_list_for_install_id_detailed(install_id)
+          console.log(session_info_list)
+          //let experiment_info_with_sessions = 
           //return
         }
         console.log('finished')

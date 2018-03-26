@@ -281,7 +281,8 @@ export list_log_collections_for_user_real = (userid) ->>
   return collections_list.map (._id)
 */
 
-export list_log_collections_for_user = memoizeOneArgAsync list_log_collections_for_user_real
+export list_log_collections_for_user = list_log_collections_for_user_real
+#export list_log_collections_for_user = memoizeOneArgAsync list_log_collections_for_user_real
 
 export list_intervention_collections_for_user_real = (userid) ->>
   all_collections = await list_collections()
@@ -299,7 +300,8 @@ export list_intervention_collections_for_user_real = (userid) ->>
   )
 */
 
-export list_intervention_collections_for_user = memoizeOneArgAsync list_intervention_collections_for_user_real
+export list_intervention_collections_for_user = list_intervention_collections_for_user_real
+#export list_intervention_collections_for_user = memoizeOneArgAsync list_intervention_collections_for_user_real
 
 export list_log_collections_for_logname_real = (logname) ->>
   all_collections = await list_collections()
@@ -313,7 +315,8 @@ export list_log_collections_for_logname_real = (collection) ->>
 
 */
 
-export list_log_collections_for_logname = memoizeOneArgAsync list_log_collections_for_logname_real
+export list_log_collections_for_logname = list_log_collections_for_logname_real
+#export list_log_collections_for_logname = memoizeOneArgAsync list_log_collections_for_logname_real
 
 export get_collection_for_user_and_logname = (userid, logname) ->>
   return await get_collection("#{userid}_#{logname}")
