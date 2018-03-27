@@ -839,6 +839,9 @@ async function get_session_info_list_for_user_detailed(userid) {
 }
 
 function group_list_into_dict_by_key(list, key) {
+  if (list == null) {
+    return {} // TODO why is this necessary?
+  }
   let output = {}
   for (let x of list) {
     let val = x[key]

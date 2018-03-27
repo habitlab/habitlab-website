@@ -59,6 +59,10 @@ def ttest_rel(a, b):
   return scipy.stats.ttest_rel(a, b)
 
 @route
+def ttest_ind(a, b):
+  return scipy.stats.ttest_ind(a, b)
+
+@route
 def mannwhitneyu(a, b):
   return scipy.stats.mannwhitneyu(a, b)
 

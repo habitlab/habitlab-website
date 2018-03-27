@@ -43,18 +43,277 @@
         */
         
         //return
-        //let install_ids_in_experiment = (await get_selection_algorithm_to_install_ids_list())['experiment_alternate_between_same_vs_random_varlength_deterministic_latinsquare']
-        let install_ids_in_experiment = ['433c345412712b1c71708ddb']
+        let install_ids_in_experiment = (await get_selection_algorithm_to_install_ids_list())['experiment_alternate_between_same_vs_random_varlength_deterministic_latinsquare']
+        //let install_ids_in_experiment = ['433c345412712b1c71708ddb']
+        let random_session_durations_all = []
+        let same_session_durations_all = []
+        let random_session_durations_means = []
+        let same_session_durations_means = []
+        let random_session_durations_medians = []
+        let same_session_durations_medians = []
+        let random_sessions_fraction_complied = []
+        let same_sessions_fraction_complied = []
+        let random_day_durations_all = []
+        let same_day_durations_all = []
+        let random_day_durations_means = []
+        let same_day_durations_means = []
+        let random_day_durations_medians = []
+        let same_day_durations_medians = []
+        let random_day_fraction_complied = []
+        let same_day_fraction_complied = []
         for (let install_id of install_ids_in_experiment) {
           console.log(install_id)
           let experiment_info_list = await get_experiment_info_same_vs_random_varlength_deterministic_latinsquare_for_install_id(install_id)
-          console.log(experiment_info_list)
           let session_info_list = await get_session_info_list_for_install_id_detailed(install_id)
-          console.log(session_info_list)
           let experiment_info_with_sessions = await group_together_session_info_list_with_experiment_info_list(session_info_list, experiment_info_list)
-          console.log(experiment_info_with_sessions)
+          let random_session_durations_for_user = []
+          let same_session_durations_for_user = []
+          let random_day_durations_for_user = []
+          let same_day_durations_for_user = []
+          for (let experiment_info of experiment_info_with_sessions) {
+            for (let condition_info of experiment_info.condition_info_list) {
+              let condition = condition_info.condition
+              for (let day_info of condition_info.day_info_list) {
+                let total_time_on_day = 0
+                for (let session_info of day_info.session_info_list) {
+                  //if (session_info.domain != 'www.facebook.com') {
+                  //  continue
+                  //}
+                  let time_spent = session_info.time_spent
+                  let timestamp = session_info.timestamp
+                  if (timestamp > moment('Mon Mar 26 2018 02:30:02').unix() * 1000) {
+                    continue
+                  }
+                  total_time_on_day += time_spent
+                  if (condition == 'random') {
+                    random_session_durations_for_user.push(time_spent)
+                  } else {
+                    same_session_durations_for_user.push(time_spent)
+                  }
+                }
+                if (total_time_on_day > 0) {
+                  if (condition == 'random') {
+                    random_day_durations_for_user.push(total_time_on_day)
+                  } else {
+                    same_day_durations_for_user.push(total_time_on_day)
+                  }
+                }
+              }
+            }
+          }
+          if (random_session_durations_for_user.length > 0 && same_session_durations_for_user.length > 0) {
+            random_session_durations_means.push(prelude.mean(random_session_durations_for_user))
+            same_session_durations_means.push(prelude.mean(same_session_durations_for_user))
+            random_session_durations_medians.push(median(random_session_durations_for_user))
+            same_session_durations_medians.push(median(same_session_durations_for_user))
+            let num_complied_same = same_session_durations_for_user.filter((x) => x < 60).length
+            let fraction_complied_same = num_complied_same / same_session_durations_for_user.length
+            let num_complied_random = random_session_durations_for_user.filter((x) => x < 60).length
+            let fraction_complied_random = num_complied_random / random_session_durations_for_user.length
+            random_sessions_fraction_complied.push(fraction_complied_random)
+            same_sessions_fraction_complied.push(fraction_complied_same)
+          }
+          if (random_day_durations_for_user.length > 0 && same_day_durations_for_user.length > 0) {
+            random_day_durations_means.push(prelude.mean(random_day_durations_for_user))
+            same_day_durations_means.push(prelude.mean(same_day_durations_for_user))
+            random_day_durations_medians.push(median(random_day_durations_for_user))
+            same_day_durations_medians.push(median(same_day_durations_for_user))
+            let num_complied_same = same_day_durations_for_user.filter((x) => x < 60).length
+            let fraction_complied_same = num_complied_same / same_day_durations_for_user.length
+            let num_complied_random = random_day_durations_for_user.filter((x) => x < 60).length
+            let fraction_complied_random = num_complied_random / random_day_durations_for_user.length
+            random_day_fraction_complied.push(fraction_complied_random)
+            same_day_fraction_complied.push(fraction_complied_same)
+          }
+          random_day_durations_all = random_day_durations_all.concat(random_day_durations_for_user)
+          same_day_durations_all = same_day_durations_all.concat(same_day_durations_for_user)
+          random_session_durations_all = random_session_durations_all.concat(random_session_durations_for_user)
+          same_session_durations_all = same_session_durations_all.concat(same_session_durations_for_user)
+          //console.log(prelude.mean(same_session_durations_for_user))
+          //console.log(prelude.mean(random_session_durations_for_user))
           //return
         }
+        console.log('====== all =======')
+        let random_durations = random_session_durations_all
+        let same_durations = same_session_durations_all
+        console.log('num samples random')
+        console.log(random_durations.length)
+        console.log('num samples same')
+        console.log(same_durations.length)
+        console.log('mean random')
+        console.log(prelude.mean(random_durations))
+        console.log('mean same')
+        console.log(prelude.mean(same_durations))
+        console.log('median random')
+        console.log(median(random_durations))
+        console.log('median same')
+        console.log(median(same_durations))
+        console.log('mannwhitneyu')
+        console.log(await pyfunc('mannwhitneyu', same_durations, random_durations))
+        console.log('ttest_ind')
+        console.log(await pyfunc('ttest_ind', same_durations, random_durations))
+        console.log('====== per user means ======')
+        random_durations = random_session_durations_means
+        same_durations = same_session_durations_means
+        console.log('num samples random')
+        console.log(random_durations.length)
+        console.log('num samples same')
+        console.log(same_durations.length)
+        console.log('mean random')
+        console.log(prelude.mean(random_durations))
+        console.log('mean same')
+        console.log(prelude.mean(same_durations))
+        console.log('median random')
+        console.log(median(random_durations))
+        console.log('median same')
+        console.log(median(same_durations))
+        console.log('mannwhitneyu')
+        console.log(await pyfunc('mannwhitneyu', same_durations, random_durations))
+        console.log('ttest_ind')
+        console.log(await pyfunc('ttest_ind', same_durations, random_durations))
+        console.log('wilcoxon')
+        console.log(await pyfunc('wilcoxon', same_durations, random_durations))
+        console.log('ttest_rel')
+        console.log(await pyfunc('ttest_rel', same_durations, random_durations))
+        console.log('====== per user medians =======')
+        random_durations = random_session_durations_medians
+        same_durations = same_session_durations_medians
+        console.log('num samples random')
+        console.log(random_durations.length)
+        console.log('num samples same')
+        console.log(same_durations.length)
+        console.log('mean random')
+        console.log(prelude.mean(random_durations))
+        console.log('mean same')
+        console.log(prelude.mean(same_durations))
+        console.log('median random')
+        console.log(median(random_durations))
+        console.log('median same')
+        console.log(median(same_durations))
+        console.log('mannwhitneyu')
+        console.log(await pyfunc('mannwhitneyu', same_durations, random_durations))
+        console.log('ttest_ind')
+        console.log(await pyfunc('ttest_ind', same_durations, random_durations))
+        console.log('wilcoxon')
+        console.log(await pyfunc('wilcoxon', same_durations, random_durations))
+        console.log('ttest_rel')
+        console.log(await pyfunc('ttest_rel', same_durations, random_durations))
+        console.log('===== per user intervention compliance rate =======')
+        random_durations = random_sessions_fraction_complied
+        same_durations = same_sessions_fraction_complied
+        console.log('num samples random')
+        console.log(random_durations.length)
+        console.log('num samples same')
+        console.log(same_durations.length)
+        console.log('mean random')
+        console.log(prelude.mean(random_durations))
+        console.log('mean same')
+        console.log(prelude.mean(same_durations))
+        console.log('median random')
+        console.log(median(random_durations))
+        console.log('median same')
+        console.log(median(same_durations))
+        console.log('mannwhitneyu')
+        console.log(await pyfunc('mannwhitneyu', same_durations, random_durations))
+        console.log('ttest_ind')
+        console.log(await pyfunc('ttest_ind', same_durations, random_durations))
+        console.log('wilcoxon')
+        console.log(await pyfunc('wilcoxon', same_durations, random_durations))
+        console.log('ttest_rel')
+        console.log(await pyfunc('ttest_rel', same_durations, random_durations))
+        console.log('===== daily timespent =======')
+        random_durations = random_day_durations_all
+        same_durations = same_day_durations_all
+        console.log('num samples random')
+        console.log(random_durations.length)
+        console.log('num samples same')
+        console.log(same_durations.length)
+        console.log('mean random')
+        console.log(prelude.mean(random_durations))
+        console.log('mean same')
+        console.log(prelude.mean(same_durations))
+        console.log('median random')
+        console.log(median(random_durations))
+        console.log('median same')
+        console.log(median(same_durations))
+        console.log('mannwhitneyu')
+        console.log(await pyfunc('mannwhitneyu', same_durations, random_durations))
+        console.log('ttest_ind')
+        console.log(await pyfunc('ttest_ind', same_durations, random_durations))
+        //console.log('wilcoxon')
+        //console.log(await pyfunc('wilcoxon', same_durations, random_durations))
+        //console.log('ttest_rel')
+        //console.log(await pyfunc('ttest_rel', same_durations, random_durations))
+        console.log('===== day means =======')
+        random_durations = random_day_durations_means
+        same_durations = same_day_durations_means
+        console.log('num samples random')
+        console.log(random_durations.length)
+        console.log('num samples same')
+        console.log(same_durations.length)
+        console.log('mean random')
+        console.log(prelude.mean(random_durations))
+        console.log('mean same')
+        console.log(prelude.mean(same_durations))
+        console.log('median random')
+        console.log(median(random_durations))
+        console.log('median same')
+        console.log(median(same_durations))
+        console.log('mannwhitneyu')
+        console.log(await pyfunc('mannwhitneyu', same_durations, random_durations))
+        console.log('ttest_ind')
+        console.log(await pyfunc('ttest_ind', same_durations, random_durations))
+        //console.log('wilcoxon')
+        //console.log(await pyfunc('wilcoxon', same_durations, random_durations))
+        //console.log('ttest_rel')
+        //console.log(await pyfunc('ttest_rel', same_durations, random_durations))
+        console.log('===== day medians =======')
+        random_durations = random_day_durations_medians
+        same_durations = same_day_durations_medians
+        console.log('num samples random')
+        console.log(random_durations.length)
+        console.log('num samples same')
+        console.log(same_durations.length)
+        console.log('mean random')
+        console.log(prelude.mean(random_durations))
+        console.log('mean same')
+        console.log(prelude.mean(same_durations))
+        console.log('median random')
+        console.log(median(random_durations))
+        console.log('median same')
+        console.log(median(same_durations))
+        console.log('mannwhitneyu')
+        console.log(await pyfunc('mannwhitneyu', same_durations, random_durations))
+        console.log('ttest_ind')
+        console.log(await pyfunc('ttest_ind', same_durations, random_durations))
+        //console.log('wilcoxon')
+        //console.log(await pyfunc('wilcoxon', same_durations, random_durations))
+        //console.log('ttest_rel')
+        //console.log(await pyfunc('ttest_rel', same_durations, random_durations))
+        console.log('===== per day user intervention compliance rate =======')
+        random_durations = random_day_fraction_complied
+        same_durations = same_day_fraction_complied
+        console.log('num samples random')
+        console.log(random_durations.length)
+        console.log('num samples same')
+        console.log(same_durations.length)
+        console.log('mean random')
+        console.log(prelude.mean(random_durations))
+        console.log('mean same')
+        console.log(prelude.mean(same_durations))
+        console.log('median random')
+        console.log(median(random_durations))
+        console.log('median same')
+        console.log(median(same_durations))
+        console.log('mannwhitneyu')
+        console.log(await pyfunc('mannwhitneyu', same_durations, random_durations))
+        console.log('ttest_ind')
+        console.log(await pyfunc('ttest_ind', same_durations, random_durations))
+        //console.log('wilcoxon')
+        //console.log(await pyfunc('wilcoxon', same_durations, random_durations))
+        //console.log('ttest_rel')
+        //console.log(await pyfunc('ttest_rel', same_durations, random_durations))
+
         console.log('finished')
         return
         console.log('num install ids in experiment ' + install_ids_in_experiment.length)
