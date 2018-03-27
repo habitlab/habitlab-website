@@ -67,35 +67,6 @@ app.post '/add_logging_state', (ctx) ->>
     db?close()
   ctx.body = JSON.stringify {response: 'done', success: true}
 
-is_valid_collection_name = (name) ->
-  if name.length > 90
-    return false
-  valid_collection_characters = 'abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789-_'
-  for x in name
-    if valid_collection_characters.indexOf(x) == -1
-      return false
-  return true
-
-app.post '/add_feature_state', (ctx) ->>
-  ctx.type = 'json'
-  try
-    query = {} <<< ctx.request.body
-    if query.callback?
-      delete query.callback
-    if (not query.feature?) or (not is_valid_collection_name(query.feature))
-      ctx.body = JSON.stringify {response: 'need feature name', success: false}
-      return
-    [feature_states, db] = await get_collection('features:' + query.feature)
-    query.timestamp = Date.now()
-    query.ip = ctx.request.ip_address_fixed
-    await n2p -> feature_states.insert(fix_object(query), it)
-  catch err
-    console.error 'error in add_feature_state'
-    console.error err
-  finally
-    db?close()
-  ctx.body = JSON.stringify {response: 'done', success: true}
-
 app.get '/add_install', (ctx) ->>
   ctx.type = 'json'
   try
@@ -268,16 +239,35 @@ app.get '/logwebvisit', (ctx) ->>
     db?close()
   ctx.body = JSON.stringify {response: 'done', success: true}
 
+# TODO: These routes might be consolidated with others in the future
 # specifically for adding shared intervention accross users
 app.post '/sharedintervention', (ctx) ->>
   ctx.type = 'json'
   # construct new sharable item
-  # console.log ctx.request.body
+  console.log ctx.request.body
   # the user generated unique id will be the key to retrieve code
-  {auther_email, auther_id, description, 
-  goals, name, code, is_sharing, preview, key} = ctx.request.body
-  new_share_item = {auther_email, auther_id, description, 
-  goals, name, code, preview, key}
+  {author_email, author_id, description, 
+  goals, name, code, is_sharing, preview, 
+  key, sitename, numusers, stars, comments,
+  displayname, domain, matches, sitename_printable} = ctx.request.body
+  # validate the input
+  if not author_id? or not author_email? or not key?
+    ctx.body = JSON.stringify {response: 'error', error: 'need parameter user info'}
+    return
+  if not goals? or not name? or not sitename?
+    ctx.body = JSON.stringify {response: 'error', error: 'need parameter goals'}
+    return
+  if not code?
+    ctx.body = JSON.stringify {response: 'error', error: 'need parameter code'}
+    return
+
+  # TODO: we are saving these blank fields
+  numusers ?= 0
+  stars ?= 0
+  comments ?= []
+  new_share_item = {author_email, author_id, description, 
+  goals, name, code, preview, key, sitename, numusers, stars, comments,
+  displayname, domain, matches, sitename_printable}
   # inject into database
   if is_sharing
     # sharable
@@ -305,7 +295,6 @@ app.post '/sharedintervention', (ctx) ->>
       db?close()
   ctx.body = JSON.stringify {response: 'success', success: true}
 
-<<<<<<< HEAD
 # TODO: These routes might be consolidated with others in the future
 app.get '/get_sharedinterventions_for_site', (ctx) ->>
   ctx.type = 'json'
@@ -319,19 +308,4 @@ app.get '/get_sharedinterventions_for_site', (ctx) ->>
   ctx.body = JSON.stringify(all_results)
   db?close()
 
-# TODO: These routes might be consolidated with others in the future
-app.get '/delete_shared_intervention', (ctx) ->>
-  ctx.type = 'json'
-  {key} = ctx.request.query
-  if need_query_property ctx, 'key'
-    ctx.body = JSON.stringify {response: 'failure', success: false}
-    return
-  [collection, db] = await get_collection_share_intervention()/*Find these functions*/
-  # all_results = await n2p -> collection.find({sitename: website}).toArray(it)
-  await n2p -> collection.remove({key: key}, it)
-  ctx.body = JSON.stringify {response: 'success', success: true}
-db?close()
-
-=======
->>>>>>> dfc2a29... implemented share button on server side
 require('libs/globals').add_globals(module.exports)
