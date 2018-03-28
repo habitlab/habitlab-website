@@ -280,6 +280,8 @@ async function get_selection_algorithm_to_install_ids_list() {
   return output
 }
 
+let get_selection_algorithm_to_install_ids_list_cached = memoize_to_disk_0arg(get_selection_algorithm_to_install_ids_list, 'get_selection_algorithm_to_install_ids_list')
+
 async function get_install_id_to_user_id() {
   user_to_all_install_ids = await get_user_to_all_install_ids_cached()
   let output = {}
@@ -766,6 +768,24 @@ async function get_session_info_list_for_user(userid) {
   }
   return output
 }
+
+async function get_session_info_with_experiment_info_for_install_id(install_id) {
+  let experiment_info_list = await get_experiment_info_same_vs_random_varlength_deterministic_latinsquare_for_install_id(install_id)
+  let session_info_list = await get_session_info_list_for_install_id_detailed(install_id)
+  let experiment_info_with_sessions = await group_together_session_info_list_with_experiment_info_list(session_info_list, experiment_info_list)
+  return experiment_info_with_sessions
+}
+
+async function get_install_id_to_session_info_with_experiment_info_for_install_ids_in_experiment() {
+  let output = {}
+  let install_ids_in_experiment = (await get_selection_algorithm_to_install_ids_list_cached())['experiment_alternate_between_same_vs_random_varlength_deterministic_latinsquare']
+  for (let install_id of install_ids_in_experiment) {
+    output[install_id] = await get_session_info_with_experiment_info_for_install_id(install_id)
+  }
+  return output
+}
+
+let get_install_id_to_session_info_with_experiment_info_for_install_ids_in_experiment_cached = memoize_to_disk_0arg(get_install_id_to_session_info_with_experiment_info_for_install_ids_in_experiment, 'get_install_id_to_session_info_with_experiment_info_for_install_ids_in_experiment')
 
 async function get_session_info_list_for_install_id_detailed(install_id) {
   let user_id = await get_userid_from_install_id(install_id)

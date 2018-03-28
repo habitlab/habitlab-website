@@ -13,10 +13,9 @@
 
     <br><br>
 
-    
+    <div id="histograms"></div>
   </template>
   <script>
-
     Polymer({
       is: 'intervention-sessions-experiment-latinsquares',
       properties: {
@@ -31,6 +30,80 @@
         }
       },
       */
+      plot_data: function(data, title, layout) {
+        if (title == null) {
+          title = 'untitled plot'
+        }
+        let h = $(this.$$('#histograms'))
+        h.append($('<div>').text(title))
+        let newdiv = document.createElement('div')
+        h.append(newdiv)
+        Plotly.newPlot(newdiv, data, layout)
+      },
+      plot_trace: function(trace, title) {
+        this.plot_data([trace], title)
+      },
+      plot_bar: function(trace, title) {
+        trace = JSON.parse(JSON.stringify(trace))
+        trace.type = 'bar'
+        this.plot_trace(trace, title)
+      },
+      plot_series: function(series, title) {
+        let trace = {
+          x: math.range(0, series.length).toArray(),
+          y: series,
+        }
+        this.plot_bar(trace)
+      },
+      plot_histogram: function(values, title) {
+        let trace = {
+          x: values,
+          type: 'histogram',
+          histnorm: 'probability density',
+        }
+        this.plot_trace(trace, title)
+      },
+      plot_histogram_pair: function(values1, values2, title) {
+        let trace1 = {
+          x: values1,
+          type: 'histogram',
+          nbinsy: '10',
+          histnorm: 'probability density',
+          opacity: 0.5,
+          marker: {
+            color: 'green'
+          }
+        }
+        let trace2 = {
+          x: values2,
+          type: 'histogram',
+          nbinsy: '10',
+          histnorm: 'probability density',
+          opacity: 0.5,
+          marker: {
+            color: 'red'
+          }
+        }
+        let layout = {
+          barmode: 'overlay'
+        }
+        this.plot_data([trace1, trace2], title, layout)
+      },
+      plot_data_googlecharts: function(data, title) {
+        if (title == null) {
+          title = 'untitled plot'
+        }
+        let h = $(this.$$('#histograms'))
+        h.append($('<div>').text(title))
+        let chart = document.createElement('google-chart')
+        chart.style.width = '100%'
+        chart.cols = [{"label": "Data", "type": "number"},{"label": "Visits", "type": "number"}]
+        chart.rows = data
+        h.append(chart)
+      },
+      plot_series_googlecharts: function(data, title) {
+        this.plot_data_googlecharts(data.map((x,i) => [i, x]), title)
+      },
       ready: async function() {
         //let users_in_experiment = (await get_selection_algorithm_to_users_list())['experiment_alternate_between_same_vs_random_varlength_deterministic_latinsquare']
         //console.log('num users in experiment ' + users_in_experiment.length)
@@ -41,9 +114,17 @@
           console.log(session_info_list)
         }
         */
-        
+       /*
+        this.plot_histogram([3,3,5,5,1,2,3,3], 'sample histogram')
+        this.plot_bar({
+          x: [0, 1, 2],
+          y: [5, 8, 4],
+        }, 'sample bar chart')
+        this.plot_series([3,7,5,9], 'sample series')
+        return
+        */
         //return
-        let install_ids_in_experiment = (await get_selection_algorithm_to_install_ids_list())['experiment_alternate_between_same_vs_random_varlength_deterministic_latinsquare']
+        let install_ids_in_experiment = (await get_selection_algorithm_to_install_ids_list_cached())['experiment_alternate_between_same_vs_random_varlength_deterministic_latinsquare']
         //let install_ids_in_experiment = ['433c345412712b1c71708ddb']
         let random_session_durations_all = []
         let same_session_durations_all = []
@@ -61,11 +142,10 @@
         let same_day_durations_medians = []
         let random_day_fraction_complied = []
         let same_day_fraction_complied = []
+        let install_id_to_session_info_with_experiment_info = await get_install_id_to_session_info_with_experiment_info_for_install_ids_in_experiment_cached()
         for (let install_id of install_ids_in_experiment) {
-          console.log(install_id)
-          let experiment_info_list = await get_experiment_info_same_vs_random_varlength_deterministic_latinsquare_for_install_id(install_id)
-          let session_info_list = await get_session_info_list_for_install_id_detailed(install_id)
-          let experiment_info_with_sessions = await group_together_session_info_list_with_experiment_info_list(session_info_list, experiment_info_list)
+          //let experiment_info_with_sessions = await get_session_info_with_experiment_info_for_install_id(install_id)
+          let experiment_info_with_sessions = install_id_to_session_info_with_experiment_info[install_id]
           let random_session_durations_for_user = []
           let same_session_durations_for_user = []
           let random_day_durations_for_user = []
@@ -133,6 +213,19 @@
           //console.log(prelude.mean(random_session_durations_for_user))
           //return
         }
+        this.plot_histogram(random_session_durations_all, 'duration of random sessions')
+        this.plot_histogram(same_session_durations_all, 'duration of same sessions')
+        this.plot_histogram_pair(random_session_durations_all, same_session_durations_all, 'duration of sessions')
+        this.plot_histogram(random_session_durations_all.map(Math.log), 'duration of random sessions (log values)')
+        this.plot_histogram(same_session_durations_all.map(Math.log), 'duration of same sessions (log values)')
+        this.plot_histogram_pair(random_session_durations_all.map(Math.log), same_session_durations_all.map(Math.log), 'duration of sessions (log values)')
+        this.plot_histogram(random_session_durations_medians, 'median duration of random sessions for each user')
+        this.plot_histogram(same_session_durations_medians, 'median duration of same sessions for each user')
+        this.plot_histogram_pair(random_session_durations_medians, same_session_durations_medians, 'median duration of random sessions for each user')
+        this.plot_histogram(random_session_durations_medians.map(Math.log), 'median duration of random sessions for each user (log values)')
+        this.plot_histogram(same_session_durations_medians.map(Math.log), 'median duration of same sessions for each user (log values)')
+        this.plot_histogram_pair(random_session_durations_medians.map(Math.log), same_session_durations_medians.map(Math.log), 'median duration of random sessions for each user (log values)')
+        this.plot_histogram_pair(random_session_durations_medians.map(Math.log), same_session_durations_medians.map(Math.log), 'time spent each day')
         console.log('====== all =======')
         let random_durations = random_session_durations_all
         let same_durations = same_session_durations_all
@@ -190,6 +283,18 @@
         console.log(median(random_durations))
         console.log('median same')
         console.log(median(same_durations))
+        console.log('mean of logs')
+        console.log(prelude.mean(random_durations.map(Math.log)))
+        console.log(prelude.mean(same_durations.map(Math.log)))
+        console.log('median of logs')
+        console.log(median(random_durations.map(Math.log)))
+        console.log(median(same_durations.map(Math.log)))
+        console.log('standrard deviations')
+        console.log(math.std(random_durations))
+        console.log(math.std(same_durations))
+        console.log('standard deviations of logs')
+        console.log(math.std(random_durations.map(Math.log)))
+        console.log(math.std(same_durations.map(Math.log)))
         console.log('mannwhitneyu')
         console.log(await pyfunc('mannwhitneyu', same_durations, random_durations))
         console.log('ttest_ind')
@@ -198,6 +303,8 @@
         console.log(await pyfunc('wilcoxon', same_durations, random_durations))
         console.log('ttest_rel')
         console.log(await pyfunc('ttest_rel', same_durations, random_durations))
+        console.log('ttest_rel on log values')
+        console.log(await pyfunc('ttest_rel', same_durations.map(Math.log), random_durations.map(Math.log)))
         console.log('===== per user intervention compliance rate =======')
         random_durations = random_sessions_fraction_complied
         same_durations = same_sessions_fraction_complied
