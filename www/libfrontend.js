@@ -16,6 +16,12 @@ function clear_cache_for_func(name) {
 }
 
 function memoize_to_disk(f, func_name) {
+  if (func_name == null) {
+    func_name = f.name
+  }
+  if (func_name == null || func_name == 'anonymous') {
+    throw new Exception('need to supply func name')
+  }
   if (f.length == 1) {
     return memoize_to_disk_1arg(f, func_name)
   }
@@ -26,6 +32,13 @@ function memoize_to_disk(f, func_name) {
 }
 
 function memoize_to_disk_nargs(f, func_name, num_args) {
+  if (typeof(func_name) == 'number') {
+    num_args = func_name
+    func_name = f.name
+  }
+  if (func_name == null || func_name == 'anonymous') {
+    throw new Exception('need to supply func name')
+  }
   if (num_args == 0) {
     return memoize_to_disk_0arg(f, func_name)
   } else if (num_args == 1) {
@@ -38,6 +51,9 @@ function memoize_to_disk_nargs(f, func_name, num_args) {
 function memoize_to_disk_0arg(f, func_name) {
   if (func_name == null) {
     func_name = f.name
+  }
+  if (func_name == null || func_name == 'anonymous') {
+    throw new Exception('need to supply func name')
   }
   let store = get_store('memoizedisk|' + func_name)
   let memoize_to_disk_0arg_cache = null
@@ -62,6 +78,9 @@ function memoize_to_disk_1arg(f, func_name) {
   if (func_name == null) {
     func_name = f.name
   }
+  if (func_name == null || func_name == 'anonymous') {
+    throw new Exception('need to supply func name')
+  }
   let memoize_to_disk_1arg_cache = {}
   let store = get_store('memoizedisk|' + func_name)
   return async function(arg) {
@@ -83,6 +102,9 @@ function memoize_to_disk_1arg(f, func_name) {
 function memoize_to_disk_2arg(f, func_name) {
   if (func_name == null) {
     func_name = f.name
+  }
+  if (func_name == null || func_name == 'anonymous') {
+    throw new Exception('need to supply func name')
   }
   let memoize_to_disk_2arg_cache = {}
   let store = get_store('memoizedisk|' + func_name)
