@@ -1,18 +1,38 @@
 
 let get_store_cached = {}
 
+async function record_that_store_exists(name) {
+  let store = localforage.createInstance({name: 'store_list'})
+  await store.setItem(name, true)
+}
+
 function get_store(name) {
   if (get_store_cached[name]) {
     return get_store_cached[name]
   }
   let store = localforage.createInstance({name: name})
   get_store_cached[name] = store
+  record_that_store_exists(name)
   return store
 }
 
-function clear_cache_for_func(name) {
+async function clear_caches() {
+  let store = localforage.createInstance({name: 'store_list'})
+  let keys = await store.keys()
+  for (let key of keys) {
+    let substore = localforage.createInstance({name: key})
+    await substore.clear()
+  }
+  await store.clear()
+  for (let key of Object.keys(get_store_cached)) {
+    delete get_store_cached[key]
+  }
+  console.log('clear_caches done')
+}
+
+async function clear_cache_for_func(name) {
   let store = get_store('memoizedisk|' + name)
-  store.clear()
+  await store.clear()
 }
 
 function memoize_to_disk(f, func_name) {

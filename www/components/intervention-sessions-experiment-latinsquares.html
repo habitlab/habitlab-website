@@ -227,9 +227,9 @@
                   //}
                   let time_spent = session_info.time_spent
                   let timestamp = session_info.timestamp
-                  if (timestamp > moment('Mon Mar 26 2018 02:30:02').unix() * 1000) {
-                    continue
-                  }
+                  //if (timestamp > moment('Mon Mar 26 2018 02:30:02').unix() * 1000) {
+                  //  continue
+                  //}
                   total_time_on_day += time_spent
                   if (condition == 'random') {
                     random_session_durations_for_user.push(time_spent)
