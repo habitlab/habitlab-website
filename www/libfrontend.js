@@ -124,6 +124,12 @@ function memoize_to_disk_2arg(f, func_name) {
   }
 }
 
+async function sleep(time) {
+  return new Promise(function(it) {
+    return setTimeout(it, time)
+  })
+}
+
 async function pyfunc(funcname, ...args) {
   //return await fetch('http://localhost:9999/' + funcname + '?' + $.param({args: JSON.stringify(args)}))
   //console.log(args)
