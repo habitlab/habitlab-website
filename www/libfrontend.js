@@ -1,21 +1,47 @@
 
 let get_store_cached = {}
 
+async function record_that_store_exists(name) {
+  let store = localforage.createInstance({name: 'store_list'})
+  await store.setItem(name, true)
+}
+
 function get_store(name) {
   if (get_store_cached[name]) {
     return get_store_cached[name]
   }
   let store = localforage.createInstance({name: name})
   get_store_cached[name] = store
+  record_that_store_exists(name)
   return store
 }
 
-function clear_cache_for_func(name) {
+async function clear_caches() {
+  let store = localforage.createInstance({name: 'store_list'})
+  let keys = await store.keys()
+  for (let key of keys) {
+    let substore = localforage.createInstance({name: key})
+    await substore.clear()
+  }
+  await store.clear()
+  for (let key of Object.keys(get_store_cached)) {
+    delete get_store_cached[key]
+  }
+  console.log('clear_caches done')
+}
+
+async function clear_cache_for_func(name) {
   let store = get_store('memoizedisk|' + name)
-  store.clear()
+  await store.clear()
 }
 
 function memoize_to_disk(f, func_name) {
+  if (func_name == null) {
+    func_name = f.name
+  }
+  if (func_name == null || func_name == 'anonymous') {
+    throw new Exception('need to supply func name')
+  }
   if (f.length == 1) {
     return memoize_to_disk_1arg(f, func_name)
   }
@@ -26,6 +52,13 @@ function memoize_to_disk(f, func_name) {
 }
 
 function memoize_to_disk_nargs(f, func_name, num_args) {
+  if (typeof(func_name) == 'number') {
+    num_args = func_name
+    func_name = f.name
+  }
+  if (func_name == null || func_name == 'anonymous') {
+    throw new Exception('need to supply func name')
+  }
   if (num_args == 0) {
     return memoize_to_disk_0arg(f, func_name)
   } else if (num_args == 1) {
@@ -38,6 +71,9 @@ function memoize_to_disk_nargs(f, func_name, num_args) {
 function memoize_to_disk_0arg(f, func_name) {
   if (func_name == null) {
     func_name = f.name
+  }
+  if (func_name == null || func_name == 'anonymous') {
+    throw new Exception('need to supply func name')
   }
   let store = get_store('memoizedisk|' + func_name)
   let memoize_to_disk_0arg_cache = null
@@ -62,6 +98,9 @@ function memoize_to_disk_1arg(f, func_name) {
   if (func_name == null) {
     func_name = f.name
   }
+  if (func_name == null || func_name == 'anonymous') {
+    throw new Exception('need to supply func name')
+  }
   let memoize_to_disk_1arg_cache = {}
   let store = get_store('memoizedisk|' + func_name)
   return async function(arg) {
@@ -84,6 +123,9 @@ function memoize_to_disk_2arg(f, func_name) {
   if (func_name == null) {
     func_name = f.name
   }
+  if (func_name == null || func_name == 'anonymous') {
+    throw new Exception('need to supply func name')
+  }
   let memoize_to_disk_2arg_cache = {}
   let store = get_store('memoizedisk|' + func_name)
   return async function(arg, arg2) {
@@ -100,6 +142,12 @@ function memoize_to_disk_2arg(f, func_name) {
     }
     return cached_value
   }
+}
+
+async function sleep(time) {
+  return new Promise(function(it) {
+    return setTimeout(it, time)
+  })
 }
 
 async function pyfunc(funcname, ...args) {

@@ -4,18 +4,144 @@
 <dom-module id="intervention-sessions-experiment-latinsquares">
   <template>
     <style>
-      #retention_curve_general {
-        width: 100%;
-        height: 600px;
-      }
     </style>
     <div>Check console log</div>
 
     <br><br>
 
-    <div id="histograms"></div>
+    <div id="plots"></div>
   </template>
   <script>
+
+    async function get_plots_div() {
+      let num_checks_for_basetag = 0
+      while (window.basetag == null) {
+        await sleep(100)
+        num_checks_for_basetag += 1
+        if (num_checks_for_basetag > 100) {
+          console.log('get_plots_div taking a long time to get window.basetag, check that this is a polymer component')
+        }
+      }
+      let plots_div = window.basetag.$$('#plots')
+      if (plots_div == null) {
+        console.log('#plots id missing in element')
+      }
+      return plots_div
+    }
+
+    async function plot_data(data, title, layout) {
+      if (title == null) {
+        title = 'untitled plot'
+      }
+      let h = $(await get_plots_div())
+      h.append($('<div>').text(title))
+      let newdiv = document.createElement('div')
+      h.append(newdiv)
+      Plotly.newPlot(newdiv, data, layout)
+    }
+
+    function plot_trace (trace, title) {
+      plot_data([trace], title)
+    }
+
+    function plot_bar(trace, title) {
+      trace = JSON.parse(JSON.stringify(trace))
+      trace.type = 'bar'
+      plot_trace(trace, title)
+    }
+
+    function plot_series(series, title) {
+      let trace = {
+        x: math.range(0, series.length).toArray(),
+        y: series,
+      }
+      plot_bar(trace)
+    }
+
+    function plot_histogram(values, title) {
+      let trace = {
+        x: values,
+        type: 'histogram',
+        histnorm: 'probability density',
+      }
+      plot_trace(trace, title)
+    }
+
+    function plot_histogram_pair(values1, values2, title) {
+      let trace1 = {
+        x: values1,
+        type: 'histogram',
+        nbinsy: '10',
+        histnorm: 'probability density',
+        opacity: 0.5,
+        marker: {
+          color: 'green'
+        }
+      }
+      let trace2 = {
+        x: values2,
+        type: 'histogram',
+        nbinsy: '10',
+        histnorm: 'probability density',
+        opacity: 0.5,
+        marker: {
+          color: 'red'
+        }
+      }
+      let layout = {
+        barmode: 'overlay'
+      }
+      plot_data([trace1, trace2], title, layout)
+    }
+
+    async function printstats_ind(random_durations, same_durations, msg) {
+      if (msg != null) {
+        console.log('======== ' + msg + ' =========')
+      }
+      console.log('num samples random')
+      console.log(random_durations.length)
+      console.log('num samples same')
+      console.log(same_durations.length)
+      console.log('mean random')
+      console.log(prelude.mean(random_durations))
+      console.log('mean same')
+      console.log(prelude.mean(same_durations))
+      console.log('median random')
+      console.log(median(random_durations))
+      console.log('median same')
+      console.log(median(same_durations))
+      console.log('stddev random')
+      console.log(math.std(random_durations))
+      console.log('stddev same')
+      console.log(math.std(same_durations))
+      console.log('mannwhitneyu')
+      console.log(await pyfunc('mannwhitneyu', same_durations, random_durations))
+      console.log('ttest_ind')
+      console.log(await pyfunc('ttest_ind', same_durations, random_durations))
+    }
+
+    async function printstats_ind_with_log(random_durations, same_durations, msg) {
+      await printstats_ind(random_durations, same_durations, msg)
+      await printstats_ind(random_durations.map(Math.log), same_durations.map(Math.log), msg + ' (log)')
+    }
+
+    async function printstats_rel(random_durations, same_durations, msg) {
+      await printstats_ind(random_durations, same_durations, msg)
+      if (random_durations.length != same_durations.length) {
+        console.log('need to pass collections of equal length to printstats_rel')
+        return
+      }
+      console.log('wilcoxon')
+      console.log(await pyfunc('wilcoxon', same_durations, random_durations))
+      console.log('ttest_rel')
+      console.log(await pyfunc('ttest_rel', same_durations, random_durations))
+    }
+
+    async function printstats_rel_with_log(random_durations, same_durations, msg) {
+      await printstats_rel(random_durations, same_durations, msg)
+      await printstats_rel(random_durations.map(Math.log), same_durations.map(Math.log), msg + ' (log)')
+    }
+
     Polymer({
       is: 'intervention-sessions-experiment-latinsquares',
       properties: {
@@ -30,65 +156,6 @@
         }
       },
       */
-      plot_data: function(data, title, layout) {
-        if (title == null) {
-          title = 'untitled plot'
-        }
-        let h = $(this.$$('#histograms'))
-        h.append($('<div>').text(title))
-        let newdiv = document.createElement('div')
-        h.append(newdiv)
-        Plotly.newPlot(newdiv, data, layout)
-      },
-      plot_trace: function(trace, title) {
-        this.plot_data([trace], title)
-      },
-      plot_bar: function(trace, title) {
-        trace = JSON.parse(JSON.stringify(trace))
-        trace.type = 'bar'
-        this.plot_trace(trace, title)
-      },
-      plot_series: function(series, title) {
-        let trace = {
-          x: math.range(0, series.length).toArray(),
-          y: series,
-        }
-        this.plot_bar(trace)
-      },
-      plot_histogram: function(values, title) {
-        let trace = {
-          x: values,
-          type: 'histogram',
-          histnorm: 'probability density',
-        }
-        this.plot_trace(trace, title)
-      },
-      plot_histogram_pair: function(values1, values2, title) {
-        let trace1 = {
-          x: values1,
-          type: 'histogram',
-          nbinsy: '10',
-          histnorm: 'probability density',
-          opacity: 0.5,
-          marker: {
-            color: 'green'
-          }
-        }
-        let trace2 = {
-          x: values2,
-          type: 'histogram',
-          nbinsy: '10',
-          histnorm: 'probability density',
-          opacity: 0.5,
-          marker: {
-            color: 'red'
-          }
-        }
-        let layout = {
-          barmode: 'overlay'
-        }
-        this.plot_data([trace1, trace2], title, layout)
-      },
       plot_data_googlecharts: function(data, title) {
         if (title == null) {
           title = 'untitled plot'
@@ -123,7 +190,6 @@
         this.plot_series([3,7,5,9], 'sample series')
         return
         */
-        //return
         let install_ids_in_experiment = (await get_selection_algorithm_to_install_ids_list_cached())['experiment_alternate_between_same_vs_random_varlength_deterministic_latinsquare']
         //let install_ids_in_experiment = ['433c345412712b1c71708ddb']
         let random_session_durations_all = []
@@ -161,9 +227,9 @@
                   //}
                   let time_spent = session_info.time_spent
                   let timestamp = session_info.timestamp
-                  if (timestamp > moment('Mon Mar 26 2018 02:30:02').unix() * 1000) {
-                    continue
-                  }
+                  //if (timestamp > moment('Mon Mar 26 2018 02:30:02').unix() * 1000) {
+                  //  continue
+                  //}
                   total_time_on_day += time_spent
                   if (condition == 'random') {
                     random_session_durations_for_user.push(time_spent)
@@ -213,300 +279,30 @@
           //console.log(prelude.mean(random_session_durations_for_user))
           //return
         }
-        this.plot_histogram(random_session_durations_all, 'duration of random sessions')
-        this.plot_histogram(same_session_durations_all, 'duration of same sessions')
-        this.plot_histogram_pair(random_session_durations_all, same_session_durations_all, 'duration of sessions')
-        this.plot_histogram(random_session_durations_all.map(Math.log), 'duration of random sessions (log values)')
-        this.plot_histogram(same_session_durations_all.map(Math.log), 'duration of same sessions (log values)')
-        this.plot_histogram_pair(random_session_durations_all.map(Math.log), same_session_durations_all.map(Math.log), 'duration of sessions (log values)')
-        this.plot_histogram(random_session_durations_medians, 'median duration of random sessions for each user')
-        this.plot_histogram(same_session_durations_medians, 'median duration of same sessions for each user')
-        this.plot_histogram_pair(random_session_durations_medians, same_session_durations_medians, 'median duration of random sessions for each user')
-        this.plot_histogram(random_session_durations_medians.map(Math.log), 'median duration of random sessions for each user (log values)')
-        this.plot_histogram(same_session_durations_medians.map(Math.log), 'median duration of same sessions for each user (log values)')
-        this.plot_histogram_pair(random_session_durations_medians.map(Math.log), same_session_durations_medians.map(Math.log), 'median duration of random sessions for each user (log values)')
-        this.plot_histogram_pair(random_session_durations_medians.map(Math.log), same_session_durations_medians.map(Math.log), 'time spent each day')
-        console.log('====== all =======')
-        let random_durations = random_session_durations_all
-        let same_durations = same_session_durations_all
-        console.log('num samples random')
-        console.log(random_durations.length)
-        console.log('num samples same')
-        console.log(same_durations.length)
-        console.log('mean random')
-        console.log(prelude.mean(random_durations))
-        console.log('mean same')
-        console.log(prelude.mean(same_durations))
-        console.log('median random')
-        console.log(median(random_durations))
-        console.log('median same')
-        console.log(median(same_durations))
-        console.log('mannwhitneyu')
-        console.log(await pyfunc('mannwhitneyu', same_durations, random_durations))
-        console.log('ttest_ind')
-        console.log(await pyfunc('ttest_ind', same_durations, random_durations))
-        console.log('====== per user means ======')
-        random_durations = random_session_durations_means
-        same_durations = same_session_durations_means
-        console.log('num samples random')
-        console.log(random_durations.length)
-        console.log('num samples same')
-        console.log(same_durations.length)
-        console.log('mean random')
-        console.log(prelude.mean(random_durations))
-        console.log('mean same')
-        console.log(prelude.mean(same_durations))
-        console.log('median random')
-        console.log(median(random_durations))
-        console.log('median same')
-        console.log(median(same_durations))
-        console.log('mannwhitneyu')
-        console.log(await pyfunc('mannwhitneyu', same_durations, random_durations))
-        console.log('ttest_ind')
-        console.log(await pyfunc('ttest_ind', same_durations, random_durations))
-        console.log('wilcoxon')
-        console.log(await pyfunc('wilcoxon', same_durations, random_durations))
-        console.log('ttest_rel')
-        console.log(await pyfunc('ttest_rel', same_durations, random_durations))
-        console.log('====== per user medians =======')
-        random_durations = random_session_durations_medians
-        same_durations = same_session_durations_medians
-        console.log('num samples random')
-        console.log(random_durations.length)
-        console.log('num samples same')
-        console.log(same_durations.length)
-        console.log('mean random')
-        console.log(prelude.mean(random_durations))
-        console.log('mean same')
-        console.log(prelude.mean(same_durations))
-        console.log('median random')
-        console.log(median(random_durations))
-        console.log('median same')
-        console.log(median(same_durations))
-        console.log('mean of logs')
-        console.log(prelude.mean(random_durations.map(Math.log)))
-        console.log(prelude.mean(same_durations.map(Math.log)))
-        console.log('median of logs')
-        console.log(median(random_durations.map(Math.log)))
-        console.log(median(same_durations.map(Math.log)))
-        console.log('standrard deviations')
-        console.log(math.std(random_durations))
-        console.log(math.std(same_durations))
-        console.log('standard deviations of logs')
-        console.log(math.std(random_durations.map(Math.log)))
-        console.log(math.std(same_durations.map(Math.log)))
-        console.log('mannwhitneyu')
-        console.log(await pyfunc('mannwhitneyu', same_durations, random_durations))
-        console.log('ttest_ind')
-        console.log(await pyfunc('ttest_ind', same_durations, random_durations))
-        console.log('wilcoxon')
-        console.log(await pyfunc('wilcoxon', same_durations, random_durations))
-        console.log('ttest_rel')
-        console.log(await pyfunc('ttest_rel', same_durations, random_durations))
-        console.log('ttest_rel on log values')
-        console.log(await pyfunc('ttest_rel', same_durations.map(Math.log), random_durations.map(Math.log)))
-        console.log('===== per user intervention compliance rate =======')
-        random_durations = random_sessions_fraction_complied
-        same_durations = same_sessions_fraction_complied
-        console.log('num samples random')
-        console.log(random_durations.length)
-        console.log('num samples same')
-        console.log(same_durations.length)
-        console.log('mean random')
-        console.log(prelude.mean(random_durations))
-        console.log('mean same')
-        console.log(prelude.mean(same_durations))
-        console.log('median random')
-        console.log(median(random_durations))
-        console.log('median same')
-        console.log(median(same_durations))
-        console.log('mannwhitneyu')
-        console.log(await pyfunc('mannwhitneyu', same_durations, random_durations))
-        console.log('ttest_ind')
-        console.log(await pyfunc('ttest_ind', same_durations, random_durations))
-        console.log('wilcoxon')
-        console.log(await pyfunc('wilcoxon', same_durations, random_durations))
-        console.log('ttest_rel')
-        console.log(await pyfunc('ttest_rel', same_durations, random_durations))
-        console.log('===== daily timespent =======')
-        random_durations = random_day_durations_all
-        same_durations = same_day_durations_all
-        console.log('num samples random')
-        console.log(random_durations.length)
-        console.log('num samples same')
-        console.log(same_durations.length)
-        console.log('mean random')
-        console.log(prelude.mean(random_durations))
-        console.log('mean same')
-        console.log(prelude.mean(same_durations))
-        console.log('median random')
-        console.log(median(random_durations))
-        console.log('median same')
-        console.log(median(same_durations))
-        console.log('mannwhitneyu')
-        console.log(await pyfunc('mannwhitneyu', same_durations, random_durations))
-        console.log('ttest_ind')
-        console.log(await pyfunc('ttest_ind', same_durations, random_durations))
-        //console.log('wilcoxon')
-        //console.log(await pyfunc('wilcoxon', same_durations, random_durations))
-        //console.log('ttest_rel')
-        //console.log(await pyfunc('ttest_rel', same_durations, random_durations))
-        console.log('===== day means =======')
-        random_durations = random_day_durations_means
-        same_durations = same_day_durations_means
-        console.log('num samples random')
-        console.log(random_durations.length)
-        console.log('num samples same')
-        console.log(same_durations.length)
-        console.log('mean random')
-        console.log(prelude.mean(random_durations))
-        console.log('mean same')
-        console.log(prelude.mean(same_durations))
-        console.log('median random')
-        console.log(median(random_durations))
-        console.log('median same')
-        console.log(median(same_durations))
-        console.log('mannwhitneyu')
-        console.log(await pyfunc('mannwhitneyu', same_durations, random_durations))
-        console.log('ttest_ind')
-        console.log(await pyfunc('ttest_ind', same_durations, random_durations))
-        //console.log('wilcoxon')
-        //console.log(await pyfunc('wilcoxon', same_durations, random_durations))
-        //console.log('ttest_rel')
-        //console.log(await pyfunc('ttest_rel', same_durations, random_durations))
-        console.log('===== day medians =======')
-        random_durations = random_day_durations_medians
-        same_durations = same_day_durations_medians
-        console.log('num samples random')
-        console.log(random_durations.length)
-        console.log('num samples same')
-        console.log(same_durations.length)
-        console.log('mean random')
-        console.log(prelude.mean(random_durations))
-        console.log('mean same')
-        console.log(prelude.mean(same_durations))
-        console.log('median random')
-        console.log(median(random_durations))
-        console.log('median same')
-        console.log(median(same_durations))
-        console.log('mannwhitneyu')
-        console.log(await pyfunc('mannwhitneyu', same_durations, random_durations))
-        console.log('ttest_ind')
-        console.log(await pyfunc('ttest_ind', same_durations, random_durations))
-        //console.log('wilcoxon')
-        //console.log(await pyfunc('wilcoxon', same_durations, random_durations))
-        //console.log('ttest_rel')
-        //console.log(await pyfunc('ttest_rel', same_durations, random_durations))
-        console.log('===== per day user intervention compliance rate =======')
-        random_durations = random_day_fraction_complied
-        same_durations = same_day_fraction_complied
-        console.log('num samples random')
-        console.log(random_durations.length)
-        console.log('num samples same')
-        console.log(same_durations.length)
-        console.log('mean random')
-        console.log(prelude.mean(random_durations))
-        console.log('mean same')
-        console.log(prelude.mean(same_durations))
-        console.log('median random')
-        console.log(median(random_durations))
-        console.log('median same')
-        console.log(median(same_durations))
-        console.log('mannwhitneyu')
-        console.log(await pyfunc('mannwhitneyu', same_durations, random_durations))
-        console.log('ttest_ind')
-        console.log(await pyfunc('ttest_ind', same_durations, random_durations))
-        //console.log('wilcoxon')
-        //console.log(await pyfunc('wilcoxon', same_durations, random_durations))
-        //console.log('ttest_rel')
-        //console.log(await pyfunc('ttest_rel', same_durations, random_durations))
-
+        plot_histogram(random_session_durations_all, 'duration of random sessions')
+        plot_histogram(same_session_durations_all, 'duration of same sessions')
+        plot_histogram_pair(random_session_durations_all, same_session_durations_all, 'duration of sessions')
+        plot_histogram(random_session_durations_all.map(Math.log), 'duration of random sessions (log values)')
+        plot_histogram(same_session_durations_all.map(Math.log), 'duration of same sessions (log values)')
+        plot_histogram_pair(random_session_durations_all.map(Math.log), same_session_durations_all.map(Math.log), 'duration of sessions (log values)')
+        plot_histogram(random_session_durations_medians, 'median duration of random sessions for each user')
+        plot_histogram(same_session_durations_medians, 'median duration of same sessions for each user')
+        plot_histogram_pair(random_session_durations_medians, same_session_durations_medians, 'median duration of random sessions for each user')
+        plot_histogram(random_session_durations_medians.map(Math.log), 'median duration of random sessions for each user (log values)')
+        plot_histogram(same_session_durations_medians.map(Math.log), 'median duration of same sessions for each user (log values)')
+        plot_histogram_pair(random_session_durations_medians.map(Math.log), same_session_durations_medians.map(Math.log), 'median duration of random sessions for each user (log values)')
+        plot_histogram_pair(random_session_durations_medians.map(Math.log), same_session_durations_medians.map(Math.log), 'time spent each day')
+        
+        await printstats_ind_with_log(random_session_durations_all, same_session_durations_all, 'all session durations')
+        await printstats_rel_with_log(random_session_durations_means, same_session_durations_means, 'session duration means per user')
+        await printstats_rel_with_log(random_session_durations_medians, same_session_durations_medians, 'session duration medians per user')
+        await printstats_rel(random_sessions_fraction_complied, same_sessions_fraction_complied, 'per session compliance 60 second leave rate per user')
+        await printstats_ind_with_log(random_day_durations_all, same_day_durations_all, 'daily time spent')
+        await printstats_rel_with_log(random_day_durations_means, same_day_durations_means, 'daily time means per user')
+        await printstats_rel_with_log(random_day_durations_medians, same_day_durations_medians, 'daily time medians per user')
+        await printstats_rel(random_day_fraction_complied, same_day_fraction_complied, 'daily intervention compliance 60 second leave rate per user')
+        
         console.log('finished')
-        return
-        console.log('num install ids in experiment ' + install_ids_in_experiment.length)
-        for (let install_id of install_ids_in_experiment) {
-          let session_info_list = await get_session_info_list_for_install_id_detailed(install_id)
-          console.log(session_info_list)
-        }
-        console.log('finished')
-        return
-        let same_samples = []
-        let random_samples = []
-        let same_day_num_interventions_seen = []
-        let random_day_num_interventions_seen = []
-        let only_one_sample_per_user = false
-        for (let userid of users_in_experiment) {
-          //console.log(userid)
-          let experiment_vars_list = await get_collection_for_user_cached(userid, 'synced:experiment_vars')
-          let domain_to_epoch_to_seconds = await get_seconds_on_domain_per_day_epoch_for_user_cached(userid)
-          if (domain_to_epoch_to_seconds['www.facebook.com'] == null) {
-            continue
-          }
-          let time_on_facebook = domain_to_epoch_to_seconds['www.facebook.com']
-          let epoch_day_to_num_intervention_impressions = await get_num_intervention_impressions_on_domain_per_epoch_day(userid, 'www.facebook.com')
-          for (let experiment_info_entry of experiment_vars_list) {
-            if (experiment_info_entry.key != 'experiment_alternate_between_same_vs_random_varlength_deterministic_latinsquare') {
-              continue
-            }
-            let experiment_info = JSON.parse(experiment_info_entry.val)
-            let duration = experiment_info.duration_order[experiment_info.duration_idx]
-            if (duration != 1) {
-              // only consider duration 1 for now
-              continue
-            }
-            let same_epoch
-            let random_epoch
-            if (experiment_info.conditions[0] == 'same') {
-              same_epoch = convert_date_to_epoch(experiment_info.day)
-              random_epoch = convert_date_to_epoch(experiment_info.day) + 1
-            } else {
-              random_epoch = convert_date_to_epoch(experiment_info.day)
-              same_epoch = convert_date_to_epoch(experiment_info.day) + 1
-            }
-            let same_seconds = time_on_facebook[same_epoch]
-            let random_seconds = time_on_facebook[random_epoch]
-            if (same_seconds == null || random_seconds == null) {
-              continue
-            }
-            let num_intervention_impressions_same_day = epoch_day_to_num_intervention_impressions[same_epoch]
-            let num_intervention_impressions_random_day = epoch_day_to_num_intervention_impressions[random_epoch]
-            if (num_intervention_impressions_same_day == null || num_intervention_impressions_random_day == null) {
-              continue
-            }
-            same_samples.push(same_seconds)
-            random_samples.push(random_seconds)
-            same_day_num_interventions_seen.push(num_intervention_impressions_same_day)
-            random_day_num_interventions_seen.push(num_intervention_impressions_random_day)
-            if (only_one_sample_per_user) {
-              break
-            }
-          }
-        }
-        console.log('same day num interventions seen mean')
-        console.log(prelude.mean(same_day_num_interventions_seen))
-        console.log('random day num interventions seen mean')
-        console.log(prelude.mean(random_day_num_interventions_seen))
-        console.log('same day num interventions seen median')
-        console.log(prelude.sort(same_day_num_interventions_seen)[Math.floor(same_day_num_interventions_seen.length / 2)])
-        console.log('random day num interventions seen median')
-        console.log(prelude.sort(random_day_num_interventions_seen)[Math.floor(random_day_num_interventions_seen.length / 2)])
-        console.log('same samples mean')
-        console.log(prelude.mean(same_samples))
-        console.log('random samples mean')
-        console.log(prelude.mean(random_samples))
-        console.log('same samples median')
-        console.log(prelude.sort(same_samples)[Math.floor(same_samples.length / 2)])
-        console.log('random samples median')
-        console.log(prelude.sort(random_samples)[Math.floor(same_samples.length / 2)])
-        console.log(JSON.stringify(same_samples))
-        console.log(JSON.stringify(random_samples))
-        //this.selection_algorithm_and_users_list = selection_algorithm_and_users_list
-        console.log('ttest_rel results')
-        console.log(await pyfunc('ttest_rel', same_samples, random_samples))
-        console.log('mannwhitneyu results')
-        console.log(await pyfunc('mannwhitneyu', same_samples, random_samples))
-        console.log('wilcoxon results')
-        console.log(await pyfunc('wilcoxon', same_samples, random_samples))
       },
     })
   </script>
