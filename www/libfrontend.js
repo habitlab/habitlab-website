@@ -787,6 +787,7 @@ async function get_install_id_to_session_info_with_experiment_info_for_install_i
 
 let get_install_id_to_session_info_with_experiment_info_for_install_ids_in_experiment_cached = memoize_to_disk_0arg(get_install_id_to_session_info_with_experiment_info_for_install_ids_in_experiment, 'get_install_id_to_session_info_with_experiment_info_for_install_ids_in_experiment')
 
+/*
 async function get_session_info_list_for_install_id_detailed(install_id) {
   let user_id = await get_userid_from_install_id(install_id)
   if (user_id == null) {
@@ -794,6 +795,70 @@ async function get_session_info_list_for_install_id_detailed(install_id) {
   }
   let session_info_list = await get_session_info_list_for_user_detailed(user_id)
   return session_info_list.filter((x) => x.install_id == install_id)
+}
+*/
+
+async function get_session_info_list_for_install_id_detailed(install_id) {
+  let user_id = await get_userid_from_install_id(install_id)
+  let output = []
+  let interventions_active_for_domain_and_session = await get_collection_for_user_cached(userid, 'synced:interventions_active_for_domain_and_session')
+  let domain_to_session_id_to_time_spent = await get_domain_to_session_id_to_time_spent(userid)
+  for (let item of interventions_active_for_domain_and_session) {
+    let session_id = item.key2
+    let domain = item.key
+    let userid_inlog = item.userid
+    let interventions_active = JSON.parse(item.val)
+    let intervention = interventions_active[0]
+    let timestamp = item.timestamp
+    let timestamp_local = item.timestamp_local
+    let install_id = item.install_id
+    if (userid_inlog != userid) {
+      console.log('mismatch between userid and userid_inlog for userid ' + userid)
+      continue
+    }
+    if (domain_to_session_id_to_time_spent[domain] == null || domain_to_session_id_to_time_spent[domain][session_id] == null) {
+      //console.log('warning: missing session duration for session id ' + session_id + ' on domain ' + domain)
+      continue
+    }
+    if (intervention == null) {
+      console.log('warning: missing intervention name')
+      continue
+    }
+    let time_spent = domain_to_session_id_to_time_spent[domain][session_id]
+    if (time_spent == null) {
+      console.log('warning: missing session duration')
+      continue
+    }
+    // TODO when calling from the install id version we might get the wrong session?
+    let is_unofficial = await get_is_session_nonofficial_release_for_install_id(install_id, intervention, session_id)
+    if (is_unofficial) {
+      continue
+    }
+    let localtime = await get_session_start_localtime_for_install_id(install_id, intervention, session_id)
+    if (localtime == null) {
+      continue
+    }
+    let localdate = moment(localtime).format('YYYYMMDD')
+    let localepoch = convert_date_to_epoch(localdate)
+    let is_preview = await get_is_session_preview_for_install_id(install_id, intervention, session_id)
+    output.push({
+      time_spent,
+      session_id,
+      domain,
+      interventions_active,
+      intervention,
+      timestamp,
+      timestamp_local,
+      localtime,
+      localdate,
+      localepoch,
+      install_id,
+      userid,
+      is_unofficial,
+      is_preview,
+    })
+  }
+  return output
 }
 
 async function get_session_info_list_for_user_detailed(userid) {
@@ -973,6 +1038,42 @@ async function get_intervention_first_entry_in_session(userid, intervention_name
   return cache_get_intervention_first_entry_in_session[userid][intervention_name][session_id]
 }
 
+let cache_get_intervention_first_entry_in_session_for_install_id = {}
+
+async function get_intervention_first_entry_in_session_for_install_id(install_id, intervention_name, session_id) {
+  let user_id = await get_userid_from_install_id(install_id)
+  if (cache_get_intervention_first_entry_in_session_for_install_id[install_id] != null && cache_get_intervention_first_entry_in_session_for_install_id[install_id][intervention_name] != null) {
+    return cache_get_intervention_first_entry_in_session_for_install_id[install_id][intervention_name][session_id]
+  }
+  if (cache_get_intervention_first_entry_in_session_for_install_id[install_id] == null) {
+    cache_get_intervention_first_entry_in_session_for_install_id[install_id] = {}
+  }
+  if (cache_get_intervention_first_entry_in_session_for_install_id[install_id][intervention_name] == null) {
+    cache_get_intervention_first_entry_in_session_for_install_id[install_id][intervention_name] = {}
+  }
+  let intervention_logs = await get_intervention_logs_for_user(user_id, intervention_name)
+  //intervention_logs = intervention_logs.filter((x) => x.session_id == session_id)
+  for (let x of intervention_logs) {
+    let timestamp = x.timestamp
+    if (timestamp == null) {
+      continue
+    }
+    let cur_session_id = x.session_id
+    if (cur_session_id == null) {
+      continue
+    }
+    if (x.install_id != install_id) {
+      continue
+    }
+    let existing_item = cache_get_intervention_first_entry_in_session_for_install_id[install_id][intervention_name][session_id]
+    if (existing_item == null || timestamp < existing_item.timestamp) {
+      cache_get_intervention_first_entry_in_session_for_install_id[install_id][intervention_name][cur_session_id] = x
+    }
+  }
+  return cache_get_intervention_first_entry_in_session_for_install_id[install_id][intervention_name][session_id]
+}
+
+
 async function get_session_start_localtime(userid, intervention_name, session_id) {
   /*
   let intervention_logs = await get_intervention_logs_for_user(userid, intervention_name)
@@ -980,6 +1081,19 @@ async function get_session_start_localtime(userid, intervention_name, session_id
   let firstentry = prelude.minimumBy((x) => x.timestamp, intervention_logs)
   */
   let firstentry = await get_intervention_first_entry_in_session(userid, intervention_name, session_id)
+  if (firstentry == null) {
+    return null
+  }
+  return firstentry.localtime
+}
+
+async function get_session_start_localtime_for_install_id(install_id, intervention_name, session_id) {
+  /*
+  let intervention_logs = await get_intervention_logs_for_user(userid, intervention_name)
+  intervention_logs = intervention_logs.filter((x) => x.session_id == session_id)
+  let firstentry = prelude.minimumBy((x) => x.timestamp, intervention_logs)
+  */
+  let firstentry = await get_intervention_first_entry_in_session_for_install_id(install_id, intervention_name, session_id)
   if (firstentry == null) {
     return null
   }
@@ -999,8 +1113,35 @@ async function get_is_session_preview(userid, intervention_name, session_id) {
   return firstentry.is_preview_mode
 }
 
+async function get_is_session_preview_for_install_id(install_id, intervention_name, session_id) {
+  /*
+  let intervention_logs = await get_intervention_logs_for_user(userid, intervention_name)
+  intervention_logs = intervention_logs.filter((x) => x.session_id == session_id)
+  let firstentry = prelude.minimumBy((x) => x.timestamp, intervention_logs)
+  */
+  let firstentry = await get_intervention_first_entry_in_session_for_install_id(install_id, intervention_name, session_id)
+  if (firstentry == null) {
+    return null
+  }
+  return firstentry.is_preview_mode
+}
+
 async function get_is_session_nonofficial_release(userid, intervention_name, session_id) {
   let firstentry = await get_intervention_first_entry_in_session(userid, intervention_name, session_id)
+  if (firstentry == null) {
+    return false
+  }
+  if (firstentry.developer_mode) {
+    return true
+  }
+  if (firstentry.unofficial_version) {
+    return true
+  }
+  return false
+}
+
+async function get_is_session_nonofficial_release_for_install_id(install_id, intervention_name, session_id) {
+  let firstentry = await get_intervention_first_entry_in_session_for_install_id(install_id, intervention_name, session_id)
   if (firstentry == null) {
     return false
   }
