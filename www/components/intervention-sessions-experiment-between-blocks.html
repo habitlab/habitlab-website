@@ -14,79 +14,16 @@
   <script>
 
     Polymer({
-      is: 'intervention-sessions-experiment-latinsquares',
+      is: 'intervention-sessions-experiment-between-blocks',
       properties: {
-        
-      },
-      /*
-      display_user_list: function(user_list, container) {
-        $('#num_active_users').text(user_ids.length)
-        for (let user_id of user_ids) {
-          $(container).append($('<a href="/viewuser.html?userid=' + user_id + '">' + user_id + '</a>'))
-          $('#user_list').append($('<br>'))
-        }
-      },
-      */
-      plot_data_googlecharts: function(data, title) {
-        if (title == null) {
-          title = 'untitled plot'
-        }
-        let h = $(this.$$('#histograms'))
-        h.append($('<div>').text(title))
-        let chart = document.createElement('google-chart')
-        chart.style.width = '100%'
-        chart.cols = [{"label": "Data", "type": "number"},{"label": "Visits", "type": "number"}]
-        chart.rows = data
-        h.append(chart)
-      },
-      plot_series_googlecharts: function(data, title) {
-        this.plot_data_googlecharts(data.map((x,i) => [i, x]), title)
       },
       ready: async function() {
-        //let users_in_experiment = (await get_selection_algorithm_to_users_list())['experiment_alternate_between_same_vs_random_varlength_deterministic_latinsquare']
-        //console.log('num users in experiment ' + users_in_experiment.length)
-        /*
-        let users_in_experiment = ['7c99e2e54ebb770ba9ac519f']
-        for (let userid of users_in_experiment) {
-          let session_info_list = await get_session_info_list_for_user(userid)
-          console.log(session_info_list)
-        }
-        */
-       /*
-        this.plot_histogram([3,3,5,5,1,2,3,3], 'sample histogram')
-        this.plot_bar({
-          x: [0, 1, 2],
-          y: [5, 8, 4],
-        }, 'sample bar chart')
-        this.plot_series([3,7,5,9], 'sample series')
-        return
-        */
         let install_ids_in_experiment = (await get_selection_algorithm_to_install_ids_list_cached())['experiment_alternate_between_same_vs_random_varlength_deterministic_latinsquare']
-        //let install_ids_in_experiment = ['433c345412712b1c71708ddb']
-        let random_session_durations_all = []
-        let same_session_durations_all = []
-        let random_session_durations_means = []
-        let same_session_durations_means = []
-        let random_session_durations_medians = []
-        let same_session_durations_medians = []
-        let random_sessions_fraction_complied = []
-        let same_sessions_fraction_complied = []
-        let random_day_durations_all = []
-        let same_day_durations_all = []
-        let random_day_durations_means = []
-        let same_day_durations_means = []
-        let random_day_durations_medians = []
-        let same_day_durations_medians = []
-        let random_day_fraction_complied = []
-        let same_day_fraction_complied = []
         let install_id_to_session_info_with_experiment_info = await get_install_id_to_session_info_with_experiment_info_for_install_ids_in_experiment_cached()
+        console.log(JSON.stringify(install_id_to_session_info_with_experiment_info))
+        return
         for (let install_id of install_ids_in_experiment) {
-          //let experiment_info_with_sessions = await get_session_info_with_experiment_info_for_install_id(install_id)
           let experiment_info_with_sessions = install_id_to_session_info_with_experiment_info[install_id]
-          let random_session_durations_for_user = []
-          let same_session_durations_for_user = []
-          let random_day_durations_for_user = []
-          let same_day_durations_for_user = []
           for (let experiment_info of experiment_info_with_sessions) {
             for (let condition_info of experiment_info.condition_info_list) {
               let condition = condition_info.condition

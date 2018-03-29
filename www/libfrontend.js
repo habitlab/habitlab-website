@@ -35,6 +35,135 @@ async function clear_cache_for_func(name) {
   await store.clear()
 }
 
+async function get_plots_div() {
+  let num_checks_for_basetag = 0
+  while (window.basetag == null) {
+    await sleep(100)
+    num_checks_for_basetag += 1
+    if (num_checks_for_basetag > 100) {
+      console.log('get_plots_div taking a long time to get window.basetag, check that this is a polymer component')
+    }
+  }
+  let plots_div = window.basetag.$$('#plots')
+  if (plots_div == null) {
+    console.log('#plots id missing in element')
+  }
+  return plots_div
+}
+
+async function plot_data(data, title, layout) {
+  if (title == null) {
+    title = 'untitled plot'
+  }
+  let h = $(await get_plots_div())
+  h.append($('<div>').text(title))
+  let newdiv = document.createElement('div')
+  h.append(newdiv)
+  Plotly.newPlot(newdiv, data, layout)
+}
+
+function plot_trace (trace, title) {
+  plot_data([trace], title)
+}
+
+function plot_bar(trace, title) {
+  trace = JSON.parse(JSON.stringify(trace))
+  trace.type = 'bar'
+  plot_trace(trace, title)
+}
+
+function plot_series(series, title) {
+  let trace = {
+    x: math.range(0, series.length).toArray(),
+    y: series,
+  }
+  plot_bar(trace)
+}
+
+function plot_histogram(values, title) {
+  let trace = {
+    x: values,
+    type: 'histogram',
+    histnorm: 'probability density',
+  }
+  plot_trace(trace, title)
+}
+
+function plot_histogram_pair(values1, values2, title) {
+  let trace1 = {
+    x: values1,
+    type: 'histogram',
+    nbinsy: '10',
+    histnorm: 'probability density',
+    opacity: 0.5,
+    marker: {
+      color: 'green'
+    }
+  }
+  let trace2 = {
+    x: values2,
+    type: 'histogram',
+    nbinsy: '10',
+    histnorm: 'probability density',
+    opacity: 0.5,
+    marker: {
+      color: 'red'
+    }
+  }
+  let layout = {
+    barmode: 'overlay'
+  }
+  plot_data([trace1, trace2], title, layout)
+}
+
+async function printstats_ind(random_durations, same_durations, msg) {
+  if (msg != null) {
+    console.log('======== ' + msg + ' =========')
+  }
+  console.log('num samples random')
+  console.log(random_durations.length)
+  console.log('num samples same')
+  console.log(same_durations.length)
+  console.log('mean random')
+  console.log(prelude.mean(random_durations))
+  console.log('mean same')
+  console.log(prelude.mean(same_durations))
+  console.log('median random')
+  console.log(median(random_durations))
+  console.log('median same')
+  console.log(median(same_durations))
+  console.log('stddev random')
+  console.log(math.std(random_durations))
+  console.log('stddev same')
+  console.log(math.std(same_durations))
+  console.log('mannwhitneyu')
+  console.log(await pyfunc('mannwhitneyu', same_durations, random_durations))
+  console.log('ttest_ind')
+  console.log(await pyfunc('ttest_ind', same_durations, random_durations))
+}
+
+async function printstats_ind_with_log(random_durations, same_durations, msg) {
+  await printstats_ind(random_durations, same_durations, msg)
+  await printstats_ind(random_durations.map(Math.log), same_durations.map(Math.log), msg + ' (log)')
+}
+
+async function printstats_rel(random_durations, same_durations, msg) {
+  await printstats_ind(random_durations, same_durations, msg)
+  if (random_durations.length != same_durations.length) {
+    console.log('need to pass collections of equal length to printstats_rel')
+    return
+  }
+  console.log('wilcoxon')
+  console.log(await pyfunc('wilcoxon', same_durations, random_durations))
+  console.log('ttest_rel')
+  console.log(await pyfunc('ttest_rel', same_durations, random_durations))
+}
+
+async function printstats_rel_with_log(random_durations, same_durations, msg) {
+  await printstats_rel(random_durations, same_durations, msg)
+  await printstats_rel(random_durations.map(Math.log), same_durations.map(Math.log), msg + ' (log)')
+}
+
 function memoize_to_disk(f, func_name) {
   if (func_name == null) {
     func_name = f.name
