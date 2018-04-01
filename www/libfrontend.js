@@ -17,13 +17,22 @@ function get_store(name) {
 }
 
 async function clear_caches() {
+  console.log('clear_caches called')
   let store = localforage.createInstance({name: 'store_list'})
+  console.log('clear_caches store created')
   let keys = await store.keys()
+  console.log('clear_caches keys are')
+  console.log(keys)
   for (let key of keys) {
+    console.log(key)
     let substore = localforage.createInstance({name: key})
     await substore.clear()
+    console.log('store cleared: ' + key)
+    indexedDB.deleteDatabase(key)
+    console.log('database cleared: ' + key)
   }
   await store.clear()
+  //indexedDB.deleteDatabase('store_list')
   for (let key of Object.keys(get_store_cached)) {
     delete get_store_cached[key]
   }
@@ -448,6 +457,8 @@ async function get_selection_algorithm_to_users_list() {
   return output
 }
 
+let get_selection_algorithm_to_users_list_cached = memoize_to_disk_0arg(get_selection_algorithm_to_users_list, 'get_selection_algorithm_to_users_list')
+
 async function get_selection_algorithm_to_install_ids_list() {
   let output = {}
   let selection_algorithm_and_users_list = await get_selection_algorithm_and_install_ids_list()
@@ -460,7 +471,7 @@ async function get_selection_algorithm_to_install_ids_list() {
 let get_selection_algorithm_to_install_ids_list_cached = memoize_to_disk_0arg(get_selection_algorithm_to_install_ids_list, 'get_selection_algorithm_to_install_ids_list')
 
 async function get_install_id_to_user_id() {
-  user_to_all_install_ids = await get_user_to_all_install_ids_cached()
+  let user_to_all_install_ids = await get_user_to_all_install_ids_cached()
   let output = {}
   for (let userid of Object.keys(user_to_all_install_ids)) {
     let install_ids = user_to_all_install_ids[userid]
@@ -475,6 +486,11 @@ async function get_install_id_to_user_id() {
 }
 
 let get_install_id_to_user_id_cached = memoize_to_disk_0arg(get_install_id_to_user_id, 'get_install_id_to_user_id')
+
+async function get_userid_to_all_install_ids(userid) {
+  let user_to_all_install_ids = await get_user_to_all_install_ids_cached()
+  return user_to_all_install_ids[userid]
+}
 
 async function get_userid_from_install_id(install_id) {
   let install_id_to_user_id = await get_install_id_to_user_id_cached()
@@ -953,6 +969,17 @@ async function get_session_info_with_experiment_info_for_install_id(install_id) 
   return experiment_info_with_sessions
 }
 
+async function get_session_info_with_experiment_info_for_userid(userid) {
+  let all_install_ids = await get_userid_to_all_install_ids(userid)
+  if (all_install_ids == null || all_install_ids.length != 1) {
+    return []
+  }
+  let experiment_info_list = await get_experiment_info_same_vs_random_varlength_deterministic_latinsquare_for_userid(userid)
+  let session_info_list = await get_session_info_list_for_user_detailed(userid)
+  let experiment_info_with_sessions = await group_together_session_info_list_with_experiment_info_list(session_info_list, experiment_info_list)
+  return experiment_info_with_sessions
+}
+
 async function get_install_id_to_session_info_with_experiment_info_for_install_ids_in_experiment() {
   let output = {}
   let install_ids_in_experiment = (await get_selection_algorithm_to_install_ids_list_cached())['experiment_alternate_between_same_vs_random_varlength_deterministic_latinsquare']
@@ -963,6 +990,21 @@ async function get_install_id_to_session_info_with_experiment_info_for_install_i
 }
 
 let get_install_id_to_session_info_with_experiment_info_for_install_ids_in_experiment_cached = memoize_to_disk_0arg(get_install_id_to_session_info_with_experiment_info_for_install_ids_in_experiment, 'get_install_id_to_session_info_with_experiment_info_for_install_ids_in_experiment')
+
+async function get_userid_to_session_info_with_experiment_info_for_userids_in_experiment() {
+  let output = {}
+  let user_ids_in_experiment = (await get_selection_algorithm_to_users_list_cached())['experiment_alternate_between_same_vs_random_varlength_deterministic_latinsquare']
+  for (let userid of user_ids_in_experiment) {
+    let all_install_ids = await get_userid_to_all_install_ids(userid)
+    if (all_install_ids == null || all_install_ids.length != 1) {
+      continue
+    }
+    output[userid] = await get_session_info_with_experiment_info_for_userid(userid)
+  }
+  return output
+}
+
+let get_userid_to_session_info_with_experiment_info_for_userids_in_experiment_cached = memoize_to_disk_0arg(get_userid_to_session_info_with_experiment_info_for_userids_in_experiment, 'get_userid_to_session_info_with_experiment_info_for_userids_in_experiment')
 
 /*
 async function get_session_info_list_for_install_id_detailed(install_id) {
@@ -976,7 +1018,7 @@ async function get_session_info_list_for_install_id_detailed(install_id) {
 */
 
 async function get_session_info_list_for_install_id_detailed(install_id) {
-  let user_id = await get_userid_from_install_id(install_id)
+  let userid = await get_userid_from_install_id(install_id)
   let output = []
   let interventions_active_for_domain_and_session = await get_collection_for_user_cached(userid, 'synced:interventions_active_for_domain_and_session')
   let domain_to_session_id_to_time_spent = await get_domain_to_session_id_to_time_spent(userid)
@@ -1598,9 +1640,21 @@ async function list_first_active_date_for_user(userid) {
   return dates_active[0]
 }
 
+async function list_last_active_date_for_user(install_id) {
+  let install_id_to_dates_active = await get_install_id_to_dates_active_cached()
+  let dates_active = install_id_to_dates_active[install_id]
+  return dates_active[0]
+}
+
 async function list_last_active_date_for_user(userid) {
   let user_to_dates_active = await get_user_to_dates_active_cached()
   let dates_active = user_to_dates_active[userid]
+  return dates_active[dates_active.length - 1]
+}
+
+async function list_last_active_date_for_install_id(install_id) {
+  let install_id_to_dates_active = await get_install_id_to_dates_active_cached()
+  let dates_active = install_id_to_dates_active[install_id]
   return dates_active[dates_active.length - 1]
 }
 
@@ -1816,6 +1870,8 @@ expose_getjson('get_last_interventions_for_former_users')
 expose_getjson('get_last_interventions_and_num_impressions_for_former_users')
 
 expose_getjson('get_user_to_dates_active')
+
+expose_getjson('get_install_id_to_dates_active')
 
 expose_getjson('get_user_to_install_times')
 

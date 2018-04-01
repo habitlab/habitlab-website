@@ -79,8 +79,15 @@
             }
             same_samples.push(same_seconds)
             random_samples.push(random_seconds)
-            same_day_num_interventions_seen.push(num_intervention_impressions_same_day)
-            random_day_num_interventions_seen.push(num_intervention_impressions_random_day)
+            if (num_intervention_impressions_same_day != null) {
+              same_day_num_interventions_seen.push(num_intervention_impressions_same_day)
+              if (num_intervention_impressions_same_day >= 4) {
+                console.log(userid)
+              }
+            }
+            if (num_intervention_impressions_random_day != null) {
+              random_day_num_interventions_seen.push(num_intervention_impressions_random_day)
+            }
             if (only_one_sample_per_user) {
               break
             }
