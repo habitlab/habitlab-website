@@ -928,6 +928,7 @@ async function get_session_info_list_for_user(userid) {
   let output = []
   let interventions_active_for_domain_and_session = await get_collection_for_user_cached(userid, 'synced:interventions_active_for_domain_and_session')
   let domain_to_session_id_to_time_spent = await get_domain_to_session_id_to_time_spent(userid)
+  let last_active_date_for_userid = await list_last_active_date_for_user(userid)
   console.log(domain_to_session_id_to_time_spent)
   for (let item of interventions_active_for_domain_and_session) {
     let session_id = item.key2
@@ -938,6 +939,7 @@ async function get_session_info_list_for_user(userid) {
     let timestamp = item.timestamp
     let timestamp_local = item.timestamp_local
     let install_id = item.install_id
+    let last_active_date_for_install_id = await list_last_active_date_for_install_id(install_id)
     if (userid_inlog != userid) {
       console.log('mismatch between userid and userid_inlog for userid ' + userid)
       continue
@@ -948,6 +950,8 @@ async function get_session_info_list_for_user(userid) {
     }
     let time_spent = domain_to_session_id_to_time_spent[domain][session_id]
     output.push({
+      last_active_date_for_userid,
+      last_active_date_for_install_id,
       time_spent,
       session_id,
       domain,
