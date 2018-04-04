@@ -1770,12 +1770,12 @@ async function get_lifetimes_and_whether_attrition_was_observed_for_users(user_l
       console.log(userid)
       continue
     }
-    if (days_active > 22) {
-      console.log("days_active is too large")
-      console.log(userid)
-    }
+    //if (days_active > 22) {
+    //  console.log("days_active is too large")
+    //  console.log(userid)
+    //}
     let attritioned = 1
-    if (last_active == 0) {
+    if (last_active <= 2) { // within 3 days
       attritioned = 0
     }
     lifetimes.push(days_active)
