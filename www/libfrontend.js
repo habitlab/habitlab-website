@@ -1775,7 +1775,7 @@ async function get_lifetimes_and_whether_attrition_was_observed_for_users(user_l
     //  console.log(userid)
     //}
     let attritioned = 1
-    if (last_active <= 2) { // within 3 days
+    if (last_active <= 3) { // within 3 days
       attritioned = 0
     }
     lifetimes.push(days_active)

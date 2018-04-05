@@ -201,6 +201,9 @@
           //if (!did_user_enable_interventions_5min && !did_user_disable_interventions_5min) {
           //if (!did_user_enable_interventions_5min && !did_user_disable_interventions_5min) {
           //if (!did_user_enable_interventions_5min && !did_user_disable_interventions_5min) {
+          //if (!did_user_enable_interventions_5min && !did_user_disable_interventions_5min) {
+          //if (!did_user_enable_interventions && !did_user_disable_interventions) {
+          //if (!did_user_enable_interventions && !did_user_disable_interventions) {
           if (!did_user_enable_interventions_5min && !did_user_disable_interventions_5min) {
             if (condition_to_users[condition + '_defaultinterventions'] == null) {
               condition_to_users[condition + '_defaultinterventions'] = []
@@ -399,6 +402,9 @@
           half_of_defaults: lifetimes2,
           one: lifetimes3,
         }))
+        let result = await pyfunc('logrank_test between all and half', lifetimes1, lifetimes3)
+        console.log(result)
+        console.log('p value ' + result.__StatisticalResult__.p_value)
       }
     })
   </script>

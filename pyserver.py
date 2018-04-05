@@ -6,6 +6,7 @@ from datetime import datetime
 import json
 from functools import wraps
 
+import lifelines.statistics
 
 class CustomEncoder(json.JSONEncoder):
   def default(self, o):
@@ -73,5 +74,11 @@ def wilcoxon(a, b):
 @route
 def linregress(x):
   return scipy.stats.linregress(x)
+
+@route
+def logrank_test(a, b):
+  # a={"lifetimes": [], "attritions": []}
+  # b={"lifetimes": [], "attritions": []}
+  return lifelines.statistics.logrank_test(a['lifetimes'], b['lifetimes'], event_observed_A=a['attritions'], event_observed_B=b['attritions'])
 
 app.run(port=9999)
