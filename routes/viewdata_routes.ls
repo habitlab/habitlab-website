@@ -518,7 +518,7 @@ app.get '/get_user_to_all_install_times', auth, (ctx) ->>
   finally
     db?close()
 
-app.get '/get_user_to_all_install_ids', auth, (ctx) ->>
+app.get '/get_user_to_is_unofficial', auth, (ctx) ->>
   ctx.type = 'json'
   try
     [installs, db] = await get_installs()
@@ -527,14 +527,18 @@ app.get '/get_user_to_all_install_ids', auth, (ctx) ->>
     for install_info in all_results
       userid = install_info.user_id
       install_id = install_info.install_id
+      devmode = install_info.devmode
+      unofficial_version = install_info.unofficial_version
+      is_unofficial = (devmode == true) or (unofficial_version?)
       if not output[userid]?
-        output[userid] = []
-      output[userid].push(install_id)
+        output[userid] = is_unofficial
+      else if is_unofficial
+        output[userid] = true
     ctx.body = JSON.stringify(output)
   catch err
-    console.log 'error in get_user_to_all_install_ids'
+    console.log 'error in get_user_to_is_unofficial'
     console.log err
-    ctx.body = JSON.stringify {response: 'error', error: 'error in get_user_to_all_install_ids'}
+    ctx.body = JSON.stringify {response: 'error', error: 'error in get_user_to_is_unofficial'}
   finally
     db?close()
 
