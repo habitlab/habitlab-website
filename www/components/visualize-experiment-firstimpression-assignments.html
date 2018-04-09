@@ -18,7 +18,9 @@
         <div>last active {{getkey(userid, last_active_date_for_all_users)}}</div>
         <div>install ids {{getkey(userid, user_to_all_install_ids)}}</div>
         <div>is unofficial {{getkey(userid, user_to_is_unofficial)}}</div>
-        <div>{{initial_condition_info_for_user_printable(userid, user_to_initial_condition_info)}}</div>
+        <div>condition {{getkey(userid, user_to_initial_condition_info)}}</div>
+        <div>version at install time {{getkey(userid, user_to_habitlab_version_install)}}</div>
+        <div>version at impressions {{getkey(userid, user_to_habitlab_versions_impressions)}}</div>
         <br>
       </div>
     </template>
@@ -34,7 +36,9 @@
         <div>last active {{getkey(userid, last_active_date_for_all_users)}}</div>
         <div>install ids {{getkey(userid, user_to_all_install_ids)}}</div>
         <div>is unofficial {{getkey(userid, user_to_is_unofficial)}}</div>
-        <div>{{initial_condition_info_for_user_printable(userid, user_to_initial_condition_info)}}</div>
+        <div>condition {{getkey(userid, user_to_initial_condition_info)}}</div>
+        <div>version at install time {{getkey(userid, user_to_habitlab_version_install)}}</div>
+        <div>version at impressions {{getkey(userid, user_to_habitlab_versions_impressions)}}</div>
         <br>
       </div>
     </template>
@@ -50,7 +54,9 @@
         <div>last active {{getkey(userid, last_active_date_for_all_users)}}</div>
         <div>install ids {{getkey(userid, user_to_all_install_ids)}}</div>
         <div>is unofficial {{getkey(userid, user_to_is_unofficial)}}</div>
-        <div>{{initial_condition_info_for_user_printable(userid, user_to_initial_condition_info)}}</div>
+        <div>condition {{getkey(userid, user_to_initial_condition_info)}}</div>
+        <div>version at install time {{getkey(userid, user_to_habitlab_version_install)}}</div>
+        <div>version at impressions {{getkey(userid, user_to_habitlab_versions_impressions)}}</div>
         <br>
       </div>
     </template>
@@ -66,7 +72,9 @@
         <div>last active {{getkey(userid, last_active_date_for_all_users)}}</div>
         <div>install ids {{getkey(userid, user_to_all_install_ids)}}</div>
         <div>is unofficial {{getkey(userid, user_to_is_unofficial)}}</div>
-        <div>{{initial_condition_info_for_user_printable(userid, user_to_initial_condition_info)}}</div>
+        <div>condition {{getkey(userid, user_to_initial_condition_info)}}</div>
+        <div>version at install time {{getkey(userid, user_to_habitlab_version_install)}}</div>
+        <div>version at impressions {{getkey(userid, user_to_habitlab_versions_impressions)}}</div>
         <br>
       </div>
     </template>
@@ -124,6 +132,8 @@
         let skip_unofficial = true
         let skip_duplicate_install_ids = true
         let user_to_initial_condition_info = {}
+        let user_to_habitlab_versions_impressions = {}
+        let user_to_habitlab_version_install = {}
         for (let userid of users_with_experiment_vars) {
           let experiment_vars_list = await get_collection_for_user_cached(userid, 'synced:experiment_vars')
           if (skip_unofficial && this.user_to_is_unofficial[userid] != false) {
@@ -134,22 +144,37 @@
             //console.log('skipping duplicate')
             continue
           }
+          let habitlab_versions_for_user = []
+          let habitlab_versions_for_user_set = new Set()
           for (let x of experiment_vars_list) {
             if (x.key == 'intervention_firstimpression_notice') {
               //if (x.val == 'experiment_alternate_between_same_vs_random_varlength_deterministic_latinsquare' && !latinsquare_users_set.has(userid)) {
               //  latinsquare_users.push(userid)
               //  latinsquare_users_set.add(userid)
               //}
-              user_to_initial_condition_info[userid] = x.val
+              let version = x.habitlab_version
+              let condition = x.val
+              user_to_habitlab_version_install[userid] = version
+              user_to_initial_condition_info[userid] = condition
               if (!firstimpression_users_set.has(userid)) {
                 firstimpression_users_set.add(userid)
                 firstimpression_users.push(userid)
               }
             }
+            if (x.key == 'intervention_firstimpression_notice_seenlist') {
+              let version = x.habitlab_version
+              if (!habitlab_versions_for_user_set.has(version)) {
+                habitlab_versions_for_user_set.add(version)
+                habitlab_versions_for_user.push(version)
+              }
+            }
           }
+          user_to_habitlab_versions_impressions[userid] = habitlab_versions_for_user
         }
         this.firstimpression_users = firstimpression_users
         this.user_to_initial_condition_info = user_to_initial_condition_info
+        this.user_to_habitlab_versions_impressions = user_to_habitlab_versions_impressions
+        this.user_to_habitlab_version_install = user_to_habitlab_version_install
         this.firstimpression_users_none = firstimpression_users.filter(x => user_to_initial_condition_info[x] == 'none')
         this.firstimpression_users_info = firstimpression_users.filter(x => user_to_initial_condition_info[x] == 'info')
         this.firstimpression_users_power = firstimpression_users.filter(x => user_to_initial_condition_info[x] == 'power')
