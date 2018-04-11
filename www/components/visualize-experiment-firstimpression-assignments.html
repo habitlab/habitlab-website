@@ -110,56 +110,50 @@
       },
       ready: async function() {
         console.log('ready in firstimpression assignments')
-        let all_collections = await listcollections()
-        let users_with_experiment_vars = []
         let user_to_selection_algorithm = {}
         let selection_algorithm_and_users_list = []
         let selection_algorithm_to_idx = {}
-        for (let collection_fullname of all_collections) {
-          let underscore_index = collection_fullname.indexOf('_')
-          let username = collection_fullname.substr(0, underscore_index)
-          let collection_name = collection_fullname.substr(underscore_index + 1)
-          if (collection_name == 'synced:experiment_vars') {
-            users_with_experiment_vars.push(username)
-          }
-        }
-        let firstimpression_users = []
-        let firstimpression_users_set = new Set()
         this.first_active_date_for_all_users = await list_first_active_date_for_all_users()
         this.last_active_date_for_all_users = await list_last_active_date_for_all_users()
         this.user_to_all_install_ids = await get_user_to_all_install_ids_cached()
         this.user_to_is_unofficial = await get_user_to_is_unofficial_cached()
         let skip_unofficial = true
         let skip_duplicate_install_ids = true
+        let skip_users_who_did_not_complete_onboarding = true
         let user_to_initial_condition_info = {}
         let user_to_habitlab_versions_impressions = {}
         let user_to_habitlab_version_install = {}
-        for (let userid of users_with_experiment_vars) {
+        let all_firstimpression_users = await get_all_users_in_firstimpression_experiment_cached()
+        let skipped_users = []
+        let firstimpression_users = []
+        for (let userid of all_firstimpression_users) {
           let experiment_vars_list = await get_collection_for_user_cached(userid, 'synced:experiment_vars')
           if (skip_unofficial && this.user_to_is_unofficial[userid] != false) {
             //console.log('skipping unofficial')
+            skipped_users.push(userid)
             continue
           }
           if (skip_duplicate_install_ids && (this.user_to_all_install_ids[userid] == null || this.user_to_all_install_ids[userid].length != 1)) {
             //console.log('skipping duplicate')
+            skipped_users.push(userid)
             continue
           }
+          let did_user_complete_onboarding = await get_did_user_complete_onboarding_cached(userid)
+          if (skip_users_who_did_not_complete_onboarding && !did_user_complete_onboarding) {
+            skipped_users.push(userid)
+            continue
+          }
+          //let intervention_to_num_times_seen = await get_intervention_to_num_times_seen(userid)
+          //console.log(intervention_to_num_times_seen)
+          firstimpression_users.push(userid)
           let habitlab_versions_for_user = []
           let habitlab_versions_for_user_set = new Set()
           for (let x of experiment_vars_list) {
             if (x.key == 'intervention_firstimpression_notice') {
-              //if (x.val == 'experiment_alternate_between_same_vs_random_varlength_deterministic_latinsquare' && !latinsquare_users_set.has(userid)) {
-              //  latinsquare_users.push(userid)
-              //  latinsquare_users_set.add(userid)
-              //}
               let version = x.habitlab_version
               let condition = x.val
               user_to_habitlab_version_install[userid] = version
               user_to_initial_condition_info[userid] = condition
-              if (!firstimpression_users_set.has(userid)) {
-                firstimpression_users_set.add(userid)
-                firstimpression_users.push(userid)
-              }
             }
             if (x.key == 'intervention_firstimpression_notice_seenlist') {
               let version = x.habitlab_version
@@ -171,6 +165,7 @@
           }
           user_to_habitlab_versions_impressions[userid] = habitlab_versions_for_user
         }
+        this.skipped_users = skipped_users
         this.firstimpression_users = firstimpression_users
         this.user_to_initial_condition_info = user_to_initial_condition_info
         this.user_to_habitlab_versions_impressions = user_to_habitlab_versions_impressions
