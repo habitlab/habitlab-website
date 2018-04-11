@@ -308,4 +308,17 @@ app.get '/get_sharedinterventions_for_site', (ctx) ->>
   ctx.body = JSON.stringify(all_results)
   db?close()
 
+# TODO: These routes might be consolidated with others in the future
+app.get '/delete_shared_intervention', (ctx) ->>
+  ctx.type = 'json'
+  {key} = ctx.request.query
+  if need_query_property ctx, 'key'
+    ctx.body = JSON.stringify {response: 'failure', success: false}
+    return
+  [collection, db] = await get_collection_share_intervention()/*Find these functions*/
+  # all_results = await n2p -> collection.find({sitename: website}).toArray(it)
+  await n2p -> collection.remove({key: key}, it)
+  ctx.body = JSON.stringify {response: 'success', success: true}
+  db?close()
+
 require('libs/globals').add_globals(module.exports)
