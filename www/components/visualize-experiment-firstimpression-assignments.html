@@ -134,6 +134,7 @@
         let user_to_habitlab_version_install = {}
         let all_firstimpression_users = await get_all_users_in_firstimpression_experiment_cached()
         let skipped_users = []
+        let user_skipped_reasons = new pycollections.Counter()
         let firstimpression_users = []
         let user_to_num_interventions_seen = {}
         let user_to_num_unique_interventions_seen = {}
@@ -142,11 +143,13 @@
           if (skip_unofficial && this.user_to_is_unofficial[userid] != false) {
             //console.log('skipping unofficial')
             skipped_users.push(userid)
+            user_skipped_reasons.update({'unofficial': 1})
             continue
           }
           if (skip_duplicate_install_ids && (this.user_to_all_install_ids[userid] == null || this.user_to_all_install_ids[userid].length != 1)) {
             //console.log('skipping duplicate')
             skipped_users.push(userid)
+            user_skipped_reasons.update({'duplicate_install': 1})
             continue
           }
           let intervention_to_num_times_seen = await get_intervention_to_num_times_seen_newsession_nonpreview(userid)
@@ -157,11 +160,13 @@
           user_to_num_unique_interventions_seen[userid] = num_unique_interventions_seen
           if (skip_users_who_saw_no_interventions && total_num_times_interventions_seen == 0) {
             skipped_users.push(userid)
+            user_skipped_reasons.update({'saw_no_nonpreview_interventions': 1})
             continue
           }
           let did_user_complete_onboarding = await get_did_user_complete_onboarding_cached(userid)
           if (skip_users_who_did_not_complete_onboarding && !did_user_complete_onboarding) {
             skipped_users.push(userid)
+            user_skipped_reasons.update({'did_not_complete_onboarding': 1})
             continue
           }
           firstimpression_users.push(userid)
@@ -184,6 +189,7 @@
           }
           user_to_habitlab_versions_impressions[userid] = habitlab_versions_for_user
         }
+        console.log(user_skipped_reasons.items())
         this.user_to_num_interventions_seen = user_to_num_interventions_seen
         this.user_to_num_unique_interventions_seen = user_to_num_unique_interventions_seen
         this.skipped_users = skipped_users
