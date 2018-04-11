@@ -228,6 +228,19 @@ export get_intervention_to_num_times_seen = (user_id) ->>
 
 expose_get_auth get_intervention_to_num_times_seen, 'userid'
 
+export get_intervention_to_num_times_seen_newsession_nonpreview = (user_id) ->>
+  collections = await list_intervention_collections_for_user(user_id)
+  db = await get_mongo_db()
+  output = {}
+  for entry in collections
+    entry_key = entry.replace(user_id + '_', '')
+    collection = db.collection(entry)
+    num_items = await n2p -> collection.find({type: 'impression', is_new_session: true, is_preview_mode: false}).count(it)
+    output[entry_key] = num_items
+  return output
+
+expose_get_auth get_intervention_to_num_times_seen_newsession_nonpreview, 'userid'
+
 export get_last_intervention_seen_and_time = (user_id) ->>
   intervention_to_time_seen = await get_intervention_to_time_most_recently_seen(user_id)
   last_intervention_seen = null

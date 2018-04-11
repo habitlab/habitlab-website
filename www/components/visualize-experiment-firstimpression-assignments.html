@@ -19,6 +19,8 @@
         <div>install ids {{getkey(userid, user_to_all_install_ids)}}</div>
         <div>is unofficial {{getkey(userid, user_to_is_unofficial)}}</div>
         <div>condition {{getkey(userid, user_to_initial_condition_info)}}</div>
+        <div>num times an intervention was seen {{getkey(userid, user_to_num_interventions_seen)}}</div>
+        <div>num unique interventions seen {{getkey(userid, user_to_num_unique_interventions_seen)}}</div>
         <div>version at install time {{getkey(userid, user_to_habitlab_version_install)}}</div>
         <div>version at impressions {{getkey(userid, user_to_habitlab_versions_impressions)}}</div>
         <br>
@@ -37,6 +39,8 @@
         <div>install ids {{getkey(userid, user_to_all_install_ids)}}</div>
         <div>is unofficial {{getkey(userid, user_to_is_unofficial)}}</div>
         <div>condition {{getkey(userid, user_to_initial_condition_info)}}</div>
+        <div>num times an intervention was seen {{getkey(userid, user_to_num_interventions_seen)}}</div>
+        <div>num unique interventions seen {{getkey(userid, user_to_num_unique_interventions_seen)}}</div>
         <div>version at install time {{getkey(userid, user_to_habitlab_version_install)}}</div>
         <div>version at impressions {{getkey(userid, user_to_habitlab_versions_impressions)}}</div>
         <br>
@@ -55,6 +59,8 @@
         <div>install ids {{getkey(userid, user_to_all_install_ids)}}</div>
         <div>is unofficial {{getkey(userid, user_to_is_unofficial)}}</div>
         <div>condition {{getkey(userid, user_to_initial_condition_info)}}</div>
+        <div>num times an intervention was seen {{getkey(userid, user_to_num_interventions_seen)}}</div>
+        <div>num unique interventions seen {{getkey(userid, user_to_num_unique_interventions_seen)}}</div>
         <div>version at install time {{getkey(userid, user_to_habitlab_version_install)}}</div>
         <div>version at impressions {{getkey(userid, user_to_habitlab_versions_impressions)}}</div>
         <br>
@@ -73,6 +79,8 @@
         <div>install ids {{getkey(userid, user_to_all_install_ids)}}</div>
         <div>is unofficial {{getkey(userid, user_to_is_unofficial)}}</div>
         <div>condition {{getkey(userid, user_to_initial_condition_info)}}</div>
+        <div>num times an intervention was seen {{getkey(userid, user_to_num_interventions_seen)}}</div>
+        <div>num unique interventions seen {{getkey(userid, user_to_num_unique_interventions_seen)}}</div>
         <div>version at install time {{getkey(userid, user_to_habitlab_version_install)}}</div>
         <div>version at impressions {{getkey(userid, user_to_habitlab_versions_impressions)}}</div>
         <br>
@@ -120,12 +128,15 @@
         let skip_unofficial = true
         let skip_duplicate_install_ids = true
         let skip_users_who_did_not_complete_onboarding = true
+        let skip_users_who_saw_no_interventions = true
         let user_to_initial_condition_info = {}
         let user_to_habitlab_versions_impressions = {}
         let user_to_habitlab_version_install = {}
         let all_firstimpression_users = await get_all_users_in_firstimpression_experiment_cached()
         let skipped_users = []
         let firstimpression_users = []
+        let user_to_num_interventions_seen = {}
+        let user_to_num_unique_interventions_seen = {}
         for (let userid of all_firstimpression_users) {
           let experiment_vars_list = await get_collection_for_user_cached(userid, 'synced:experiment_vars')
           if (skip_unofficial && this.user_to_is_unofficial[userid] != false) {
@@ -138,13 +149,21 @@
             skipped_users.push(userid)
             continue
           }
+          let intervention_to_num_times_seen = await get_intervention_to_num_times_seen_newsession_nonpreview(userid)
+          let total_num_times_interventions_seen = prelude.sum(Object.values(intervention_to_num_times_seen))
+          //console.log(total_num_times_interventions_seen)
+          user_to_num_interventions_seen[userid] = total_num_times_interventions_seen
+          let num_unique_interventions_seen = Object.values(intervention_to_num_times_seen).filter(x => x > 0).length
+          user_to_num_unique_interventions_seen[userid] = num_unique_interventions_seen
+          if (skip_users_who_saw_no_interventions && total_num_times_interventions_seen == 0) {
+            skipped_users.push(userid)
+            continue
+          }
           let did_user_complete_onboarding = await get_did_user_complete_onboarding_cached(userid)
           if (skip_users_who_did_not_complete_onboarding && !did_user_complete_onboarding) {
             skipped_users.push(userid)
             continue
           }
-          //let intervention_to_num_times_seen = await get_intervention_to_num_times_seen(userid)
-          //console.log(intervention_to_num_times_seen)
           firstimpression_users.push(userid)
           let habitlab_versions_for_user = []
           let habitlab_versions_for_user_set = new Set()
@@ -165,6 +184,8 @@
           }
           user_to_habitlab_versions_impressions[userid] = habitlab_versions_for_user
         }
+        this.user_to_num_interventions_seen = user_to_num_interventions_seen
+        this.user_to_num_unique_interventions_seen = user_to_num_unique_interventions_seen
         this.skipped_users = skipped_users
         this.firstimpression_users = firstimpression_users
         this.user_to_initial_condition_info = user_to_initial_condition_info

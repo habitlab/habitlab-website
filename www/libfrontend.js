@@ -1908,6 +1908,8 @@ expose_getjson('get_uninstalls')
 
 expose_getjson_cached('get_intervention_to_num_times_seen', 'userid')
 
+expose_getjson_cached('get_intervention_to_num_times_seen_newsession_nonpreview', 'userid')
+
 expose_getjson('get_users_with_logs_who_are_no_longer_active')
 
 expose_getjson('get_last_interventions_for_former_users')
