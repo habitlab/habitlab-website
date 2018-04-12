@@ -1,0 +1,1 @@
+mapobj = require('map-obj');

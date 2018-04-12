@@ -16,6 +16,7 @@
         <a href="/viewuser.html?userid={{userid}}">{{userid}}</a>
         <div>first active {{getkey(userid, first_active_date_for_all_users)}}</div>
         <div>last active {{getkey(userid, last_active_date_for_all_users)}}</div>
+        <div>experiment start {{getkey(userid, user_to_experiment_start)}}</div>
         <div>install ids {{getkey(userid, user_to_all_install_ids)}}</div>
         <div>is unofficial {{getkey(userid, user_to_is_unofficial)}}</div>
         <div>condition {{getkey(userid, user_to_initial_condition_info)}}</div>
@@ -36,6 +37,7 @@
         <a href="/viewuser.html?userid={{userid}}">{{userid}}</a>
         <div>first active {{getkey(userid, first_active_date_for_all_users)}}</div>
         <div>last active {{getkey(userid, last_active_date_for_all_users)}}</div>
+        <div>experiment start {{getkey(userid, user_to_experiment_start)}}</div>
         <div>install ids {{getkey(userid, user_to_all_install_ids)}}</div>
         <div>is unofficial {{getkey(userid, user_to_is_unofficial)}}</div>
         <div>condition {{getkey(userid, user_to_initial_condition_info)}}</div>
@@ -56,6 +58,7 @@
         <a href="/viewuser.html?userid={{userid}}">{{userid}}</a>
         <div>first active {{getkey(userid, first_active_date_for_all_users)}}</div>
         <div>last active {{getkey(userid, last_active_date_for_all_users)}}</div>
+        <div>experiment start {{getkey(userid, user_to_experiment_start)}}</div>
         <div>install ids {{getkey(userid, user_to_all_install_ids)}}</div>
         <div>is unofficial {{getkey(userid, user_to_is_unofficial)}}</div>
         <div>condition {{getkey(userid, user_to_initial_condition_info)}}</div>
@@ -76,6 +79,7 @@
         <a href="/viewuser.html?userid={{userid}}">{{userid}}</a>
         <div>first active {{getkey(userid, first_active_date_for_all_users)}}</div>
         <div>last active {{getkey(userid, last_active_date_for_all_users)}}</div>
+        <div>experiment start {{getkey(userid, user_to_experiment_start)}}</div>
         <div>install ids {{getkey(userid, user_to_all_install_ids)}}</div>
         <div>is unofficial {{getkey(userid, user_to_is_unofficial)}}</div>
         <div>condition {{getkey(userid, user_to_initial_condition_info)}}</div>
@@ -138,6 +142,7 @@
         let firstimpression_users = []
         let user_to_num_interventions_seen = {}
         let user_to_num_unique_interventions_seen = {}
+        let user_to_experiment_start_timestamp = {}
         for (let userid of all_firstimpression_users) {
           let experiment_vars_list = await get_collection_for_user_cached(userid, 'synced:experiment_vars')
           if (skip_unofficial && this.user_to_is_unofficial[userid] != false) {
@@ -176,8 +181,12 @@
             if (x.key == 'intervention_firstimpression_notice') {
               let version = x.habitlab_version
               let condition = x.val
-              user_to_habitlab_version_install[userid] = version
-              user_to_initial_condition_info[userid] = condition
+              let timestamp = x.timestamp
+              if (user_to_habitlab_version_install[userid] == null) {
+                user_to_habitlab_version_install[userid] = version
+                user_to_initial_condition_info[userid] = condition
+                user_to_experiment_start_timestamp[userid] = timestamp
+              }
             }
             if (x.key == 'intervention_firstimpression_notice_seenlist') {
               let version = x.habitlab_version
@@ -190,6 +199,7 @@
           user_to_habitlab_versions_impressions[userid] = habitlab_versions_for_user
         }
         console.log(user_skipped_reasons.items())
+        this.user_to_experiment_start = mapobj(user_to_experiment_start_timestamp, (key, val) => [key, moment(val).toString()])
         this.user_to_num_interventions_seen = user_to_num_interventions_seen
         this.user_to_num_unique_interventions_seen = user_to_num_unique_interventions_seen
         this.skipped_users = skipped_users
@@ -201,33 +211,9 @@
         this.firstimpression_users_info = firstimpression_users.filter(x => user_to_initial_condition_info[x] == 'info')
         this.firstimpression_users_power = firstimpression_users.filter(x => user_to_initial_condition_info[x] == 'power')
         console.log(firstimpression_users)
-        return
-        this.latinsquare_users = latinsquare_users
-        console.log(latinsquare_users)
-        let user_id_to_completed_condition_idx = {}
-        let user_id_to_completed_durations = {}
-        let completed_condition_idx_to_user_id = []
-        //this.selection_algorithm_and_users_list = selection_algorithm_and_users_list
-        for (let userid of users_with_experiment_vars) {
-          let experiment_vars_list = await get_collection_for_user_cached(userid, 'synced:experiment_vars')
-          for (let x of experiment_vars_list) {
-            if (x.key == 'experiment_alternate_between_same_vs_random_varlength_deterministic_latinsquare') {
-              let condition_info = JSON.parse(x.val)
-              //console.log(condition_info)
-              let duration_idx = condition_info.duration_idx
-              if (user_id_to_completed_condition_idx[userid] == null) {
-                user_id_to_completed_condition_idx[userid] = duration_idx
-              } else {
-                user_id_to_completed_condition_idx[userid] = Math.max(duration_idx, user_id_to_completed_condition_idx[userid])
-              }
-              while (completed_condition_idx_to_user_id.length <= duration_idx) {
-                completed_condition_idx_to_user_id.push([])
-              }
-              completed_condition_idx_to_user_id[duration_idx].push(userid)
-            }
-          }
-        }
-        return
+        console.log(this.firstimpression_users_none)
+        console.log(this.firstimpression_users_info)
+        console.log(this.firstimpression_users_power)
       },
     })
   </script>
