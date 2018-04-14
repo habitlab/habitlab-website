@@ -257,6 +257,32 @@ export get_last_intervention_seen_and_time = (user_id) ->>
 
 expose_get_auth get_last_intervention_seen_and_time, 'userid'
 
+export get_interventions_disabled_and_sources = (user_id) ->>
+  [collection, db] = await get_collection_for_user_and_logname(user_id, 'logs:interventions')
+  all_items = await n2p -> collection.find({}).toArray(it)
+  output = []
+  for item in all_items
+    if item.type != 'intervention_set_always_disabled'
+      continue
+    output.push [item.intervention_name, item.page]
+  db.close()
+  return output
+
+expose_get_auth get_interventions_disabled_and_sources, 'userid'
+
+export get_interventions_enabled_and_sources = (user_id) ->>
+  [collection, db] = await get_collection_for_user_and_logname(user_id, 'logs:interventions')
+  all_items = await n2p -> collection.find({}).toArray(it)
+  output = []
+  for item in all_items
+    if item.type != 'intervention_set_smartly_managed'
+      continue
+    output.push [item.intervention_name, item.page]
+  db.close()
+  return output
+
+expose_get_auth get_interventions_enabled_and_sources, 'userid'
+
 export get_time_intervention_was_most_recently_seen = (user_id, intervention_name) ->>
   [collection, db] = await get_collection_for_user_and_logname(user_id, intervention_name)
   all_items = await n2p -> collection.find({}).toArray(it)

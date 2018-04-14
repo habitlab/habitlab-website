@@ -1886,6 +1886,10 @@ expose_getjson('get_time_last_log_was_sent_for_user', 'userid')
 
 expose_getjson('get_last_intervention_seen_and_time', 'userid')
 
+expose_getjson('get_interventions_disabled_and_sources', 'userid')
+
+expose_getjson('get_interventions_enabled_and_sources', 'userid')
+
 expose_getjson('get_intervention_to_time_most_recently_seen', 'userid')
 
 expose_getjson_cached('get_last_intervention_seen', 'userid')

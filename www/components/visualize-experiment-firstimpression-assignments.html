@@ -22,6 +22,10 @@
         <div>condition {{getkey(userid, user_to_initial_condition_info)}}</div>
         <div>num times an intervention was seen {{getkey(userid, user_to_num_interventions_seen)}}</div>
         <div>num unique interventions seen {{getkey(userid, user_to_num_unique_interventions_seen)}}</div>
+        <div>last intevention seen {{getkey(userid, user_to_last_intervention_seen)}}</div>
+        <div>last intevention seen time {{getkey(userid, user_to_last_intervention_seen_time)}}</div>
+        <div>interventions disabled and sources {{getkey(userid, user_to_interventions_disabled_and_sources)}}</div>
+        <div>interventions enabled and sources {{getkey(userid, user_to_interventions_enabled_and_sources)}}</div>
         <div>version at install time {{getkey(userid, user_to_habitlab_version_install)}}</div>
         <div>version at impressions {{getkey(userid, user_to_habitlab_versions_impressions)}}</div>
         <br>
@@ -43,6 +47,10 @@
         <div>condition {{getkey(userid, user_to_initial_condition_info)}}</div>
         <div>num times an intervention was seen {{getkey(userid, user_to_num_interventions_seen)}}</div>
         <div>num unique interventions seen {{getkey(userid, user_to_num_unique_interventions_seen)}}</div>
+        <div>last intevention seen {{getkey(userid, user_to_last_intervention_seen)}}</div>
+        <div>last intevention seen time {{getkey(userid, user_to_last_intervention_seen_time)}}</div>
+        <div>interventions disabled and sources {{getkey(userid, user_to_interventions_disabled_and_sources)}}</div>
+        <div>interventions enabled and sources {{getkey(userid, user_to_interventions_enabled_and_sources)}}</div>
         <div>version at install time {{getkey(userid, user_to_habitlab_version_install)}}</div>
         <div>version at impressions {{getkey(userid, user_to_habitlab_versions_impressions)}}</div>
         <br>
@@ -64,6 +72,10 @@
         <div>condition {{getkey(userid, user_to_initial_condition_info)}}</div>
         <div>num times an intervention was seen {{getkey(userid, user_to_num_interventions_seen)}}</div>
         <div>num unique interventions seen {{getkey(userid, user_to_num_unique_interventions_seen)}}</div>
+        <div>last intevention seen {{getkey(userid, user_to_last_intervention_seen)}}</div>
+        <div>last intevention seen time {{getkey(userid, user_to_last_intervention_seen_time)}}</div>
+        <div>interventions disabled and sources {{getkey(userid, user_to_interventions_disabled_and_sources)}}</div>
+        <div>interventions enabled and sources {{getkey(userid, user_to_interventions_enabled_and_sources)}}</div>
         <div>version at install time {{getkey(userid, user_to_habitlab_version_install)}}</div>
         <div>version at impressions {{getkey(userid, user_to_habitlab_versions_impressions)}}</div>
         <br>
@@ -85,6 +97,10 @@
         <div>condition {{getkey(userid, user_to_initial_condition_info)}}</div>
         <div>num times an intervention was seen {{getkey(userid, user_to_num_interventions_seen)}}</div>
         <div>num unique interventions seen {{getkey(userid, user_to_num_unique_interventions_seen)}}</div>
+        <div>last intevention seen {{getkey(userid, user_to_last_intervention_seen)}}</div>
+        <div>last intevention seen time {{getkey(userid, user_to_last_intervention_seen_time)}}</div>
+        <div>interventions disabled and sources {{getkey(userid, user_to_interventions_disabled_and_sources)}}</div>
+        <div>interventions enabled and sources {{getkey(userid, user_to_interventions_enabled_and_sources)}}</div>
         <div>version at install time {{getkey(userid, user_to_habitlab_version_install)}}</div>
         <div>version at impressions {{getkey(userid, user_to_habitlab_versions_impressions)}}</div>
         <br>
@@ -143,6 +159,11 @@
         let user_to_num_interventions_seen = {}
         let user_to_num_unique_interventions_seen = {}
         let user_to_experiment_start_timestamp = {}
+        let user_to_last_intervention_seen_time = {}
+        let user_to_last_intervention_seen = {}
+        let user_to_attritioned = {}
+        let user_to_interventions_disabled_and_sources = {}
+        let user_to_interventions_enabled_and_sources = {}
         for (let userid of all_firstimpression_users) {
           let experiment_vars_list = await get_collection_for_user_cached(userid, 'synced:experiment_vars')
           if (skip_unofficial && this.user_to_is_unofficial[userid] != false) {
@@ -174,6 +195,15 @@
             user_skipped_reasons.update({'did_not_complete_onboarding': 1})
             continue
           }
+          let interventions_disabled_and_sources = await get_interventions_disabled_and_sources_cached(userid)
+          user_to_interventions_disabled_and_sources[userid] = interventions_disabled_and_sources
+          let interventions_enabled_and_sources = await get_interventions_enabled_and_sources_cached(userid)
+          user_to_interventions_enabled_and_sources[userid] = interventions_enabled_and_sources
+          let last_intervention_seen_and_time = await get_last_intervention_seen_and_time_cached(userid)
+          let last_intervention_seen = last_intervention_seen_and_time.intervention
+          let last_intervention_seen_time = last_intervention_seen_and_time.time
+          user_to_last_intervention_seen_time[userid] = last_intervention_seen_time
+          user_to_last_intervention_seen[userid] = last_intervention_seen
           firstimpression_users.push(userid)
           let habitlab_versions_for_user = []
           let habitlab_versions_for_user_set = new Set()
@@ -199,6 +229,10 @@
           user_to_habitlab_versions_impressions[userid] = habitlab_versions_for_user
         }
         console.log(user_skipped_reasons.items())
+        this.user_to_interventions_disabled_and_sources = user_to_interventions_disabled_and_sources
+        this.user_to_interventions_enabled_and_sources = user_to_interventions_enabled_and_sources
+        this.user_to_last_intervention_seen = user_to_last_intervention_seen
+        this.user_to_last_intervention_seen_time = mapobj(user_to_last_intervention_seen_time, (key, val) => [key, moment(val).toString()])
         this.user_to_experiment_start = mapobj(user_to_experiment_start_timestamp, (key, val) => [key, moment(val).toString()])
         this.user_to_num_interventions_seen = user_to_num_interventions_seen
         this.user_to_num_unique_interventions_seen = user_to_num_unique_interventions_seen
