@@ -1751,6 +1751,11 @@ function timestamp_to_epoch(timestamp) {
   return moment(timestamp).diff(start_of_epoch, 'days')
 }
 
+function convert_date_to_days_since_today(date) {
+  let today = moment().hours(0).minutes(0).seconds(0).milliseconds(0)
+  return Math.round(moment.duration(today.diff(date)).asDays())
+}
+
 async function get_num_intervention_impressions_on_domain_per_epoch_day(userid, domain) {
   let interventions_active_for_domain_and_session = await get_collection_for_user_cached(userid, 'synced:interventions_active_for_domain_and_session')
   let day_to_num_impressions = {}
