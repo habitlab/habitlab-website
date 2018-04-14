@@ -14,6 +14,9 @@
     <template is="dom-repeat" items="{{firstimpression_users}}" as="userid">
       <div>
         <a href="/viewuser.html?userid={{userid}}">{{userid}}</a>
+        <div>days alive {{getkey(userid, user_to_days_alive)}}</div>
+        <div>attritioned {{getkey(userid, user_to_has_attritioned)}}</div>
+        <div>attritioned within 2 days {{getkey(userid, user_to_attritioned_within_2days)}}</div>
         <div>first active {{getkey(userid, first_active_date_for_all_users)}}</div>
         <div>last active {{getkey(userid, last_active_date_for_all_users)}}</div>
         <div>experiment start {{getkey(userid, user_to_experiment_start)}}</div>
@@ -39,6 +42,9 @@
     <template is="dom-repeat" items="{{firstimpression_users_none}}" as="userid">
       <div>
         <a href="/viewuser.html?userid={{userid}}">{{userid}}</a>
+        <div>days alive {{getkey(userid, user_to_days_alive)}}</div>
+        <div>attritioned {{getkey(userid, user_to_has_attritioned)}}</div>
+        <div>attritioned within 2 days {{getkey(userid, user_to_attritioned_within_2days)}}</div>
         <div>first active {{getkey(userid, first_active_date_for_all_users)}}</div>
         <div>last active {{getkey(userid, last_active_date_for_all_users)}}</div>
         <div>experiment start {{getkey(userid, user_to_experiment_start)}}</div>
@@ -64,6 +70,9 @@
     <template is="dom-repeat" items="{{firstimpression_users_info}}" as="userid">
       <div>
         <a href="/viewuser.html?userid={{userid}}">{{userid}}</a>
+        <div>days alive {{getkey(userid, user_to_days_alive)}}</div>
+        <div>attritioned {{getkey(userid, user_to_has_attritioned)}}</div>
+        <div>attritioned within 2 days {{getkey(userid, user_to_attritioned_within_2days)}}</div>
         <div>first active {{getkey(userid, first_active_date_for_all_users)}}</div>
         <div>last active {{getkey(userid, last_active_date_for_all_users)}}</div>
         <div>experiment start {{getkey(userid, user_to_experiment_start)}}</div>
@@ -89,6 +98,9 @@
     <template is="dom-repeat" items="{{firstimpression_users_power}}" as="userid">
       <div>
         <a href="/viewuser.html?userid={{userid}}">{{userid}}</a>
+        <div>days alive {{getkey(userid, user_to_days_alive)}}</div>
+        <div>attritioned {{getkey(userid, user_to_has_attritioned)}}</div>
+        <div>attritioned within 2 days {{getkey(userid, user_to_attritioned_within_2days)}}</div>
         <div>first active {{getkey(userid, first_active_date_for_all_users)}}</div>
         <div>last active {{getkey(userid, last_active_date_for_all_users)}}</div>
         <div>experiment start {{getkey(userid, user_to_experiment_start)}}</div>
@@ -146,9 +158,11 @@
         this.user_to_all_install_ids = await get_user_to_all_install_ids_cached()
         this.user_to_is_unofficial = await get_user_to_is_unofficial_cached()
         let skip_unofficial = true
-        let skip_duplicate_install_ids = true //true
+        let exclude_users_starting_within_3_days = true
+        let skip_duplicate_install_ids = false
         let skip_users_who_did_not_complete_onboarding = true
         let skip_users_who_saw_no_interventions = true
+        let versions_to_skip = ['1.0.211', '1.0.212', '1.0.213', '1.0.214', '1.0.215']
         let user_to_initial_condition_info = {}
         let user_to_habitlab_versions_impressions = {}
         let user_to_habitlab_version_install = {}
@@ -167,6 +181,7 @@
         let user_to_days_ago_last_seen = {}
         let user_to_days_alive = {}
         let user_to_has_attritioned = {}
+        let user_to_attritioned_within_2days = {}
         for (let userid of all_firstimpression_users) {
           let experiment_vars_list = await get_collection_for_user_cached(userid, 'synced:experiment_vars')
           if (skip_unofficial && this.user_to_is_unofficial[userid] != false) {
@@ -202,9 +217,34 @@
           let last_active_date = this.last_active_date_for_all_users[userid]
           let first_active_days_since_today = convert_date_to_days_since_today(first_active_date)
           let last_active_days_since_today = convert_date_to_days_since_today(last_active_date)
-          user_to_days_alive[userid] = last_active_days_since_today - first_active_days_since_today
+          if (exclude_users_starting_within_3_days && first_active_days_since_today <= 3) {
+            skipped_users.push(userid)
+            user_skipped_reasons.update({'started_within_3_days': 1})
+            continue
+          }
+          if (versions_to_skip.length > 0) {
+            let saw_blacklisted_version = false
+            for (let x of experiment_vars_list) {
+              if (x.key == 'intervention_firstimpression_notice') {
+                let version = x.habitlab_version
+                if (versions_to_skip.includes(version)) {
+                  saw_blacklisted_version = true
+                }
+              }
+            }
+            if (saw_blacklisted_version) {
+              skipped_users.push(userid)
+              user_skipped_reasons.update({'blacklisted_version': 1})
+              continue
+            }
+          }
+          let days_alive = first_active_days_since_today - last_active_days_since_today
+          user_to_days_alive[userid] = days_alive
           user_to_days_ago_last_seen[userid] = last_active_days_since_today
-          user_to_has_attritioned[userid] = last_active_days_since_today > 2
+          let did_user_attrition = last_active_days_since_today > 2
+          user_to_has_attritioned[userid] = did_user_attrition
+          let did_user_attrition_within_2days = did_user_attrition && (days_alive < 2)
+          user_to_attritioned_within_2days[userid] = did_user_attrition_within_2days
           let interventions_disabled_and_sources = await get_interventions_disabled_and_sources_cached(userid)
           user_to_interventions_disabled_and_sources[userid] = interventions_disabled_and_sources
           let interventions_enabled_and_sources = await get_interventions_enabled_and_sources_cached(userid)
@@ -238,7 +278,20 @@
           }
           user_to_habitlab_versions_impressions[userid] = habitlab_versions_for_user
         }
+        function get_attritioned_for_users(user_list) {
+          let output = []
+          for (let userid of user_list) {
+            let attritioned = user_to_attritioned_within_2days[userid]
+            output.push(attritioned)
+          }
+          return output
+        }
+        function get_attritioned_ratio_for_users(user_list) {
+          let attritioned_list = get_attritioned_for_users(user_list)
+          return attritioned_list.filter(x => x == 1).length / attritioned_list.length
+        }
         console.log(user_skipped_reasons.items())
+        this.user_to_attritioned_within_2days = user_to_attritioned_within_2days
         this.user_to_has_attritioned = user_to_has_attritioned
         this.user_to_days_alive = user_to_days_alive
         this.user_to_interventions_disabled_and_sources = user_to_interventions_disabled_and_sources
@@ -260,9 +313,18 @@
         console.log(this.firstimpression_users_none)
         console.log(this.firstimpression_users_info)
         console.log(this.firstimpression_users_power)
+        console.log(get_attritioned_ratio_for_users(this.firstimpression_users_none))
+        console.log(get_attritioned_ratio_for_users(this.firstimpression_users_info))
+        console.log(get_attritioned_ratio_for_users(this.firstimpression_users_power))
         let lifetimes1 = await get_lifetimes_and_whether_attrition_was_observed_for_users(this.firstimpression_users_none)
         let lifetimes2 = await get_lifetimes_and_whether_attrition_was_observed_for_users(this.firstimpression_users_info)
         let lifetimes3 = await get_lifetimes_and_whether_attrition_was_observed_for_users(this.firstimpression_users_power)
+        console.log(lifetimes1.attritions)
+        console.log(lifetimes2.attritions)
+        console.log(lifetimes3.attritions)        
+        console.log(lifetimes1.attritions.filter(x => x == 1).length / lifetimes1.attritions.length)
+        console.log(lifetimes2.attritions.filter(x => x == 1).length / lifetimes2.attritions.length)
+        console.log(lifetimes3.attritions.filter(x => x == 1).length / lifetimes3.attritions.length)
         //console.log(JSON.stringify({
         //  all_of_defaults: lifetimes1,
         //  half_of_defaults: lifetimes2,
