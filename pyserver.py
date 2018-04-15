@@ -76,6 +76,11 @@ def linregress(x):
   return scipy.stats.linregress(x)
 
 @route
+def fisher_exact(a, b):
+  # where a=[3,8] is comparing ratios 3:8 to b=[1,7] 1:7
+  return scipy.stats.fisher_exact([a, b])
+
+@route
 def logrank_test(a, b):
   # a={"lifetimes": [], "attritions": []}
   # b={"lifetimes": [], "attritions": []}

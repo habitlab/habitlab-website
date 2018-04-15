@@ -159,13 +159,16 @@
         this.user_to_is_unofficial = await get_user_to_is_unofficial_cached()
         let skip_unofficial = true
         let exclude_users_starting_within_3_days = true
+        let skip_notfirst_install_ids = true
         let skip_duplicate_install_ids = false
-        let skip_users_who_did_not_complete_onboarding = true
-        let skip_users_who_saw_no_interventions = true
+        let skip_users_who_did_not_complete_onboarding = false //true
+        let skip_users_who_saw_no_interventions = false
         let versions_to_skip = ['1.0.211', '1.0.212', '1.0.213', '1.0.214', '1.0.215']
+        //let versions_to_skip = []
         let user_to_initial_condition_info = {}
         let user_to_habitlab_versions_impressions = {}
         let user_to_habitlab_version_install = {}
+        let all_firstimpression_install_ids = await get_all_install_ids_in_firstimpression_experiment_cached()
         let all_firstimpression_users = await get_all_users_in_firstimpression_experiment_cached()
         let skipped_users = []
         let user_skipped_reasons = new pycollections.Counter()
@@ -182,12 +185,32 @@
         let user_to_days_alive = {}
         let user_to_has_attritioned = {}
         let user_to_attritioned_within_2days = {}
-        for (let userid of all_firstimpression_users) {
+        let install_id_to_user_id = await get_install_id_to_user_id()
+        //console.log(install_id_to_user_id)
+        let user_id_to_all_install_ids = await get_user_to_all_install_ids_cached()
+        //for (let userid of all_firstimpression_users) {
+        let validusers = {}
+        let validinstalls = {}
+        for (let install_id of all_firstimpression_install_ids) {
+          let userid = install_id_to_user_id[install_id]
+          let all_install_ids = user_id_to_all_install_ids[userid]
+          //console.log('install id is ' + install_id + ' user id is ' + userid + ' first install id is ' + all_install_ids[0])
+          //console.log(all_install_ids)
+          if (install_id == all_install_ids[0]) {
+            validusers[userid] = true
+            validinstalls[install_id] = true
+          }
           let experiment_vars_list = await get_collection_for_user_cached(userid, 'synced:experiment_vars')
-          if (skip_unofficial && this.user_to_is_unofficial[userid] != false) {
+          if (skip_unofficial && (this.user_to_is_unofficial[userid] != false)) {
             //console.log('skipping unofficial')
             skipped_users.push(userid)
             user_skipped_reasons.update({'unofficial': 1})
+            continue
+          }
+          if (skip_notfirst_install_ids && (install_id != all_install_ids[0])) {
+            //console.log('skipping unofficial')
+            skipped_users.push(userid)
+            user_skipped_reasons.update({'notfirst_install': 1})
             continue
           }
           if (skip_duplicate_install_ids && (this.user_to_all_install_ids[userid] == null || this.user_to_all_install_ids[userid].length != 1)) {
@@ -290,6 +313,14 @@
           let attritioned_list = get_attritioned_for_users(user_list)
           return attritioned_list.filter(x => x == 1).length / attritioned_list.length
         }
+        function get_attritioned_nonattritioned_counts_for_users(user_list) {
+          let attritioned_list = get_attritioned_for_users(user_list)
+          return [attritioned_list.filter(x => x == 1).length, attritioned_list.filter(x => x == 0).length]
+        }
+        console.log('valid users')
+        console.log(Object.keys(validusers))
+        console.log('valid installs')
+        console.log(Object.keys(validinstalls))
         console.log(user_skipped_reasons.items())
         this.user_to_attritioned_within_2days = user_to_attritioned_within_2days
         this.user_to_has_attritioned = user_to_has_attritioned
@@ -316,12 +347,15 @@
         console.log(get_attritioned_ratio_for_users(this.firstimpression_users_none))
         console.log(get_attritioned_ratio_for_users(this.firstimpression_users_info))
         console.log(get_attritioned_ratio_for_users(this.firstimpression_users_power))
+        let result_fisher = await pyfunc('fisher_exact', get_attritioned_nonattritioned_counts_for_users(this.firstimpression_users_none), get_attritioned_nonattritioned_counts_for_users(this.firstimpression_users_power))
+        console.log('fisher exact test')
+        console.log(result_fisher)
         let lifetimes1 = await get_lifetimes_and_whether_attrition_was_observed_for_users(this.firstimpression_users_none)
         let lifetimes2 = await get_lifetimes_and_whether_attrition_was_observed_for_users(this.firstimpression_users_info)
         let lifetimes3 = await get_lifetimes_and_whether_attrition_was_observed_for_users(this.firstimpression_users_power)
         console.log(lifetimes1.attritions)
         console.log(lifetimes2.attritions)
-        console.log(lifetimes3.attritions)        
+        console.log(lifetimes3.attritions)
         console.log(lifetimes1.attritions.filter(x => x == 1).length / lifetimes1.attritions.length)
         console.log(lifetimes2.attritions.filter(x => x == 1).length / lifetimes2.attritions.length)
         console.log(lifetimes3.attritions.filter(x => x == 1).length / lifetimes3.attritions.length)

@@ -499,6 +499,27 @@ async function get_all_users_in_firstimpression_experiment() {
 
 let get_all_users_in_firstimpression_experiment_cached = memoize_to_disk_0arg(get_all_users_in_firstimpression_experiment, 'get_all_users_in_firstimpression_experiment')
 
+async function get_all_install_ids_in_firstimpression_experiment() {
+  let output = []
+  let output_set = {}
+  let users_with_experiment_vars = await get_all_users_with_experiment_vars_cached()
+  for (let userid of users_with_experiment_vars) {
+    let experiment_vars_list = await get_collection_for_user_cached(userid, 'synced:experiment_vars')
+    for (let x of experiment_vars_list) {
+      let install_id = x.install_id
+      if (x.key == 'intervention_firstimpression_notice') {
+        if (output_set[install_id] == null) {
+          output_set[install_id] = true
+          output.push(install_id)
+        }
+      }
+    }
+  }
+  return output
+}
+
+let get_all_install_ids_in_firstimpression_experiment_cached = memoize_to_disk_0arg(get_all_install_ids_in_firstimpression_experiment, 'get_all_install_ids_in_firstimpression_experiment')
+
 async function get_selection_algorithm_to_install_ids_list() {
   let output = {}
   let selection_algorithm_and_users_list = await get_selection_algorithm_and_install_ids_list()

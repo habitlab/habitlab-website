@@ -563,7 +563,7 @@ app.get '/get_user_to_all_install_ids', auth, (ctx) ->>
     [installs, db] = await get_installs()
     all_results = await n2p -> installs.find({}).toArray(it)
     output = {}
-    for install_info in all_results
+    for install_info in prelude.sortBy((.timestamp), all_results)
       userid = install_info.user_id
       install_id = install_info.install_id
       if not output[userid]?
