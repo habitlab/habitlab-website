@@ -204,6 +204,7 @@
           //if (!did_user_enable_interventions_5min && !did_user_disable_interventions_5min) {
           //if (!did_user_enable_interventions && !did_user_disable_interventions) {
           //if (!did_user_enable_interventions && !did_user_disable_interventions) {
+          //if (!did_user_enable_interventions_5min && !did_user_disable_interventions_5min) {
           if (!did_user_enable_interventions_5min && !did_user_disable_interventions_5min) {
             if (condition_to_users[condition + '_defaultinterventions'] == null) {
               condition_to_users[condition + '_defaultinterventions'] = []
@@ -386,14 +387,17 @@
           }))
         }).toArray()
         console.log('data for making logrank test')
-        /*
-        let lifetimes1 = await get_lifetimes_and_whether_attrition_was_observed_for_users(condition_to_users['changed_interventions_5min'])
-        let lifetimes2 = await get_lifetimes_and_whether_attrition_was_observed_for_users(condition_to_users['no_changed_interventions_5min'])
+        
+        let lifetimes_changed = await get_lifetimes_and_whether_attrition_was_observed_for_users(condition_to_users['changed_interventions_5min'])
+        let lifetimes_nochanged = await get_lifetimes_and_whether_attrition_was_observed_for_users(condition_to_users['no_changed_interventions_5min'])
         console.log(JSON.stringify({
-          'changed': lifetimes1,
-          'nochanged': lifetimes2,
+          'changed': lifetimes_changed,
+          'nochanged': lifetimes_nochanged,
         }))
-        */
+        let result0 = await pyfunc('logrank_test', lifetimes_changed, lifetimes_nochanged)
+        console.log(result0)
+        console.log('p value ' + result0.__StatisticalResult__.p_value)
+        
         let lifetimes1 = await get_lifetimes_and_whether_attrition_was_observed_for_users(condition_to_users['all_of_defaults_defaultinterventions'])
         let lifetimes2 = await get_lifetimes_and_whether_attrition_was_observed_for_users(condition_to_users['half_of_defaults_defaultinterventions'])
         let lifetimes3 = await get_lifetimes_and_whether_attrition_was_observed_for_users(condition_to_users['one_defaultinterventions'])

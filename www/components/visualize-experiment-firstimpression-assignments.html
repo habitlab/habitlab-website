@@ -155,16 +155,19 @@
         let selection_algorithm_to_idx = {}
         this.first_active_date_for_all_users = await list_first_active_date_for_all_users()
         this.last_active_date_for_all_users = await list_last_active_date_for_all_users()
+        this.first_active_date_for_all_install_ids = await list_first_active_date_for_all_install_ids()
+        this.last_active_date_for_all_install_ids = await list_last_active_date_for_all_install_ids()
         this.user_to_all_install_ids = await get_user_to_all_install_ids_cached()
         this.user_to_is_unofficial = await get_user_to_is_unofficial_cached()
         let skip_unofficial = true
-        let exclude_users_starting_within_3_days = true
-        let skip_notfirst_install_ids = true
+        let exclude_users_starting_within_3_days = false
+        let skip_notfirst_install_ids = false
         let skip_duplicate_install_ids = false
         let skip_users_who_did_not_complete_onboarding = false //true
         let skip_users_who_saw_no_interventions = false
-        let versions_to_skip = ['1.0.211', '1.0.212', '1.0.213', '1.0.214', '1.0.215']
-        //let versions_to_skip = []
+        let skip_users_with_no_sessions = false
+        //let versions_to_skip = ['1.0.211', '1.0.212', '1.0.213', '1.0.214', '1.0.215']
+        let versions_to_skip = []
         let user_to_initial_condition_info = {}
         let user_to_habitlab_versions_impressions = {}
         let user_to_habitlab_version_install = {}
@@ -178,19 +181,21 @@
         let user_to_experiment_start_timestamp = {}
         let user_to_last_intervention_seen_time = {}
         let user_to_last_intervention_seen = {}
-        let user_to_attritioned = {}
         let user_to_interventions_disabled_and_sources = {}
         let user_to_interventions_enabled_and_sources = {}
         let user_to_days_ago_last_seen = {}
         let user_to_days_alive = {}
         let user_to_has_attritioned = {}
+        let install_id_to_has_attritioned = {}
         let user_to_attritioned_within_2days = {}
+        let install_id_to_attritioned_within_2days = {}
         let install_id_to_user_id = await get_install_id_to_user_id()
         //console.log(install_id_to_user_id)
         let user_id_to_all_install_ids = await get_user_to_all_install_ids_cached()
         //for (let userid of all_firstimpression_users) {
         let validusers = {}
         let validinstalls = {}
+        //let csv_data = []
         for (let install_id of all_firstimpression_install_ids) {
           let userid = install_id_to_user_id[install_id]
           let all_install_ids = user_id_to_all_install_ids[userid]
@@ -201,6 +206,8 @@
             validinstalls[install_id] = true
           }
           let experiment_vars_list = await get_collection_for_user_cached(userid, 'synced:experiment_vars')
+          //console.log(experiment_vars_list)
+          experiment_vars_list = experiment_vars_list.filter(x => x.install_id == install_id)
           if (skip_unofficial && (this.user_to_is_unofficial[userid] != false)) {
             //console.log('skipping unofficial')
             skipped_users.push(userid)
@@ -236,8 +243,24 @@
             user_skipped_reasons.update({'did_not_complete_onboarding': 1})
             continue
           }
-          let first_active_date = this.first_active_date_for_all_users[userid]
-          let last_active_date = this.last_active_date_for_all_users[userid]
+          let session_info_list = await get_session_info_list_for_install_id_detailed_cached(install_id)
+          if (skip_users_with_no_sessions && session_info_list.length == 0) {
+            skipped_users.push(userid)
+            user_skipped_reasons.update({'no_sessions': 1})
+            continue
+          }
+          if (session_info_list[0].is_preview) {
+            continue
+          }
+          //if (session_info_list[0].domain == 'www.youtube.com') {
+          //  continue
+          //}
+          if (session_info_list[0].domain != 'www.facebook.com') {
+            continue
+          }
+          console.log(session_info_list)
+          let first_active_date = this.first_active_date_for_all_install_ids[install_id]
+          let last_active_date = this.last_active_date_for_all_install_ids[install_id]
           let first_active_days_since_today = convert_date_to_days_since_today(first_active_date)
           let last_active_days_since_today = convert_date_to_days_since_today(last_active_date)
           if (exclude_users_starting_within_3_days && first_active_days_since_today <= 3) {
@@ -266,8 +289,10 @@
           user_to_days_ago_last_seen[userid] = last_active_days_since_today
           let did_user_attrition = last_active_days_since_today > 2
           user_to_has_attritioned[userid] = did_user_attrition
-          let did_user_attrition_within_2days = did_user_attrition && (days_alive < 2)
+          install_id_to_has_attritioned[install_id] = did_user_attrition
+          let did_user_attrition_within_2days = did_user_attrition // && (days_alive < 2)
           user_to_attritioned_within_2days[userid] = did_user_attrition_within_2days
+          install_id_to_attritioned_within_2days[install_id] = did_user_attrition_within_2days
           let interventions_disabled_and_sources = await get_interventions_disabled_and_sources_cached(userid)
           user_to_interventions_disabled_and_sources[userid] = interventions_disabled_and_sources
           let interventions_enabled_and_sources = await get_interventions_enabled_and_sources_cached(userid)
@@ -317,6 +342,22 @@
           let attritioned_list = get_attritioned_for_users(user_list)
           return [attritioned_list.filter(x => x == 1).length, attritioned_list.filter(x => x == 0).length]
         }
+        function get_attritioned_for_install_ids(install_id_list) {
+          let output = []
+          for (let install_id of install_id_list) {
+            let attritioned = install_id_to_attritioned_within_2days[install_id]
+            output.push(attritioned)
+          }
+          return output
+        }
+        function get_attritioned_ratio_for_install_ids(install_id_list) {
+          let attritioned_list = get_attritioned_for_install_ids(install_id_list)
+          return attritioned_list.filter(x => x == 1).length / attritioned_list.length
+        }
+        function get_attritioned_nonattritioned_counts_for_install_ids(install_id_list) {
+          let attritioned_list = get_attritioned_for_install_ids(install_id_list)
+          return [attritioned_list.filter(x => x == 1).length, attritioned_list.filter(x => x == 0).length]
+        }
         console.log('valid users')
         console.log(Object.keys(validusers))
         console.log('valid installs')
@@ -347,6 +388,8 @@
         console.log(get_attritioned_ratio_for_users(this.firstimpression_users_none))
         console.log(get_attritioned_ratio_for_users(this.firstimpression_users_info))
         console.log(get_attritioned_ratio_for_users(this.firstimpression_users_power))
+        console.log(get_attritioned_nonattritioned_counts_for_users(this.firstimpression_users_none))
+        console.log(get_attritioned_nonattritioned_counts_for_users(this.firstimpression_users_power))
         let result_fisher = await pyfunc('fisher_exact', get_attritioned_nonattritioned_counts_for_users(this.firstimpression_users_none), get_attritioned_nonattritioned_counts_for_users(this.firstimpression_users_power))
         console.log('fisher exact test')
         console.log(result_fisher)

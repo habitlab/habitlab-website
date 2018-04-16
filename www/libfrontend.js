@@ -1146,6 +1146,9 @@ async function get_session_info_list_for_install_id_detailed(install_id) {
   return output
 }
 
+let get_session_info_list_for_install_id_detailed_cached = memoize_to_disk_1arg(get_session_info_list_for_install_id_detailed, 'get_session_info_list_for_install_id_detailed')
+
+
 async function get_session_info_list_for_user_detailed(userid) {
   let output = []
   let interventions_active_for_domain_and_session = await get_collection_for_user_cached(userid, 'synced:interventions_active_for_domain_and_session')
@@ -1700,13 +1703,33 @@ async function list_last_active_date_for_all_users_since_today() {
   return output
 }
 
+async function list_first_active_date_for_all_install_ids() {
+  let install_id_to_dates_active = await get_install_id_to_dates_active_cached()
+  let output = {}
+  for (let install_id of Object.keys(install_id_to_dates_active)) {
+    let dates_active = install_id_to_dates_active[install_id]
+    output[install_id] = dates_active[0]
+  }
+  return output
+}
+
+async function list_last_active_date_for_all_install_ids() {
+  let install_id_to_dates_active = await get_install_id_to_dates_active_cached()
+  let output = {}
+  for (let install_id of Object.keys(install_id_to_dates_active)) {
+    let dates_active = install_id_to_dates_active[install_id]
+    output[install_id] = dates_active[dates_active.length - 1]
+  }
+  return output
+}
+
 async function list_first_active_date_for_user(userid) {
   let user_to_dates_active = await get_user_to_dates_active_cached()
   let dates_active = user_to_dates_active[userid]
   return dates_active[0]
 }
 
-async function list_last_active_date_for_user(install_id) {
+async function list_last_active_date_for_install_id(install_id) {
   let install_id_to_dates_active = await get_install_id_to_dates_active_cached()
   let dates_active = install_id_to_dates_active[install_id]
   return dates_active[0]
