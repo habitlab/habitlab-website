@@ -195,7 +195,7 @@
         //for (let userid of all_firstimpression_users) {
         let validusers = {}
         let validinstalls = {}
-        //let csv_data = []
+        let csv_data = []
         for (let install_id of all_firstimpression_install_ids) {
           let userid = install_id_to_user_id[install_id]
           let all_install_ids = user_id_to_all_install_ids[userid]
@@ -249,6 +249,7 @@
             user_skipped_reasons.update({'no_sessions': 1})
             continue
           }
+          /*
           if (session_info_list[0].is_preview) {
             continue
           }
@@ -259,6 +260,7 @@
             continue
           }
           console.log(session_info_list)
+          */
           let first_active_date = this.first_active_date_for_all_install_ids[install_id]
           let last_active_date = this.last_active_date_for_all_install_ids[install_id]
           let first_active_days_since_today = convert_date_to_days_since_today(first_active_date)
