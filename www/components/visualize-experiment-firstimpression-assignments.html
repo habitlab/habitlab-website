@@ -123,6 +123,21 @@
 
   </template>
   <script>
+
+    function compute_daily_times_on_site(session_info_list) {
+      let output = []
+      let day_to_total_time_spent = {}
+      for (let session_info of session_info_list) {
+        let time_spent = session_info.time_spent
+        let day = session_info.localepoch
+        if (day_to_total_time_spent[day] == null) {
+          day_to_total_time_spent[day] = 0
+        }
+        day_to_total_time_spent[day] += time_spent
+      }
+      return Object.values(day_to_total_time_spent)
+    }
+
     Polymer({
       is: 'visualize-experiment-firstimpression-assignments',
       properties: {
@@ -201,13 +216,14 @@
           let all_install_ids = user_id_to_all_install_ids[userid]
           //console.log('install id is ' + install_id + ' user id is ' + userid + ' first install id is ' + all_install_ids[0])
           //console.log(all_install_ids)
+          let is_first_install_id = install_id == all_install_ids[0]
           if (install_id == all_install_ids[0]) {
             validusers[userid] = true
             validinstalls[install_id] = true
           }
           let experiment_vars_list = await get_collection_for_user_cached(userid, 'synced:experiment_vars')
           //console.log(experiment_vars_list)
-          experiment_vars_list = experiment_vars_list.filter(x => x.install_id == install_id)
+          experiment_vars_list_install_id = experiment_vars_list.filter(x => x.install_id == install_id)
           if (skip_unofficial && (this.user_to_is_unofficial[userid] != false)) {
             //console.log('skipping unofficial')
             skipped_users.push(userid)
@@ -226,6 +242,8 @@
             user_skipped_reasons.update({'duplicate_install': 1})
             continue
           }
+          let intervention_to_num_times_seen_all = await get_intervention_to_num_times_seen(userid)
+          let total_num_times_interventions_seen_all = prelude.sum(Object.values(intervention_to_num_times_seen_all))
           let intervention_to_num_times_seen = await get_intervention_to_num_times_seen_newsession_nonpreview(userid)
           let total_num_times_interventions_seen = prelude.sum(Object.values(intervention_to_num_times_seen))
           //console.log(total_num_times_interventions_seen)
@@ -249,6 +267,20 @@
             user_skipped_reasons.update({'no_sessions': 1})
             continue
           }
+          //console.log(session_info_list)
+          let session_times_on_site = session_info_list.map(x => x.time_spent)
+          let daily_times_on_site = compute_daily_times_on_site(session_info_list)
+          let mean_session_time = prelude.mean(session_times_on_site)
+          let mean_daily_time = prelude.mean(daily_times_on_site)
+          let is_session_list_empty = session_info_list.length == 0
+          let is_preview = false
+          let domain = ''
+          let intervention = ''
+          if (!is_session_list_empty) {
+            is_preview = session_info_list[0].is_preview
+            domain = session_info_list[0].domain
+            intervention = session_info_list[0].intervention
+          }
           /*
           if (session_info_list[0].is_preview) {
             continue
@@ -265,6 +297,10 @@
           let last_active_date = this.last_active_date_for_all_install_ids[install_id]
           let first_active_days_since_today = convert_date_to_days_since_today(first_active_date)
           let last_active_days_since_today = convert_date_to_days_since_today(last_active_date)
+          let first_active_date_userid = this.first_active_date_for_all_users[userid]
+          let last_active_date_userid = this.last_active_date_for_all_users[userid]
+          let first_active_days_since_today_userid = convert_date_to_days_since_today(first_active_date_userid)
+          let last_active_days_since_today_userid = convert_date_to_days_since_today(last_active_date_userid)
           if (exclude_users_starting_within_3_days && first_active_days_since_today <= 3) {
             skipped_users.push(userid)
             user_skipped_reasons.update({'started_within_3_days': 1})
@@ -287,9 +323,11 @@
             }
           }
           let days_alive = first_active_days_since_today - last_active_days_since_today
+          let days_alive_userid = first_active_days_since_today_userid - last_active_days_since_today_userid
           user_to_days_alive[userid] = days_alive
           user_to_days_ago_last_seen[userid] = last_active_days_since_today
           let did_user_attrition = last_active_days_since_today > 2
+          let did_user_attrition_userid = last_active_days_since_today_userid > 2
           user_to_has_attritioned[userid] = did_user_attrition
           install_id_to_has_attritioned[install_id] = did_user_attrition
           let did_user_attrition_within_2days = did_user_attrition // && (days_alive < 2)
@@ -307,18 +345,28 @@
           firstimpression_users.push(userid)
           let habitlab_versions_for_user = []
           let habitlab_versions_for_user_set = new Set()
+          let initial_condition_for_user = ''
+          let initial_habitlab_version_for_user = ''
+          let saw_multiple_conditions_for_user = false
+          let did_user_see_notice = false
           for (let x of experiment_vars_list) {
             if (x.key == 'intervention_firstimpression_notice') {
               let version = x.habitlab_version
               let condition = x.val
               let timestamp = x.timestamp
+              if (initial_condition_for_user != '') {
+                saw_multiple_conditions_for_user = true
+              }
               if (user_to_habitlab_version_install[userid] == null) {
                 user_to_habitlab_version_install[userid] = version
                 user_to_initial_condition_info[userid] = condition
                 user_to_experiment_start_timestamp[userid] = timestamp
+                initial_condition_for_user = condition
+                initial_habitlab_version_for_user = version
               }
             }
             if (x.key == 'intervention_firstimpression_notice_seenlist') {
+              did_user_see_notice = true
               let version = x.habitlab_version
               if (!habitlab_versions_for_user_set.has(version)) {
                 habitlab_versions_for_user_set.add(version)
@@ -327,6 +375,40 @@
             }
           }
           user_to_habitlab_versions_impressions[userid] = habitlab_versions_for_user
+          if (userid == null) {
+            continue
+          }
+          did_user_see_notice_or_is_none = did_user_see_notice || (initial_condition_for_user == 'none' || initial_condition_for_user == '')
+          did_user_see_notice_or_is_none_and_saw_interventions = did_user_see_notice || (total_num_times_interventions_seen_all > 0 && (initial_condition_for_user == 'none' || initial_condition_for_user == ''))
+
+          csv_data.push({
+            userid: userid,
+            install_id: install_id,
+            condition: initial_condition_for_user,
+            saw_multiple_conditions_for_user: saw_multiple_conditions_for_user,
+            days_alive: days_alive_userid,
+            days_alive_install_id: days_alive,
+            attritioned: did_user_attrition_userid,
+            attritioned_install_id: did_user_attrition,
+            last_active_days_since_today_install_id: last_active_days_since_today,
+            last_active_days_since_today: last_active_days_since_today_userid,
+            is_first_install_id: is_first_install_id,
+            is_session_list_empty: is_session_list_empty,
+            is_preview: is_preview,
+            domain: domain,
+            intervention: intervention,
+            initial_habitlab_version_for_user: initial_habitlab_version_for_user,
+            did_user_see_notice: did_user_see_notice,
+            did_user_see_notice_or_is_none: did_user_see_notice_or_is_none,
+            did_user_see_notice_or_is_none_and_saw_interventions: did_user_see_notice_or_is_none_and_saw_interventions,
+            total_num_times_interventions_seen: total_num_times_interventions_seen,
+            total_num_times_interventions_seen_all: total_num_times_interventions_seen_all,
+            did_user_complete_onboarding: did_user_complete_onboarding,
+            session_times_on_site: '"' + JSON.stringify(session_times_on_site) + '"',
+            daily_times_on_site: '"' + JSON.stringify(daily_times_on_site) + '"',
+            mean_daily_time: mean_daily_time,
+            mean_session_time: mean_session_time,
+          })
         }
         function get_attritioned_for_users(user_list) {
           let output = []
@@ -412,6 +494,8 @@
         let result = await pyfunc('logrank_test', lifetimes1, lifetimes3)
         console.log(result)
         console.log('p value ' + result.__StatisticalResult__.p_value)
+        console.log('======== csv data ===========')
+        console.log(await json2csv.json2csvPromisified(csv_data))
       },
     })
   </script>
