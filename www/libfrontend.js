@@ -1601,6 +1601,21 @@ let get_experiment_info_for_user = async function(userid) {
 
 let get_experiment_info_for_user_cached = memoize_to_disk_1arg(get_experiment_info_for_user, 'get_experiment_info_for_user')
 
+let get_all_experiment_info_for_user = async function(userid) {
+  let intervention_logs = await get_collection_for_user(userid, 'logs:interventions')
+  let output = []
+  for (let x of intervention_logs) {
+    if (x.type == 'default_interventions_on_install') {
+      if (x.interventions_per_goal != null && x.enabled_interventions != null) {
+        output.push(x)
+      }
+    }
+  }
+  return output
+}
+
+let get_all_experiment_info_for_user_cached = memoize_to_disk_1arg(get_all_experiment_info_for_user, 'get_all_experiment_info_for_user')
+
 let get_experiment_date_for_user = async function(userid) {
   let experiment_info = await get_experiment_info_for_user(userid)
   if (experiment_info != null && experiment_info != 'none' && experiment_info.timestamp != null) {
@@ -1703,6 +1718,28 @@ async function list_last_active_date_for_all_users_since_today() {
   return output
 }
 
+async function list_first_active_date_for_all_install_ids_since_today() {
+  let today = moment().hours(0).minutes(0).seconds(0).milliseconds(0)
+  let install_id_to_first_active_date = await list_first_active_date_for_all_install_ids()
+  let output = {}
+  for (let install_id of Object.keys(install_id_to_first_active_date)) {
+    let first_active = install_id_to_first_active_date[install_id]
+    output[userid] = Math.round(moment.duration(today.diff(first_active)).asDays())
+  }
+  return output
+}
+
+async function list_last_active_date_for_all_install_ids_since_today() {
+  let today = moment().hours(0).minutes(0).seconds(0).milliseconds(0)
+  let install_id_to_last_active_date = await list_last_active_date_for_all_install_ids()
+  let output = {}
+  for (let install_id of Object.keys(install_id_to_last_active_date)) {
+    let last_active = install_id_to_last_active_date[install_id]
+    output[install_id] = Math.round(moment.duration(today.diff(last_active)).asDays())
+  }
+  return output
+}
+
 async function list_first_active_date_for_all_install_ids() {
   let install_id_to_dates_active = await get_install_id_to_dates_active_cached()
   let output = {}
@@ -1755,7 +1792,7 @@ async function list_first_active_date_for_user_since_today(userid) {
 
 async function list_last_active_date_for_user_since_today(userid) {
   let today = moment().hours(0).minutes(0).seconds(0).milliseconds(0)
-  let last_active = await list_first_active_date_for_user(userid)
+  let last_active = await list_last_active_date_for_user(userid)
   return Math.round(moment.duration(today.diff(last_active)).asDays())
 }
 
@@ -1793,6 +1830,11 @@ function convert_epoch_to_date(epoch) {
 function timestamp_to_epoch(timestamp) {
   let start_of_epoch = moment().year(2016).month(0).date(1).hours(0).minutes(0).seconds(0).milliseconds(0)
   return moment(timestamp).diff(start_of_epoch, 'days')
+}
+
+function convert_timestamp_to_days_since_today(timestamp) {
+  let today = moment().hours(0).minutes(0).seconds(0).milliseconds(0)
+  return Math.round(moment.duration(today.diff(timestamp)).asDays())
 }
 
 function convert_date_to_days_since_today(date) {
