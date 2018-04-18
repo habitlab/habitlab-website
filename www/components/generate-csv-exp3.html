@@ -70,11 +70,19 @@
           let intervention_to_num_times_seen = await get_intervention_to_num_times_seen(userid)
           let total_interventions_seen = 0
           let total_facebook_interventions_seen = 0
+          let total_youtube_interventions_seen = 0
           for (let intervention_name of Object.keys(intervention_to_num_times_seen)) {
             let num_times_seen = intervention_to_num_times_seen[intervention_name]
             total_interventions_seen += num_times_seen
             if (intervention_name.startsWith('facebook:')) {
               total_facebook_interventions_seen += num_times_seen
+            }
+          }
+          for (let intervention_name of Object.keys(intervention_to_num_times_seen)) {
+            let num_times_seen = intervention_to_num_times_seen[intervention_name]
+            //total_interventions_seen += num_times_seen
+            if (intervention_name.startsWith('youtube:')) {
+              total_youtube_interventions_seen += num_times_seen
             }
           }
           csv_data.push({
@@ -91,6 +99,8 @@
             onboarding_completed: onboarding_completed,
             total_interventions_seen: total_interventions_seen,
             total_facebook_interventions_seen: total_facebook_interventions_seen,
+            total_youtube_interventions_seen: total_youtube_interventions_seen,
+            total_facebook_plus_youtube_interventions_seen: total_facebook_interventions_seen + total_youtube_interventions_seen,
             condition: condition,
           })
         }
