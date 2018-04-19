@@ -211,11 +211,13 @@
         let validusers = {}
         let validinstalls = {}
         let csv_data = []
+        let csv_data_perday = []
         for (let install_id of all_firstimpression_install_ids) {
           let userid = install_id_to_user_id[install_id]
           let all_install_ids = user_id_to_all_install_ids[userid]
           //console.log('install id is ' + install_id + ' user id is ' + userid + ' first install id is ' + all_install_ids[0])
           //console.log(all_install_ids)
+          let have_multiple_install_ids = all_install_ids.length > 1
           let is_first_install_id = install_id == all_install_ids[0]
           if (install_id == all_install_ids[0]) {
             validusers[userid] = true
@@ -281,6 +283,7 @@
             domain = session_info_list[0].domain
             intervention = session_info_list[0].intervention
           }
+
           /*
           if (session_info_list[0].is_preview) {
             continue
@@ -381,6 +384,16 @@
           did_user_see_notice_or_is_none = did_user_see_notice || (initial_condition_for_user == 'none' || initial_condition_for_user == '')
           did_user_see_notice_or_is_none_and_saw_interventions = did_user_see_notice || (total_num_times_interventions_seen_all > 0 && (initial_condition_for_user == 'none' || initial_condition_for_user == ''))
 
+          let day_info_list = convert_session_info_list_to_day_info_list(session_info_list)
+          for (let day_info of day_info_list) {
+            day_info.condition = initial_condition_for_user
+            day_info.initial_habitlab_version_for_user = initial_habitlab_version_for_user
+            day_info.did_user_see_notice = did_user_see_notice
+            day_info.did_user_see_notice_or_is_none = did_user_see_notice_or_is_none
+            day_info.did_user_see_notice_or_is_none_and_saw_interventions = did_user_see_notice_or_is_none_and_saw_interventions
+            csv_data_perday.push(day_info)
+          }
+
           csv_data.push({
             userid: userid,
             install_id: install_id,
@@ -393,6 +406,7 @@
             last_active_days_since_today_install_id: last_active_days_since_today,
             last_active_days_since_today: last_active_days_since_today_userid,
             is_first_install_id: is_first_install_id,
+            have_multiple_install_ids: have_multiple_install_ids,
             is_session_list_empty: is_session_list_empty,
             is_preview: is_preview,
             domain: domain,
@@ -496,6 +510,8 @@
         console.log('p value ' + result.__StatisticalResult__.p_value)
         console.log('======== csv data ===========')
         console.log(await json2csv.json2csvPromisified(csv_data))
+        console.log('======== csv data per day ============')
+        console.log(await json2csv.json2csvPromisified(csv_data_perday))
       },
     })
   </script>

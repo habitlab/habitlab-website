@@ -1211,6 +1211,56 @@ async function get_session_info_list_for_user_detailed(userid) {
   return output
 }
 
+function convert_session_info_list_to_day_info_list(session_info_list) {
+  let localepoch_to_sessions = {}
+  for (let session_info of session_info_list) {
+    if (localepoch_to_sessions[session_info.localepoch] == null) {
+      localepoch_to_sessions[session_info.localepoch] = []
+    }
+    localepoch_to_sessions[session_info.localepoch].push(session_info)
+  }
+  let domain_info_list = []
+  let localepoch_keys = Object.keys(localepoch_to_sessions).map(x => parseInt(x))
+  let first_localepoch = prelude.minimum(localepoch_keys)
+  for (let localepoch of localepoch_keys) {
+    let user_id_to_install_id_to_domain_to_time_spent_today = {}
+    let session_info_for_day = localepoch_to_sessions[localepoch]
+    for (let session_info of session_info_for_day) {
+      let domain = session_info.domain
+      let time_spent = session_info.time_spent
+      let userid = session_info.userid
+      let install_id = session_info.install_id
+      if (user_id_to_install_id_to_domain_to_time_spent_today[userid] == null) {
+        user_id_to_install_id_to_domain_to_time_spent_today[userid] = {}
+      }
+      if (user_id_to_install_id_to_domain_to_time_spent_today[userid][install_id] == null) {
+        user_id_to_install_id_to_domain_to_time_spent_today[userid][install_id] = {}
+      }
+      if (user_id_to_install_id_to_domain_to_time_spent_today[userid][install_id][domain] == null) {
+        user_id_to_install_id_to_domain_to_time_spent_today[userid][install_id][domain] = 0
+      }
+      user_id_to_install_id_to_domain_to_time_spent_today[userid][install_id][domain] += time_spent
+    }
+    for (let userid of Object.keys(user_id_to_install_id_to_domain_to_time_spent_today)) {
+      for (let install_id of Object.keys(user_id_to_install_id_to_domain_to_time_spent_today[userid])) {
+        let domain_to_time_spent_today = user_id_to_install_id_to_domain_to_time_spent_today[userid][install_id]
+        for (let domain of Object.keys(domain_to_time_spent_today)) {
+          domain_info_list.push({
+            domain: domain,
+            userid: userid,
+            install_id: install_id,
+            time_spent: domain_to_time_spent_today[domain],
+            log_time_spent: Math.log(domain_to_time_spent_today[domain]),
+            localepoch: localepoch,
+            days_since_install: localepoch - first_localepoch,
+          })
+        }
+      }
+    }
+  }
+  return domain_info_list
+}
+
 function group_list_into_dict_by_key(list, key) {
   if (list == null) {
     return {} // TODO why is this necessary?
