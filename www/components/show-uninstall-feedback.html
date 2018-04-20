@@ -20,7 +20,186 @@
       },
       ready: async function() {
         let uninstall_info_list = await fetch('/get_uninstall_feedback').then(x => x.json())
-        console.log(uninstall_info_list.map(x => [x.u, x.feedback]).filter(x => x[1].length > 0 && x[1].includes('fucking')))
+        let category_to_uninstall_reason_to_count = {}
+        function count_uninstall_reasons(uninstall_info_list) {
+          let output = {}
+          output.num_users = 0
+          //console.log(uninstall_info_list.map(x => x['uninstall_reasons[]']))
+          for (let uninstall_reason_list of uninstall_info_list.map(x => x['uninstall_reasons[]'])) {
+            if (uninstall_reason_list == null) {
+              uninstall_reason_list = []
+            }
+            if (typeof(uninstall_reason_list) == 'string') {
+              uninstall_reason_list = [uninstall_reason_list]
+            }
+            let did_user_check_a_reason = false
+            for (let uninstall_reason of uninstall_reason_list) {
+              if (uninstall_reason == null) {
+                continue
+              }
+              did_user_check_a_reason = true
+              if (output[uninstall_reason] == null) {
+                output[uninstall_reason] = 0
+              }
+              output[uninstall_reason] += 1
+            }
+            if (did_user_check_a_reason) {
+              output['num_users'] += 1
+            }
+          }
+          return output
+        }
+        console.log(uninstall_info_list.length)
+        console.log(uninstall_info_list.filter(x => x.feedback.length > 0))
+        console.log(count_uninstall_reasons(uninstall_info_list))
+
+        console.log(uninstall_info_list)
+        let userids_in_study1 = (await get_selection_algorithm_to_users_list_cached())['experiment_alternate_between_same_vs_random_varlength_deterministic_latinsquare']
+        console.log(userids_in_study1)
+        console.log('user ids in study 1 who left feedback')
+        console.log(uninstall_info_list.filter(x => userids_in_study1.includes(x.u)))
+        //console.log(uninstall_info_list.map(x => [x.u, x.feedback]).filter(x => x[1].length > 0))
+
+        let userid_to_session_info_with_experiment_info = await get_userid_to_session_info_with_experiment_info_for_userids_in_experiment_cached()
+        let study1_condition_to_users = {}
+        let study1_initialcondition_to_users = {}
+        let study1_user_to_condition = {}
+        let study1_user_to_initialcondition = {}
+        console.log('userid to session info with experiment info is ')
+        console.log(userid_to_session_info_with_experiment_info)
+        for (let userid of userids_in_study1) {
+          
+        }
+
+        let user_to_install_data = await get_user_to_install_data_cached()
+        let user_to_first_active_since_today = await list_first_active_date_for_all_users_since_today()
+        let user_to_last_active_since_today = await list_last_active_date_for_all_users_since_today()
+        let all_user_list = Object.keys(user_to_first_active_since_today)
+
+        let study2_condition_to_users = {}
+        let study2_user_to_condition = {}
+        for (let userid of all_user_list) {
+
+          let install_info = user_to_install_data[userid]
+          if (install_info == null) {
+            // don't have install event logged
+            continue
+          }
+          let install_timestamp = install_info.timestamp
+          let install_days_since_today = convert_timestamp_to_days_since_today(install_timestamp)
+          let first_active = user_to_first_active_since_today[userid]
+          let last_active = user_to_last_active_since_today[userid]
+          if (first_active == null || last_active == null) {
+            continue
+          }
+          if (install_days_since_today != first_active) {
+            continue
+          }
+          if (install_info.chrome_runtime_id != "obghclocpdgcekcognpkblghkedcpdgd") {
+            // not running production version
+            continue
+          }
+          if (install_info.last_visit_to_chrome_store == -1 && install_info.last_visit_to_website == -1) {
+            // fake user or autoinstall
+            continue
+          }
+          let all_experiment_info = await get_all_experiment_info_for_user_cached(userid)
+          if (all_experiment_info.length == 0) {
+            continue
+          }
+          let was_enrolled_in_experiment = false
+          for (let cur_experiment_info of all_experiment_info) {
+            let cur_experiment_start_timestamp = cur_experiment_info.timestamp
+            let cur_experiment_start_days_since_today = convert_timestamp_to_days_since_today(cur_experiment_start_timestamp)
+            if (cur_experiment_start_days_since_today == first_active) {
+              was_enrolled_in_experiment = true
+            }
+          }
+          if (was_enrolled_in_experiment) {
+            //total_num_users += 1
+          }
+          let experiment_start_timestamp = all_experiment_info[0].timestamp
+          let experiment_start_days_since_today = convert_timestamp_to_days_since_today(experiment_start_timestamp)
+          if (experiment_start_days_since_today != first_active) {
+            continue
+          }
+          if (all_experiment_info.length != 1) {
+            continue
+          }
+          //let install_ids = await get_userid_to_all_install_ids(userid)
+          //if (install_ids.length != 1) {
+          //  continue
+          //}
+          let onboarding_completed = await get_did_user_complete_onboarding_cached(userid)
+
+
+          let condition = all_experiment_info[0].interventions_per_goal
+          if (study2_condition_to_users[condition] == null) {
+            study2_condition_to_users[condition] = []
+          }
+          study2_condition_to_users[condition].push(userid)
+          if (study2_user_to_condition[userid] == null) {
+            study2_user_to_condition[userid] = condition
+          }
+        }
+        
+        let userids_in_study2 = study2_condition_to_users['one'].concat(study2_condition_to_users['half_of_defaults']).concat(study2_condition_to_users['all_of_defaults'])
+
+        console.log(study2_condition_to_users)
+        console.log('user ids in study 2 who left feedback')
+        console.log(uninstall_info_list.filter(x => userids_in_study2.includes(x.u)))
+
+        let data_csv = []
+        for (let uninstall_info of uninstall_info_list) {
+          let uninstall_reasons = uninstall_info['uninstall_reasons[]']
+          if (uninstall_reasons == null) {
+            uninstall_reasons = []
+          }
+          if (typeof(uninstall_reasons) == 'string') {
+            uninstall_reasons = [uninstall_reasons]
+          }
+          let study = 'none'
+          let condition = 'none'
+          let study1condition = 'none'
+          let study1initialcondition = 'none'
+          let study2condition = 'none'
+          let userid = uninstall_info.u
+          if (study2_user_to_condition[userid] != null) {
+            study = 'study2'
+            study2condition = study2_user_to_condition[userid]
+            condition = study2_user_to_condition[userid]
+          }
+          let feedback = uninstall_info.feedback
+          if (feedback == null) {
+            feedback = ''
+          }
+          let install_id = ''
+          if (uninstall_info.i != null) {
+            install_id = uninstall_info.i
+          }
+          let row = {
+            /*
+            study: study,
+            condition: condition,
+            study1condition: study1condition,
+            study1initialcondition: study1initialcondition,
+            study2condition: study2condition,
+            */
+            userid: userid,
+            install_id: install_id,
+            annoying: uninstall_reasons.includes('Interventions were annoying'),
+            ineffective: uninstall_reasons.includes('Did not feel effective'),
+            lag: uninstall_reasons.includes('Was causing lag'),
+            privacy: uninstall_reasons.includes('Privacy concerns'),
+            other: uninstall_reasons.includes('Other reasons'),
+            //feedback: JSON.stringify(feedback),
+          }
+          data_csv.push(row)
+        }
+        console.log('============ csv data ==============')
+        console.log(await json2csv.json2csvPromisified(data_csv))
+
+        
       },
     })
   </script>

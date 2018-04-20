@@ -1211,6 +1211,9 @@ async function get_session_info_list_for_user_detailed(userid) {
   return output
 }
 
+let get_session_info_list_for_user_detailed_cached = memoize_to_disk_1arg(get_session_info_list_for_user_detailed, 'get_session_info_list_for_user_detailed')
+
+
 function convert_session_info_list_to_day_info_list(session_info_list) {
   let localepoch_to_sessions = {}
   for (let session_info of session_info_list) {

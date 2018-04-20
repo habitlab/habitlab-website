@@ -212,6 +212,7 @@
         let validinstalls = {}
         let csv_data = []
         let csv_data_perday = []
+        let userid_to_day_info_list = {}
         for (let install_id of all_firstimpression_install_ids) {
           let userid = install_id_to_user_id[install_id]
           let all_install_ids = user_id_to_all_install_ids[userid]
@@ -269,6 +270,8 @@
             user_skipped_reasons.update({'no_sessions': 1})
             continue
           }
+
+
           //console.log(session_info_list)
           let session_times_on_site = session_info_list.map(x => x.time_spent)
           let daily_times_on_site = compute_daily_times_on_site(session_info_list)
@@ -394,6 +397,8 @@
             csv_data_perday.push(day_info)
           }
 
+          userid_to_day_info_list[userid] = day_info_list
+
           csv_data.push({
             userid: userid,
             install_id: install_id,
@@ -512,6 +517,8 @@
         console.log(await json2csv.json2csvPromisified(csv_data))
         console.log('======== csv data per day ============')
         console.log(await json2csv.json2csvPromisified(csv_data_perday))
+        console.log('========= userid to day info list =============')
+        console.log(JSON.stringify(userid_to_day_info_list))
       },
     })
   </script>

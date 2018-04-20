@@ -17,7 +17,10 @@
         let user_to_last_active_since_today = await list_last_active_date_for_all_users_since_today()
         let all_user_list = Object.keys(user_to_first_active_since_today)
         let csv_data = []
+        let total_num_users = 0
+        let userid_to_day_info_list = {}
         for (let userid of all_user_list) {
+
           let install_info = user_to_install_data[userid]
           if (install_info == null) {
             // don't have install event logged
@@ -42,12 +45,26 @@
             continue
           }
           let all_experiment_info = await get_all_experiment_info_for_user_cached(userid)
-          if (all_experiment_info.length != 1) {
+          if (all_experiment_info.length == 0) {
             continue
+          }
+          let was_enrolled_in_experiment = false
+          for (let cur_experiment_info of all_experiment_info) {
+            let cur_experiment_start_timestamp = cur_experiment_info.timestamp
+            let cur_experiment_start_days_since_today = convert_timestamp_to_days_since_today(cur_experiment_start_timestamp)
+            if (cur_experiment_start_days_since_today == first_active) {
+              was_enrolled_in_experiment = true
+            }
+          }
+          if (was_enrolled_in_experiment) {
+            total_num_users += 1
           }
           let experiment_start_timestamp = all_experiment_info[0].timestamp
           let experiment_start_days_since_today = convert_timestamp_to_days_since_today(experiment_start_timestamp)
           if (experiment_start_days_since_today != first_active) {
+            continue
+          }
+          if (all_experiment_info.length != 1) {
             continue
           }
           //let install_ids = await get_userid_to_all_install_ids(userid)
@@ -85,6 +102,13 @@
               total_youtube_interventions_seen += num_times_seen
             }
           }
+
+          let session_info_list = await get_session_info_list_for_user_detailed_cached(userid)
+          let day_info_list = convert_session_info_list_to_day_info_list(session_info_list)
+          userid_to_day_info_list[userid] = session_info_list
+
+
+
           csv_data.push({
             userid: userid,
             lifetime: lifetime,
@@ -104,7 +128,12 @@
             condition: condition,
           })
         }
+        console.log('total num users')
+        console.log(total_num_users)
+        console.log('========= csv data =============')
         console.log(await json2csv.json2csvPromisified(csv_data))
+        console.log('========== userid_to_day_info_list ===========')
+        console.log(JSON.stringify(userid_to_day_info_list))
         return
 
 
