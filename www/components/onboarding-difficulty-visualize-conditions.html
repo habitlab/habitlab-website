@@ -1,0 +1,87 @@
+<link rel="import" href="../bower_components/polymer/polymer.html">
+<link rel="import" href="../bower_components/google-chart/google-chart.html">
+
+<dom-module id="onboarding-difficulty-visualize-conditions">
+  <template>
+    <style>
+      #retention_curve_general {
+        width: 100%;
+        height: 600px;
+      }
+    </style>
+    <div>All Users with experiment_vars set</div>
+
+    <template is="dom-repeat" items="{{users_with_experiment_vars}}" as="userid">
+      <div>
+        <a href="/viewuser.html?userid={{userid}}">{{userid}}</a>
+      </div>
+    </template>
+
+    <br><br>
+
+    <template is="dom-repeat" items="{{selection_algorithm_and_users_list}}" as="selection_algorithm_and_users">
+      <div>Algorithm: {{selection_algorithm_and_users.algorithm}}</div>
+      <template is="dom-repeat" items="{{selection_algorithm_and_users.users}}" as="userid">
+        <div>
+          <a href="/viewuser.html?userid={{userid}}">{{userid}}</a>
+        </div>
+      </template>
+      <br><br>
+    </template>
+  </template>
+  <script>
+    Polymer({
+      is: 'onboarding-difficulty-visualize-conditions',
+      properties: {
+        
+      },
+      /*
+      display_user_list: function(user_list, container) {
+        $('#num_active_users').text(user_ids.length)
+        for (let user_id of user_ids) {
+          $(container).append($('<a href="/viewuser.html?userid=' + user_id + '">' + user_id + '</a>'))
+          $('#user_list').append($('<br>'))
+        }
+      },
+      */
+      ready: async function() {
+        console.log('ready called in onboarding-difficulty-visualize-conditions')
+        let user_list = await get_all_users_in_experiment_by_name('reward_gifs_abtest')
+        return
+        /*
+        let all_collections = await listcollections()
+        let users_with_experiment_vars = []
+        let user_to_selection_algorithm = {}
+        let selection_algorithm_and_users_list = []
+        let selection_algorithm_to_idx = {}
+        for (let collection_fullname of all_collections) {
+          let underscore_index = collection_fullname.indexOf('_')
+          let username = collection_fullname.substr(0, underscore_index)
+          let collection_name = collection_fullname.substr(underscore_index + 1)
+          if (collection_name == 'synced:experiment_vars') {
+            users_with_experiment_vars.push(username)
+          }
+        }
+        this.users_with_experiment_vars = users_with_experiment_vars
+        for (let userid of users_with_experiment_vars) {
+          let experiment_vars_list = await get_collection_for_user(userid, 'synced:experiment_vars')
+          for (let x of experiment_vars_list) {
+            if (x.key == 'selection_algorithm_for_visit') {
+              user_to_selection_algorithm[userid] = x.val
+              if (selection_algorithm_to_idx[x.val] == null) {
+                selection_algorithm_to_idx[x.val] = selection_algorithm_and_users_list.length
+                selection_algorithm_and_users_list.push({
+                  algorithm: x.val,
+                  users: [],
+                })
+              }
+              selection_algorithm_and_users_list[selection_algorithm_to_idx[x.val]].users.push(userid)
+            }
+          }
+        }
+        this.selection_algorithm_and_users_list = selection_algorithm_and_users_list
+        */
+      },
+    })
+  </script>
+</dom-module>

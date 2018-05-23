@@ -479,6 +479,38 @@ async function get_all_users_with_experiment_vars() {
 
 let get_all_users_with_experiment_vars_cached = memoize_to_disk_0arg(get_all_users_with_experiment_vars, 'get_all_users_with_experiment_vars')
 
+async function get_all_users_in_experiment_by_name(experiment_name) {
+  let output = []
+  let output_set = {}
+  let users_with_experiment_vars = await get_all_users_with_experiment_vars_cached()
+  for (let userid of users_with_experiment_vars) {
+    let experiment_vars_list = await get_collection_for_user_cached(userid, 'synced:experiment_vars')
+    for (let x of experiment_vars_list) {
+      if (x.key == experiment_name) {
+        if (output_set[userid] == null) {
+          output_set[userid] = true
+          output.push(userid)
+        }
+      }
+    }
+  }
+  return output
+}
+
+async function get_users_to_conditions_in_experiment_by_name(experiment_name) {
+  let output = {}
+  let users_with_experiment_vars = await get_all_users_with_experiment_vars_cached()
+  for (let userid of users_with_experiment_vars) {
+    let experiment_vars_list = await get_collection_for_user_cached(userid, 'synced:experiment_vars')
+    for (let x of experiment_vars_list) {
+      if (x.key == experiment_name) {
+        output[userid] = x.val
+      }
+    }
+  }
+  return output
+}
+
 async function get_all_users_in_firstimpression_experiment() {
   let output = []
   let output_set = {}
