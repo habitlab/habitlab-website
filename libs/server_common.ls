@@ -361,4 +361,7 @@ export fix_object = (obj) ->
     output[k] = fix_object(v)
   return output
 
+export get_collection_site_ideas = ->>
+  return await get_collection('get_collection_site_ideas')
+
 require('libs/globals').add_globals(module.exports)

@@ -7,6 +7,7 @@
   get_intervention_votes
   get_intervention_votes_total
   fix_object
+  get_collection_site_ideas
 } = require 'libs/server_common'
 
 require! {
@@ -226,6 +227,38 @@ app.get '/downvote_proposed_goal', (ctx) ->>
   [proposed_goals, db] = await get_proposed_goals()
   await n2p -> proposed_goals.update({_id: mongodb.ObjectID(goal_id)}, {$inc: {downvotes: 1}}, it)
   ctx.body = JSON.stringify {response: 'done', success: true}
+  db?close()
+
+# TODO: These routes might be consolidated with others in the future
+# specifically for adding shared intervention accross users
+app.post '/postideas', (ctx) ->>
+  ctx.type = 'json'
+  # construct new sharable item
+  console.log ctx.request.body
+  # the user generated unique id will be the key to retrieve code
+  {site, idea} = ctx.request.body
+  new_idea = {site, idea}
+  try
+      [collection,db] = await get_collection_site_ideas()
+      await n2p -> collection.insert(fix_object(new_idea), it)
+      ctx.body = JSON.stringify {response: 'success'}
+  catch err
+    console.error 'error in get_collection_site_ideas'
+    console.error err
+    ctx.body = JSON.stringify {response: 'failure'}
+  finally
+    db?close()
+
+app.get '/getideas', (ctx) ->>
+  ctx.type = 'json'
+  {website} = ctx.request.query
+  if need_query_property ctx, 'website'
+    return
+  [collection, db] = await get_collection_site_ideas()/*Find these functions*/
+  all_results = await n2p -> collection.find({site: website}).toArray(it)
+  console.log "Here are the shared results for " + website
+  console.log all_results
+  ctx.body = JSON.stringify(all_results)
   db?close()
 
 require('libs/globals').add_globals(module.exports)
