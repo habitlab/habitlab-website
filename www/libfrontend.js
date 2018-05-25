@@ -511,6 +511,21 @@ async function get_users_to_conditions_in_experiment_by_name(experiment_name) {
   return output
 }
 
+async function get_user_to_difficulty() {
+  let infolist = await get_collection_cached('features:difficuty') // yes typo was made whoops
+  let output = {}
+  for (let x of infolist) {
+    if (x.feature != 'difficuty') {
+      continue
+    }
+    let userid = x.user_id
+    let install_id = x.install_id
+    let difficulty = x.difficulty
+    output[userid] = difficulty
+  }
+  return output
+}
+
 async function get_all_users_in_firstimpression_experiment() {
   let output = []
   let output_set = {}
@@ -551,6 +566,24 @@ async function get_all_install_ids_in_firstimpression_experiment() {
 }
 
 let get_all_install_ids_in_firstimpression_experiment_cached = memoize_to_disk_0arg(get_all_install_ids_in_firstimpression_experiment, 'get_all_install_ids_in_firstimpression_experiment')
+
+async function get_last_onboarding_slide_idx_for_user(userid) {
+  let output = -1
+  let page_logs = await get_collection_for_user_cached(userid, 'logs:pages')
+  for (let x of page_logs) {
+    if (x.tab != 'onboarding') {
+      continue
+    }
+    let slide_idx = x.slide_idx
+    if (!isFinite(slide_idx)) {
+      continue
+    }
+    output = Math.max(slide_idx, output)
+  }
+  return output
+}
+
+let get_last_onboarding_slide_idx_for_user_cached = memoize_to_disk_1arg(get_last_onboarding_slide_idx_for_user, 'get_last_onboarding_slide_idx_for_user')
 
 async function get_selection_algorithm_to_install_ids_list() {
   let output = {}
@@ -618,11 +651,11 @@ async function get_user_to_install_times_list_cached() {
     if (output[user_id] == null) {
       output[user_id] = []
     }
+    if (install_info.timestamp == null) {
+      console.log('missing timestamp for user install event for user_id ' + user_id)
+      continue
+    }
     output[user_id].push(install_info.timestamp)
-  }
-  if (install_info.timestamp == null) {
-    console.log('missing timestamp for user install event for user_id ' + user_id)
-    continue
   }
   for (let user_id of Object.keys(output)) {
     output[user_id].sort((a, b) => a - b)
@@ -770,6 +803,79 @@ async function get_user_to_install_data_cached() {
   return output
 }
 
+async function get_install_id_to_is_official() {
+  let install_info_list = await get_installs_cached()
+  let output = {}
+  for (let install_info of install_info_list) {
+    let install_id = install_info.install_id
+    if (install_id == null) {
+      continue
+    }
+    let is_official = true
+    if (output[install_info] == false) {
+      continue
+    }
+    if (install_info.devmode || install_info.unofficial_version) {
+      is_official = false
+    }
+    if (install_info.chrome_runtime_id != "obghclocpdgcekcognpkblghkedcpdgd") {
+      is_official = false
+    }
+    output[install_id] = is_official
+  }
+  return output
+}
+
+async function get_timestamp_experiment_var_was_last_set_for_userid(userid, varname) {
+  let output = -1
+  let experiment_vars = await get_collection_for_user_cached(userid, 'synced:experiment_vars')
+  for (let x of experiment_vars) {
+    if (x.key == varname) {
+      output = Math.max(output, x.timestamp)
+    }
+  }
+  return output
+}
+
+async function get_timestamp_experiment_var_was_last_set_for_install_id(install_id, varname) {
+  let output = -1
+  let userid = await get_userid_from_install_id(install_id)
+  let experiment_vars = await get_collection_for_user_cached(userid, 'synced:experiment_vars')
+  for (let x of experiment_vars) {
+    if (x.key == varname) {
+      output = Math.max(output, x.timestamp)
+    }
+  }
+  return output
+}
+
+async function get_user_to_is_official() {
+  let install_info_list = await get_installs_cached()
+  let output = {}
+  for (let install_info of install_info_list) {
+    let install_id = install_info.user_id
+    if (install_id == null) {
+      continue
+    }
+    let is_official = true
+    if (output[install_info] == false) {
+      continue
+    }
+    if (install_info.devmode || install_info.unofficial_version) {
+      is_official = false
+    }
+    if (install_info.chrome_runtime_id != "obghclocpdgcekcognpkblghkedcpdgd") {
+      is_official = false
+    }
+    output[install_id] = is_official
+  }
+  return output
+}
+
+async function get_unofficial_users() {
+
+}
+
 async function get_install_data() {
   let install_info_list = await get_installs()
   let output = []
@@ -842,6 +948,12 @@ async function get_collection_for_user(userid, collection_name) {
 }
 
 let get_collection_for_user_cached = memoize_to_disk_2arg(get_collection_for_user, 'get_collection_for_user')
+
+async function get_collection(collection_name) {
+  return await getjson('/printcollection', {collection: collection_name})
+}
+
+let get_collection_cached = memoize_to_disk_1arg(get_collection, 'get_collection')
 
 async function get_intervention_logs_for_user(userid, intervention_name) {
   intervention_name = intervention_name.split('/').join(':')
@@ -1809,7 +1921,7 @@ async function list_first_active_date_for_all_install_ids_since_today() {
   let output = {}
   for (let install_id of Object.keys(install_id_to_first_active_date)) {
     let first_active = install_id_to_first_active_date[install_id]
-    output[userid] = Math.round(moment.duration(today.diff(first_active)).asDays())
+    output[install_id] = Math.round(moment.duration(today.diff(first_active)).asDays())
   }
   return output
 }

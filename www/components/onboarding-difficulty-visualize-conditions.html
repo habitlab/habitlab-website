@@ -46,7 +46,101 @@
       */
       ready: async function() {
         console.log('ready called in onboarding-difficulty-visualize-conditions')
-        let user_list = await get_all_users_in_experiment_by_name('reward_gifs_abtest')
+        let user_to_reward_gifs = await get_users_to_conditions_in_experiment_by_name('reward_gifs_abtest')
+        let user_to_goal_notifications = await get_users_to_conditions_in_experiment_by_name('daily_goal_reminders_abtest')
+        let user_to_difficulty_selection_screen = await get_users_to_conditions_in_experiment_by_name('difficulty_selection_screen')
+        let user_list = await get_all_users_in_experiment_by_name('difficulty_selection_screen')
+        user_list = user_list.filter(x => user_to_reward_gifs[x] != null && user_to_goal_notifications[x] != null && user_to_difficulty_selection_screen[x] != null)
+        console.log(user_list)
+        console.log(user_to_difficulty_selection_screen)
+        let install_id_to_first_active_since_today = await list_first_active_date_for_all_install_ids_since_today()
+        let install_id_to_last_active_since_today = await list_last_active_date_for_all_install_ids_since_today()
+        let user_to_first_active_since_today = await list_first_active_date_for_all_users_since_today()
+        let user_to_last_active_since_today = await list_last_active_date_for_all_users_since_today()
+        let user_to_difficulty = await get_user_to_difficulty()
+        let user_to_install_ids = await get_user_to_all_install_ids_cached()
+        let user_to_is_official = await get_user_to_is_official()
+        let install_id_to_is_official = await get_install_id_to_is_official()
+        let user_to_install_times = await get_user_to_install_times_list_cached()
+        let csv_data = []
+        for (let userid of user_list) {
+          let install_ids = user_to_install_ids[userid]
+          let num_install_ids = 0
+          if (install_ids != null) {
+            num_install_ids = install_ids.length
+          }
+          if (num_install_ids == 0) {
+            continue
+          }
+          let install_id = install_ids[0]
+          if (user_to_is_official[userid] != true) {
+            continue
+          }
+          if (install_id_to_is_official[install_id] != true) {
+            continue
+          }
+          let difficulty_selection_screen = user_to_difficulty_selection_screen[userid]
+          let reward_gifs = user_to_reward_gifs[userid]
+          let goal_notifications = user_to_goal_notifications[userid]
+          let first_active = install_id_to_first_active_since_today[install_id]
+          let last_active = install_id_to_last_active_since_today[install_id]
+          if (first_active == null || last_active == null) {
+            continue
+          }
+          let first_active_user = user_to_first_active_since_today[userid]
+          let last_active_user = user_to_last_active_since_today[userid]
+          if (first_active_user == null || last_active_user == null) {
+            continue
+          }
+          let experiment_started_time_user = await get_timestamp_experiment_var_was_last_set_for_userid(userid, 'difficulty_selection_screen')
+          let experiment_started_time_install_id = await get_timestamp_experiment_var_was_last_set_for_install_id(install_id, 'difficulty_selection_screen')
+          let duplicate_user = false
+          let install_timestamps = user_to_install_times[userid] 
+          if (install_timestamps.length != 1) {
+            duplicate_user = true
+          }
+          let install_timestamp = install_timestamps[0]
+          if (Math.abs(install_timestamp - experiment_started_time_user) > 3600*1000*24) {
+            duplicate_user = true
+          }
+          if (Math.abs(install_timestamp - experiment_started_time_install_id) > 3600*1000*24) {
+            duplicate_user = true
+          }
+
+          let last_onboarding_slide_idx = await get_last_onboarding_slide_idx_for_user_cached(userid)
+          let onboarding_completed = await get_did_user_complete_onboarding_cached(userid)
+          let lifetime_user = first_active_user - last_active_user
+          let attritioned_user = last_active_user >= 3
+          let lifetime = first_active - last_active
+          let attritioned = last_active >= 3
+          let selected_difficulty = 'noneselected'
+          if (user_to_difficulty[userid] != null) {
+            selected_difficulty = user_to_difficulty[userid]
+          }
+          let cur_row = {
+            userid: userid,
+            install_id: install_id,
+            selected_difficulty: selected_difficulty,
+            difficulty_selection_screen: difficulty_selection_screen,
+            reward_gifs: reward_gifs,
+            goal_notifications: goal_notifications,
+            lifetime_user: lifetime_user,
+            attritioned_user: attritioned_user,
+            lifetime: lifetime,
+            attritioned: attritioned,
+            first_active: first_active,
+            last_active: last_active,
+            first_active_user: first_active_user,
+            last_active_user: last_active_user,
+            onboarding_completed: onboarding_completed,
+            last_onboarding_slide_idx: last_onboarding_slide_idx,
+            num_install_ids: num_install_ids,
+            duplicate_user: duplicate_user,
+          }
+          csv_data.push(cur_row)
+        }
+        console.log('========= csv data =============')
+        console.log(await json2csv.json2csvPromisified(csv_data))
         return
         /*
         let all_collections = await listcollections()
