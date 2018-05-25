@@ -643,6 +643,17 @@ async function get_user_to_install_times_list() {
   return output
 }
 
+async function get_domain_to_num_visits_for_user(userid) {
+  let history_vars_collection = await get_collection_for_user_cached(userid, 'synced:history_vars')
+  for (let x of history_vars_collection) {
+    if (x.key != 'pages_list_compressed') {
+      continue
+    }
+    let data = JSON.parse(LZString.decompressFromEncodedURIComponent(x.val))
+    // TODO in progress
+  }
+}
+
 async function get_user_to_install_times_list_cached() {
   let install_info_list = await get_installs_cached()
   let output = {}
