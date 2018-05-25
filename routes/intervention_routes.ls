@@ -231,13 +231,23 @@ app.get '/downvote_proposed_goal', (ctx) ->>
 
 # TODO: These routes might be consolidated with others in the future
 # specifically for adding shared intervention accross users
+app.get '/upvote_proposed_idea', (ctx) ->>
+  ctx.type = 'json'
+  {idea_id} = ctx.request.query
+  if need_query_property ctx, 'idea_id'
+    return
+  [proposed_ideas, db] = await get_collection_site_ideas()
+  await n2p -> proposed_ideas.update({_id: mongodb.ObjectID(idea_id)}, {$inc: {vote: 1}}, it)
+  ctx.body = JSON.stringify {response: 'done', success: true}
+  db?close()
+
 app.post '/postideas', (ctx) ->>
   ctx.type = 'json'
   # construct new sharable item
-  console.log ctx.request.body
+  # console.log ctx.request.body
   # the user generated unique id will be the key to retrieve code
-  {site, idea} = ctx.request.body
-  new_idea = {site, idea}
+  {site, idea, vote} = ctx.request.body
+  new_idea = {site, idea, vote}
   try
       [collection,db] = await get_collection_site_ideas()
       await n2p -> collection.insert(fix_object(new_idea), it)
@@ -256,7 +266,7 @@ app.get '/getideas', (ctx) ->>
     return
   [collection, db] = await get_collection_site_ideas()/*Find these functions*/
   all_results = await n2p -> collection.find({site: website}).toArray(it)
-  console.log "Here are the shared results for " + website
+  # console.log "Here are the shared results for " + website
   console.log all_results
   ctx.body = JSON.stringify(all_results)
   db?close()
