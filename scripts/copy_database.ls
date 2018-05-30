@@ -129,8 +129,11 @@ sync_all_in_collection_fresh = (collection_name, db_src, db_dst) ->>
 
 list_collections = (db_src) ->>
   collections_src = db_src.collection('collections')
-  all_items_src = await keep_trying -> collections_src.find({}).toArray(it)
-  return all_items_src.map (._id)
+  all_items_src = await keep_trying -> collections_src.find({}, {_id: 1}).toArray(it)
+  output = all_items_src.map (._id)
+  if output.indexOf('collections') == -1
+    output.push('collections')
+  return output
 
 do ->>
   db_src = await get_mongo_db()
