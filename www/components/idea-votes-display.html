@@ -1,0 +1,52 @@
+<link rel="import" href="../bower_components/polymer/polymer.html">
+<link rel="import" href="../bower_components/google-chart/google-chart.html">
+
+<dom-module id="idea-votes-display">
+  <template>
+    <style>
+      :root {
+        width: 100%;
+      }
+
+      google-chart {
+        width: 100%;
+      }
+    </style>
+    <template is="dom-repeat" items="{{sites_ideas_votes_mappings}}" as="sites_ideas_votes">
+      <h3>{{sites_ideas_votes.site}}</h3>
+      <google-chart type="table" cols='[{"label": "idea", "type": "string"}, {"label": "vote_count", "type": "number"}]'
+        rows="{{sites_ideas_votes.ideas_votes_pair}}" ></google-chart>
+    </template>
+  </template>
+  <script>
+    Polymer({
+      is: 'idea-votes-display',
+      properties: {
+        sites_ideas_votes_mappings: {
+          type: Array,
+          value: []
+        }
+      },
+      ready: async function() {
+        self = this
+        sites_ideas_votes_mappings_copy = []
+        var sites = ["Amazon", "Buzzfeed", "Calm", "Duolingo", "Facebook", "Gmail", "Iqiyi", "Netflix", "New York Times", "Reddit", "TED", "Twitter", "Youku", "Youtube"]
+        for (let site of sites) {
+          // extract for each website
+          var ideas_votes_mappings = await get_ideas_votes(site)
+          var ideas_votes_pair = []
+          for (let item of ideas_votes_mappings) { 
+            ideas_votes_pair.push([item.idea, item.vote])
+          }
+          var temp = {
+            'site': site,
+            'ideas_votes_pair': ideas_votes_pair,
+          }
+          sites_ideas_votes_mappings_copy.push(temp)
+        }
+        self.sites_ideas_votes_mappings = sites_ideas_votes_mappings_copy
+      }
+    });
+  </script>
+
+</dom-module>

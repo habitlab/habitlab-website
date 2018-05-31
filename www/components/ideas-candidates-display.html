@@ -1,0 +1,123 @@
+<link rel="import" href="../bower_components/polymer/polymer.html">
+<link rel="import" href="../bower_components/google-chart/google-chart.html">
+
+<dom-module id="ideas-candidates-display">
+  <template>
+    <style>
+      :root {
+        width: 100%;
+      }
+
+      google-chart {
+        width: 100%;
+      }
+
+      button {
+        width: 100px;
+      }
+      textarea {
+        width: 300px;
+        height: 150px;
+      }
+    </style>
+    <template is="dom-repeat" items="{{sites_ideas_candidates_mappings}}" as="sites_ideas_candiates">
+      <h3>{{sites_ideas_candiates.site}}</h3>
+      <template is="dom-repeat" items="{{sites_ideas_candiates.ideas_candidates}}" as="candiates">
+          <h5>{{candiates}}</h5>
+        </template>
+    </template>
+    ------------------------------------------------------------------------------------------
+    <h1>Posting Ideas</h1>
+    <form>
+        Select the website for posting the idea:
+        <select id="siteSelector">
+            <option value="Amazon">Amazon</option>
+            <option value="Buzzfeed">Buzzfeed</option>
+            <option value="Calm">Calm</option>
+          <option value="Duolingo">Duolingo</option>
+          <option value="Facebook">Facebook</option>
+          <option value="Gmail">Gmail</option>
+          <option value="Iqiyi">Iqiyi</option>
+          <option value="Netflix">Netflix</option>
+          <option value="New York Times">New York Times</option>
+          <option value="Reddit">Reddit</option>
+          <option value="TED">TED</option>
+          <option value="Twitter">Twitter</option>
+          <option value="Youku">Youku</option>
+          <option value="Youtube">Youtube</option>
+        </select>
+        </form>
+        <p>Please type in the idea to post:</p>
+        <textarea name="idea" id="ideaText" rows="4" cols="50">Enter idea here...</textarea>
+        <p>Click the button to post idea to database.</p>
+        <button type="button" class="postButton" onclick="myFunction()">Post it!</button>
+  </template>
+  <script>
+    Polymer({
+      is: 'ideas-candidates-display',
+      properties: {
+        sites_ideas_candidates_mappings: {
+          type: Array,
+          value: []
+        }
+      },
+      ready: async function() {
+        self = this
+        sites_ideas_candidates_mappings_copy = []
+        var sites = ["Youtube", "Facebook"]
+        for (let site of sites) {
+          // extract for each website
+          var get_ideas_candidates = await get_idea_candidates(site)
+          var ideas_candidates = []
+          for (let item of get_ideas_candidates) { 
+            ideas_candidates.push(item.idea)
+          }
+          var temp = {
+            'site': site,
+            'ideas_candidates': ideas_candidates,
+          }
+          sites_ideas_candidates_mappings_copy.push(temp)
+        }
+        //console.log("sites_ideas_candidates_mappings_copy")
+        self.sites_ideas_candidates_mappings = sites_ideas_candidates_mappings_copy
+      },
+      // post_idea: function() {
+      //   alert("cli!!")
+      // }
+    });
+    function post_json(url, data) {
+      return new Promise(function(resolve, reject) {
+        let xhr = new XMLHttpRequest()
+        xhr.open('POST', url)
+        xhr.setRequestHeader('Content-Type', 'application/json')
+        xhr.onload = function() {
+          if (xhr.status == 200) {
+            resolve(JSON.parse(xhr.responseText))
+          } else {
+            reject('error in post_json: ' + xhr.status)
+          }
+        }
+        xhr.onerror = function() {
+          reject(xhr)
+        }
+        xhr.send(JSON.stringify(data))
+      })
+    }
+    async function myFunction() {
+      var site = document.getElementById("siteSelector").value
+      var idea = document.getElementById("ideaText").value
+      var vote = 0
+      site_idea_pair = { site : site, idea : idea , vote : 0}      
+      let result = await post_json('/postideas', site_idea_pair)
+      if (result.response == "success") {
+        alert("post success")
+        document.getElementById("siteSelector").value = "Amazon";
+        document.getElementById("ideaText").value = "Enter idea here...";
+      } else {
+        alert("post failed")
+      }
+      console.log(result)
+    }
+  </script>
+
+</dom-module>
