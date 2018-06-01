@@ -643,21 +643,34 @@ async function get_user_to_install_times_list() {
   return output
 }
 
-async function get_domain_to_num_visits_for_user(userid) {
+async function get_domain_visit_info_for_user_compressed(userid) {
   let history_vars_collection = await get_collection_for_user_cached(userid, 'synced:history_vars')
   for (let x of history_vars_collection) {
     if (x.key != 'domain_visit_info') {
       continue
     }
-    let data = JSON.parse(LZString.decompressFromEncodedURIComponent(x.val))
-    // TODO in progress
-    let output = {}
-    for (let domain of Object.keys(data)) {
-      let info = data[domain]
-      
-    }
-    return data
+    return x.val
   }
+  return ''
+}
+
+async function get_domain_visit_info_for_user(userid) {
+  let data_compressed = await get_domain_visit_info_for_user_compressed(userid)
+  if (data_compressed == null || data_compressed == '') {
+    return {}
+  }
+  return JSON.parse(LZString.decompressFromEncodedURIComponent(x.val))
+}
+
+async function get_domain_to_num_visits_for_user(userid) {
+  let data = await get_domain_visit_info_for_user(userid)
+  // domain -> [num unique urls, num unique urls typed, total visits, total typed, first visit time, last visit time]
+  let output = {}
+  for (let domain of Object.keys(data)) {
+    let info = data[domain]
+    output[domain] = info[2]
+  }
+  return output
 }
 
 async function get_user_to_install_times_list_cached() {

@@ -117,6 +117,7 @@
           if (user_to_difficulty[userid] != null) {
             selected_difficulty = user_to_difficulty[userid]
           }
+          let domain_visit_info_compressed = await get_domain_visit_info_for_user_compressed(userid)
           let cur_row = {
             userid: userid,
             install_id: install_id,
@@ -136,6 +137,7 @@
             last_onboarding_slide_idx: last_onboarding_slide_idx,
             num_install_ids: num_install_ids,
             duplicate_user: duplicate_user,
+            domain_visit_info_compressed: domain_visit_info_compressed,
           }
           csv_data.push(cur_row)
         }
