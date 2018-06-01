@@ -19,6 +19,7 @@
   need_query_property
   need_query_properties
   expose_get_auth
+  get_collection_site_ideas
 } = require 'libs/server_common'
 
 require! {
@@ -1057,5 +1058,30 @@ app.get '/get_daily_active_counts', auth, (ctx) ->>
   db.close()
   return
 */
+
+app.get '/get_ideas_votes', (ctx) ->>
+  ctx.type = 'json'
+  {website} = ctx.request.query
+  if need_query_property ctx, 'website'
+    return
+  [collection, db] = await get_collection_site_ideas()/*Find these functions*/
+  all_results = await n2p -> collection.find({site: website}).toArray(it)
+  # console.log "Here are the shared results for " + website
+  console.log all_results
+  ctx.body = JSON.stringify(all_results)
+  db?close()
+
+app.get '/get_idea_candidates', (ctx) ->>
+  ctx.type = 'json'
+  {website} = ctx.request.query
+  if need_query_property ctx, 'website'
+    return
+  [collection, db] = await get_collection_site_idea_candidates()/*Find these functions*/
+  all_results = await n2p -> collection.find({site: website}).toArray(it)
+  # console.log "Here are the shared results for " + website
+  console.log all_results
+  ctx.body = JSON.stringify(all_results)
+  db?close()
+
 
 require('libs/globals').add_globals(module.exports)

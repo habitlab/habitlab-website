@@ -8,6 +8,7 @@
   get_intervention_votes_total
   fix_object
   get_collection_site_ideas
+  get_collection_site_idea_candidates
 } = require 'libs/server_common'
 
 require! {
@@ -259,7 +260,26 @@ app.post '/postideas', (ctx) ->>
   finally
     db?close()
 
-app.get '/getideas', (ctx) ->>
+app.post '/postidea_candidate', (ctx) ->>
+  ctx.type = 'json'
+  # construct new sharable item
+  # console.log ctx.request.body
+  # the user generated unique id will be the key to retrieve code
+  {site, idea} = ctx.request.body
+  new_idea = {site, idea}
+  try
+      [collection,db] = await get_collection_site_idea_candidates()
+      await n2p -> collection.insert(fix_object(new_idea), it)
+      ctx.body = JSON.stringify {response: 'success'}
+      console.log new_idea
+  catch err
+    console.error 'error in get_collection_site_ideas'
+    console.error err
+    ctx.body = JSON.stringify {response: 'failure'}
+  finally
+    db?close()
+
+app.get '/getideas_vote', (ctx) ->>
   ctx.type = 'json'
   {website} = ctx.request.query
   if need_query_property ctx, 'website'

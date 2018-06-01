@@ -2258,6 +2258,10 @@ expose_getjson('get_user_to_is_unofficial')
 
 expose_getjson('get_web_visit_actions')
 
+expose_getjson('get_ideas_votes', 'website')
+
+expose_getjson('get_idea_candidates', 'website')
+
 async function get_intervention_to_attrition_probability() {
   let intervention_to_num_times_seen_last = await get_intervention_to_num_times_seen_last()
   let intervention_to_num_times_seen_total = await get_intervention_to_num_times_seen_total()
