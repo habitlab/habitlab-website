@@ -7,8 +7,8 @@
   get_intervention_votes
   get_intervention_votes_total
   fix_object
-  get_collection_site_ideas
-  get_collection_site_idea_candidates
+  get_collection_goal_ideas
+  get_collection_goal_idea_candidates
 } = require 'libs/server_common'
 
 require! {
@@ -237,7 +237,7 @@ app.get '/upvote_proposed_idea', (ctx) ->>
   {idea_id} = ctx.request.query
   if need_query_property ctx, 'idea_id'
     return
-  [proposed_ideas, db] = await get_collection_site_ideas()
+  [proposed_ideas, db] = await get_collection_goal_ideas()
   await n2p -> proposed_ideas.update({_id: mongodb.ObjectID(idea_id)}, {$inc: {vote: 1}}, it)
   ctx.body = JSON.stringify {response: 'done', success: true}
   db?close()
@@ -247,14 +247,16 @@ app.post '/postideas', (ctx) ->>
   # construct new sharable item
   # console.log ctx.request.body
   # the user generated unique id will be the key to retrieve code
-  {site, idea, vote} = ctx.request.body
-  new_idea = {site, idea, vote}
+  {goal, idea, vote} = ctx.request.body
+  if need_query_properties ctx, ['goal', 'idea', 'vote']
+    return
+  new_idea = {goal, idea, vote}
   try
-      [collection,db] = await get_collection_site_ideas()
-      await n2p -> collection.insert(fix_object(new_idea), it)
-      ctx.body = JSON.stringify {response: 'success'}
+    [collection,db] = await get_collection_goal_ideas()
+    await n2p -> collection.insert(fix_object(new_idea), it)
+    ctx.body = JSON.stringify {response: 'success'}
   catch err
-    console.error 'error in get_collection_site_ideas'
+    console.error 'error in get_collection_goal_ideas'
     console.error err
     ctx.body = JSON.stringify {response: 'failure'}
   finally
@@ -265,15 +267,16 @@ app.post '/postidea_candidate', (ctx) ->>
   # construct new sharable item
   # console.log ctx.request.body
   # the user generated unique id will be the key to retrieve code
-  {site, idea} = ctx.request.body
-  new_idea = {site, idea}
+  {goal, idea} = ctx.request.body
+  if need_query_properties ctx, ['goal', 'idea']
+    return
+  new_idea = {goal, idea}
   try
-      [collection,db] = await get_collection_site_idea_candidates()
-      await n2p -> collection.insert(fix_object(new_idea), it)
-      ctx.body = JSON.stringify {response: 'success'}
-      console.log new_idea
+    [collection,db] = await get_collection_goal_idea_candidates()
+    await n2p -> collection.insert(fix_object(new_idea), it)
+    ctx.body = JSON.stringify {response: 'success'}
   catch err
-    console.error 'error in get_collection_site_ideas'
+    console.error 'error in get_collection_goal_ideas'
     console.error err
     ctx.body = JSON.stringify {response: 'failure'}
   finally
@@ -281,13 +284,20 @@ app.post '/postidea_candidate', (ctx) ->>
 
 app.get '/getideas_vote', (ctx) ->>
   ctx.type = 'json'
-  {website} = ctx.request.query
-  if need_query_property ctx, 'website'
+  {goal} = ctx.request.query
+  if need_query_property ctx, 'goal'
     return
-  [collection, db] = await get_collection_site_ideas()/*Find these functions*/
-  all_results = await n2p -> collection.find({site: website}).toArray(it)
+  [collection, db] = await get_collection_goal_ideas()/*Find these functions*/
+  all_results = await n2p -> collection.find({goal: goal}).toArray(it)
   # console.log "Here are the shared results for " + website
-  console.log all_results
+  ctx.body = JSON.stringify(all_results)
+  db?close()
+
+app.get '/getideas_vote_all', (ctx) ->>
+  ctx.type = 'json'
+  [collection, db] = await get_collection_goal_ideas()/*Find these functions*/
+  all_results = await n2p -> collection.find({}).toArray(it)
+  # console.log "Here are the shared results for " + website
   ctx.body = JSON.stringify(all_results)
   db?close()
 
