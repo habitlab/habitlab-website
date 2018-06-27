@@ -242,6 +242,7 @@ app.get '/upvote_proposed_idea', (ctx) ->>
   ctx.body = JSON.stringify {response: 'done', success: true}
   db?close()
 
+/*
 app.post '/postideas', (ctx) ->>
   ctx.type = 'json'
   # construct new sharable item
@@ -261,6 +262,7 @@ app.post '/postideas', (ctx) ->>
     ctx.body = JSON.stringify {response: 'failure'}
   finally
     db?close()
+*/
 
 app.post '/postidea_candidate', (ctx) ->>
   ctx.type = 'json'
