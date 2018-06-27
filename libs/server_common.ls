@@ -65,7 +65,7 @@ else
 
 export mongourl = getsecret('MONGODB_URI') ? 'mongodb://localhost:27017/default'
 
-export mongourl2 = getsecret('MONGODB_URI2') ? 'mongodb://localhost:27017/default'
+export mongourl2 = getsecret('MONGODB_URI_VOTING') ? 'mongodb://localhost:27017/default'
 
 sleep = (time) ->>
   return new Promise ->
@@ -362,9 +362,9 @@ export fix_object = (obj) ->
   return output
 
 export get_collection_goal_ideas = ->>
-  return await get_collection('get_collection_goal_ideas')
+  return await get_collection2('get_collection_goal_ideas')
 
 export get_collection_goal_idea_candidates = ->>
-  return await get_collection('get_collection_goal_idea_candidates')
+  return await get_collection2('get_collection_goal_idea_candidates')
 
 require('libs/globals').add_globals(module.exports)
