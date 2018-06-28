@@ -269,10 +269,10 @@ app.post '/postidea_candidate', (ctx) ->>
   # construct new sharable item
   # console.log ctx.request.body
   # the user generated unique id will be the key to retrieve code
-  {goal, idea} = ctx.request.body
-  if need_query_properties ctx, ['goal', 'idea']
+  {goal, idea, userid, installid} = ctx.request.body
+  if need_query_properties ctx, ['goal', 'idea', 'userid', 'installid']
     return
-  new_idea = {goal, idea}
+  new_idea = {goal, idea, userid, installid}
   try
     [collection,db] = await get_collection_goal_idea_candidates()
     await n2p -> collection.insert(fix_object(new_idea), it)
