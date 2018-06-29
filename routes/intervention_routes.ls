@@ -8,6 +8,7 @@
   get_intervention_votes_total
   fix_object
   get_collection_goal_ideas
+  get_collection_goal_idea_logs
   get_collection_goal_idea_candidates
 } = require 'libs/server_common'
 
@@ -232,15 +233,19 @@ app.get '/downvote_proposed_goal', (ctx) ->>
 
 # TODO: These routes might be consolidated with others in the future
 # specifically for adding shared intervention accross users
-app.get '/upvote_proposed_idea', (ctx) ->>
+app.post '/upvote_proposed_idea', (ctx) ->>
   ctx.type = 'json'
-  {idea_id} = ctx.request.query
-  if need_query_property ctx, 'idea_id'
+  {goal, winnerid, loserid, winner, loser, userid, installid} = ctx.request.body
+  if need_query_property ctx, 'winnerid'
     return
   [proposed_ideas, db] = await get_collection_goal_ideas()
-  await n2p -> proposed_ideas.update({_id: mongodb.ObjectID(idea_id)}, {$inc: {vote: 1}}, it)
+  [idea_logs, db2] = await get_collection_goal_idea_logs()
+  await n2p -> idea_logs.insert({winnerid, loserid, winner, loser, userid, installid}, it)
+  await n2p -> proposed_ideas.update({_id: mongodb.ObjectID(winnerid)}, {$inc: {vote: 1}}, it)
+  await n2p -> proposed_ideas.update({_id: mongodb.ObjectID(loserid)}, {$inc: {lostvote: 1}}, it)
   ctx.body = JSON.stringify {response: 'done', success: true}
   db?close()
+  db2?close()
 
 /*
 app.post '/postideas', (ctx) ->>
@@ -264,17 +269,38 @@ app.post '/postideas', (ctx) ->>
     db?close()
 */
 
+/*
+app.post '/logvote_pair', (ctx) ->>
+  {goal, winner, loser, userid, installid} = ctx.request.body
+  if need_query_properties ctx, ['goal', 'winner', 'loser', 'userid', 'installid']
+    return
+  logitem = {goal, winner, loser, userid, installid}
+  try
+    [collection,db] = await get_collection_goal_idea_logs()
+    await n2p -> collection.insert(fix_object(logitem), it)
+    ctx.body = JSON.stringify {response: 'success'}
+  catch err
+    console.error 'error in get_collection_goal_ideas'
+    console.error err
+    ctx.body = JSON.stringify {response: 'failure'}
+  finally
+    db?close()
+*/
+
 app.post '/postidea_candidate', (ctx) ->>
   ctx.type = 'json'
   # construct new sharable item
   # console.log ctx.request.body
+  console.log 'postidea_candidate'
   # the user generated unique id will be the key to retrieve code
   {goal, idea, userid, installid} = ctx.request.body
-  if need_query_properties ctx, ['goal', 'idea', 'userid', 'installid']
+  if need_body_properties ctx, ['goal', 'idea', 'userid', 'installid']
     return
   new_idea = {goal, idea, userid, installid}
   try
     [collection,db] = await get_collection_goal_idea_candidates()
+    console.log 'new_idea'
+    console.log new_idea
     await n2p -> collection.insert(fix_object(new_idea), it)
     ctx.body = JSON.stringify {response: 'success'}
   catch err
