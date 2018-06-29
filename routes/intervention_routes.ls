@@ -4,6 +4,8 @@
   mongodb
   need_query_properties
   need_query_property
+  need_body_properties
+  need_body_property
   get_intervention_votes
   get_intervention_votes_total
   fix_object
