@@ -67,7 +67,7 @@ export post_idea = (goal, idea) ->>
   console.log existing_ideas
   if existing_ideas.length > 0
     return
-  await keep_trying -> ideas.insert({goal, idea, vote: 0, lostvote: 0}, it)
+  await keep_trying -> ideas.insert({goal, idea, vote: 0, lostvote: 0, tie: 0}, it)
   return
 
 goal_to_ideas = {
@@ -105,7 +105,7 @@ initialize = ->>
 
 clearvotes = ->>
   ideas = await get_collection_goal_ideas()
-  await keep_trying -> ideas.updateMany({}, {$set: {vote: 0, lostvote: 0}}, it)
+  await keep_trying -> ideas.updateMany({}, {$set: {vote: 0, lostvote: 0, tie: 0}}, it)
   return
 
 clearvotelogs = ->>

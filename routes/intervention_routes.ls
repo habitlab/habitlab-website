@@ -236,13 +236,27 @@ app.get '/downvote_proposed_goal', (ctx) ->>
 app.post '/upvote_proposed_idea', (ctx) ->>
   ctx.type = 'json'
   {goal, winnerid, loserid, winner, loser, userid, installid} = ctx.request.body
-  if need_query_property ctx, 'winnerid'
+  if need_body_properties ctx, ['goal', 'winnerid', 'loserid', 'winner', 'loser', 'userid', 'installid']
     return
   [proposed_ideas, db] = await get_collection_goal_ideas()
   [idea_logs, db2] = await get_collection_goal_idea_logs()
   await n2p -> idea_logs.insert({winnerid, loserid, winner, loser, userid, installid}, it)
   await n2p -> proposed_ideas.update({_id: mongodb.ObjectID(winnerid)}, {$inc: {vote: 1}}, it)
   await n2p -> proposed_ideas.update({_id: mongodb.ObjectID(loserid)}, {$inc: {lostvote: 1}}, it)
+  ctx.body = JSON.stringify {response: 'done', success: true}
+  db?close()
+  db2?close()
+
+app.post '/opt_out_nudgeidea', (ctx) ->>
+  ctx.type = 'json'
+  {goal, leftidea, leftideaid, rightidea, rightideaid, userid, installid} = ctx.request.body
+  if need_body_properties ctx, ['goal', 'leftidea', 'leftideaid', 'rightidea', 'rightideaid', 'userid', 'installid']
+    return
+  [proposed_ideas, db] = await get_collection_goal_ideas()
+  [idea_logs, db2] = await get_collection_goal_idea_logs()
+  await n2p -> idea_logs.insert({leftidea, leftideaid, rightidea, rightideaid, userid, installid}, it)
+  await n2p -> proposed_ideas.update({_id: mongodb.ObjectID(leftideaid)}, {$inc: {tie: 1}}, it)
+  await n2p -> proposed_ideas.update({_id: mongodb.ObjectID(rightideaid)}, {$inc: {tie: 1}}, it)
   ctx.body = JSON.stringify {response: 'done', success: true}
   db?close()
   db2?close()
