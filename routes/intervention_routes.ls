@@ -242,7 +242,10 @@ app.post '/upvote_proposed_idea', (ctx) ->>
     return
   [proposed_ideas, db] = await get_collection_goal_ideas()
   [idea_logs, db2] = await get_collection_goal_idea_logs()
-  await n2p -> idea_logs.insert({type: 'vote', winnerid, loserid, winner, loser, userid, installid}, it)
+  data = {type: 'vote', winnerid, loserid, winner, loser, userid, installid}
+  data.timestamp = Date.now()
+  data.ip = ctx.request.ip_address_fixed
+  await n2p -> idea_logs.insert(data, it)
   await n2p -> proposed_ideas.update({_id: mongodb.ObjectID(winnerid)}, {$inc: {vote: 1}}, it)
   await n2p -> proposed_ideas.update({_id: mongodb.ObjectID(loserid)}, {$inc: {lostvote: 1}}, it)
   ctx.body = JSON.stringify {response: 'done', success: true}
@@ -256,7 +259,10 @@ app.post '/opt_out_nudgeidea', (ctx) ->>
     return
   [proposed_ideas, db] = await get_collection_goal_ideas()
   [idea_logs, db2] = await get_collection_goal_idea_logs()
-  await n2p -> idea_logs.insert({type: 'tie', leftidea, leftideaid, rightidea, rightideaid, userid, installid}, it)
+  data = {type: 'tie', leftidea, leftideaid, rightidea, rightideaid, userid, installid}
+  data.timestamp = Date.now()
+  data.ip = ctx.request.ip_address_fixed
+  await n2p -> idea_logs.insert(data, it)
   await n2p -> proposed_ideas.update({_id: mongodb.ObjectID(leftideaid)}, {$inc: {tie: 1}}, it)
   await n2p -> proposed_ideas.update({_id: mongodb.ObjectID(rightideaid)}, {$inc: {tie: 1}}, it)
   ctx.body = JSON.stringify {response: 'done', success: true}
@@ -313,6 +319,8 @@ app.post '/postidea_candidate', (ctx) ->>
   if need_body_properties ctx, ['goal', 'idea', 'userid', 'installid']
     return
   new_idea = {goal, idea, userid, installid}
+  new_idea.timestamp = Date.now()
+  new_idea.ip = ctx.request.ip_address_fixed
   try
     [collection,db] = await get_collection_goal_idea_candidates()
     console.log 'new_idea'
@@ -340,6 +348,14 @@ app.get '/getideas_vote', (ctx) ->>
 app.get '/getideas_vote_all', (ctx) ->>
   ctx.type = 'json'
   [collection, db] = await get_collection_goal_ideas()/*Find these functions*/
+  all_results = await n2p -> collection.find({}).toArray(it)
+  # console.log "Here are the shared results for " + website
+  ctx.body = JSON.stringify(all_results)
+  db?close()
+
+app.get '/getidea_candidates', (ctx) ->>
+  ctx.type = 'json'
+  [collection, db] = await get_collection_goal_idea_candidates()/*Find these functions*/
   all_results = await n2p -> collection.find({}).toArray(it)
   # console.log "Here are the shared results for " + website
   ctx.body = JSON.stringify(all_results)
