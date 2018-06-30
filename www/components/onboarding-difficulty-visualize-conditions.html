@@ -62,6 +62,11 @@
         let user_to_is_official = await get_user_to_is_official()
         let install_id_to_is_official = await get_install_id_to_is_official()
         let user_to_install_times = await get_user_to_install_times_list_cached()
+        let user_to_install_dates = await get_user_to_install_dates_list_cached()
+        
+        //gets the data before this date 
+        let expected_date = "20180629"
+
         let csv_data = []
         for (let userid of user_list) {
           let install_ids = user_to_install_ids[userid]
@@ -106,7 +111,6 @@
           if (Math.abs(install_timestamp - experiment_started_time_install_id) > 3600*1000*24) {
             duplicate_user = true
           }
-
           let last_onboarding_slide_idx = await get_last_onboarding_slide_idx_for_user_cached(userid)
           let onboarding_completed = await get_did_user_complete_onboarding_cached(userid)
           let lifetime_user = first_active_user - last_active_user
@@ -139,8 +143,11 @@
             duplicate_user: duplicate_user,
             domain_visit_info_compressed: domain_visit_info_compressed,
           }
-          csv_data.push(cur_row)
+          if (user_to_install_dates[cur_row.userid] < expected_date) {
+            csv_data.push(cur_row)
+          }
         }
+        console.log(csv_data.length)
         console.log('========= csv data =============')
         console.log(await json2csv.json2csvPromisified(csv_data))
         return

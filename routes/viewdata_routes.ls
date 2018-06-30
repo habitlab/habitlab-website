@@ -1040,7 +1040,6 @@ export get_user_to_dates_active_oldlogs = ->>
       #    users_set[userid] = true
   #db.close()
   return user_to_days_active
-
 expose_get_auth get_user_to_dates_active_oldlogs
 */
 
