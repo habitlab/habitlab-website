@@ -328,8 +328,21 @@ export need_query_properties = (ctx, properties_list) ->
       return true
   return false
 
+export need_body_properties = (ctx, properties_list) ->
+  for property in properties_list
+    if not ctx.request.body[property]?
+      ctx.body = JSON.stringify {response: 'error', error: 'Need ' + property}
+      return true
+  return false
+
 export need_query_property = (ctx, property) ->
   if not ctx.request.query[property]?
+    ctx.body = JSON.stringify {response: 'error', error: 'Need ' + property}
+    return true
+  return false
+
+export need_query_property = (ctx, property) ->
+  if not ctx.request.body[property]?
     ctx.body = JSON.stringify {response: 'error', error: 'Need ' + property}
     return true
   return false
@@ -366,5 +379,8 @@ export get_collection_goal_ideas = ->>
 
 export get_collection_goal_idea_candidates = ->>
   return await get_collection2('get_collection_goal_idea_candidates')
+
+export get_collection_goal_idea_logs = ->>
+  return await get_collection2('get_collection_goal_idea_logs')
 
 require('libs/globals').add_globals(module.exports)

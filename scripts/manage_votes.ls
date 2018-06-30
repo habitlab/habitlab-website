@@ -39,8 +39,8 @@ export get_collection = (collection_name) ->>
 export get_collection_goal_ideas = ->>
   return await get_collection('get_collection_goal_ideas')
 
-export get_collection_goal_idea_vote_logs = ->>
-  return await get_collection('get_collection_goal_idea_vote_logs')
+export get_collection_goal_idea_logs = ->>
+  return await get_collection('get_collection_goal_idea_logs')
 
 export get_collection_goal_idea_candidates = ->>
   return await get_collection('get_collection_goal_idea_candidates')
@@ -67,13 +67,28 @@ export post_idea = (goal, idea) ->>
   console.log existing_ideas
   if existing_ideas.length > 0
     return
-  await keep_trying -> ideas.insert({goal, idea, vote: 0, lostvote: 0}, it)
+  await keep_trying -> ideas.insert({goal, idea, vote: 0, lostvote: 0, tie: 0}, it)
   return
 
 goal_to_ideas = {
   'facebook/spend_less_time': [
+    # new ideas
     'Remove the unread notifications icon'
     'Type out your goals for visiting Facebook'
+    # existing nudges
+    'Injects timer into the Facebook feed'
+    'Removes the Facebook news feed'
+    'Notifies you of time spent in the corner of your desktop'
+    'Removes Facebook comments'
+    'Removes clickbait'
+    'Notifies you of time spent every minute'
+    'Shows time spent on site at the top of screen'
+    'Freezes scrolling after a certain amount of scrolls'
+    'Show time spent and visit count each visit'
+    'Makes you wait a few seconds before visiting'
+    'Closes tab after 60 seconds'
+    'Asks how long you want to spend on site this visit'
+    'Asks what you aim to do this visit and puts a reminder up'
   ],
   #'youtube/spend_less_time': [
   #  ''
@@ -90,12 +105,22 @@ initialize = ->>
 
 clearvotes = ->>
   ideas = await get_collection_goal_ideas()
-  await keep_trying -> ideas.updateMany({}, {$set: {vote: 0, lostvote: 0}}, it)
+  await keep_trying -> ideas.updateMany({}, {$set: {vote: 0, lostvote: 0, tie: 0}}, it)
   return
 
 clearvotelogs = ->>
-  votelogs = await get_collection_goal_idea_vote_logs()
+  votelogs = await get_collection_goal_idea_logs()
   await votelogs.remove({})
+  return
+
+clearideas = ->>
+  ideas = await get_collection_goal_ideas()
+  await ideas.remove({})
+  return
+
+clearideacandidates = ->>
+  candidates = await get_collection_goal_idea_candidates()
+  await candidates.remove({})
   return
 
 do ->>
@@ -112,6 +137,14 @@ do ->>
     describe: 'clears the existing set of vote logs'
     default: false
   })
+  .option('clearideas', {
+    describe: 'clears the existing set of ideas'
+    default: false
+  })
+  .option('clearideacandidates', {
+    describe: 'clears the existing set of idea candidates'
+    default: false
+  })
   #.option('fresh', {
   #  describe: 'perform a fresh sync (deleting the listcio )'
   #})
@@ -121,6 +154,12 @@ do ->>
     await initialize()
   else if argv.clearvotes
     await clearvotes()
+  else if argv.clearvotelogs
+    await clearvotelogs()
+  else if argv.clearideas
+    await clearideas()
+  else if argv.clearideacandidates
+    await clearideacandidates()
   else
     console.log('no command was provided')
   process.exit()
