@@ -25,8 +25,29 @@ yarn
 sudo npm install -g mongosrv node-dev
 ```
 
+## Syncing the Database
 
-## Extracting the Database
+Update .getsecret.yaml with the credentials to the database you wish to sync as MONGODB_SRC and the destination as MONGODB_DST. If you are syncing to the local database, then MONGODB_DST should be `MONGODB_DST: mongodb://localhost:27017/test` and you should start the database with the command
+
+```
+mongosrv
+```
+
+To sync the contents over, run the scripts
+
+```
+./scripts/copy_database --threads 20
+```
+
+Once the database finishes syncing, keep the command mongosrv running (it will take a while, ie 20+ minutes, to start again. You will know the mongodb server has finished starting up when you see a message "Listening on port 27017" is displayed). Then run the command
+
+```
+./runserver
+```
+
+To start the server.
+
+## Extracting the Database (old, ignore)
 
 Extract the file `mongodb_backup_nov9.tar.gz` to a directory.
 
