@@ -36,7 +36,7 @@ mongosrv
 To sync the contents over, run the scripts
 
 ```
-./scripts/copy_database --threads 20
+./scripts/copy_database --fresh --threads 20
 ```
 
 Once the database finishes syncing, keep the command mongosrv running (it will take a while, ie 20+ minutes, to start again. You will know the mongodb server has finished starting up when you see a message "Listening on port 27017" is displayed). Then run the command
