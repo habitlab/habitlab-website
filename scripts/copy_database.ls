@@ -161,8 +161,10 @@ do ->>
   .strict()
   .argv
   if argv.fresh
-    fs.removeSync('.node-persist')
-    fs.unlinkSync('listcollections')
+    if fs.existsSync('.node-persist')
+      fs.removeSync('.node-persist')
+    if fs.existsSync('listcollections')
+      fs.unlinkSync('listcollections')
   if argv.collection?
     all_collections = [argv.collection]
   else
