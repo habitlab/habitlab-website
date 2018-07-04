@@ -43,6 +43,7 @@
     "text-clipper": "^1.2.0"
   },
   "devDependencies": {
+    "fs-extra": "^6.0.1",
     "gulp": "^3.9.1",
     "gulp-changed": "^3.1.0",
     "gulp-print": "^2.0.1",
