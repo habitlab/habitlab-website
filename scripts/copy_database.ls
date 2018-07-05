@@ -1,9 +1,10 @@
 require! {
   mongodb
   getsecret
-  fs
   n2p
 }
+
+fs = require('fs-extra')
 
 storage = require('node-persist')
 
@@ -146,6 +147,10 @@ do ->>
     describe: 'should be resumable (state is stored in the .node-persist directory)'
     default: true
   })
+  .option('fresh', {
+    describe: 'should be resumable (state is stored in the .node-persist directory)'
+    default: false
+  })
   .option('threads', {
     describe: 'number of threads to use for syncing'
     default: 1
@@ -155,6 +160,11 @@ do ->>
   #})
   .strict()
   .argv
+  if argv.fresh
+    if fs.existsSync('.node-persist')
+      fs.removeSync('.node-persist')
+    if fs.existsSync('listcollections')
+      fs.unlinkSync('listcollections')
   if argv.collection?
     all_collections = [argv.collection]
   else
