@@ -341,7 +341,7 @@ export need_query_property = (ctx, property) ->
     return true
   return false
 
-export need_query_property = (ctx, property) ->
+export need_body_property = (ctx, property) ->
   if not ctx.request.body[property]?
     ctx.body = JSON.stringify {response: 'error', error: 'Need ' + property}
     return true
