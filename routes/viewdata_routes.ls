@@ -1067,6 +1067,8 @@ export binary_index_of = (list, searchElement) ->
  */
 export find_corresponding_time_duration = (sessions_time, id, install_id, domain) ->>
   index = binary_index_of(sessions_time, id)
+  if index == -1
+   return 0
   # Now, there can be multiple occurrences of this id, let's find the earliest one.
   # this is because there can be multiple installs and syncing saves sessions even when they
   # aren't finished yet.
