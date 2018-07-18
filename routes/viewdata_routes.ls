@@ -1004,6 +1004,88 @@ app.get '/getactiveusers_week', auth, (ctx) ->>
   output = await list_active_users_week()
   ctx.body = JSON.stringify output
 
+/**
+ * @return {intervention: {install_id: {session_id: time_spent}}}
+ * Note: we need to separate by install_id because there can be multiple sessions with the same id
+ * for different installs.
+ */
+export get_sessions_for_user = (user) ->>
+  organized_time = {}
+  [intervention_sessions_col, db] = await get_collection(user + '_synced:interventions_active_for_domain_and_session')
+  intervention_sessions = await n2p -> intervention_sessions_col.find({}).toArray(it)
+  [sessions_time_col, db2] = await get_collection(user + '_synced:seconds_on_domain_per_session')
+  sessions_time = await n2p -> sessions_time_col.find({}).toArray(it)
+  enabled_interventions = {}
+  [intervention_info_col, db3] = await get_collection(user + '_logs:interventions')
+  intervention_info = await n2p -> intervention_info_col.find({}).toArray(it)
+  if intervention_info.length > 0
+    enabled_interventions = intervention_info[intervention_info.length - 1].enabled_interventions
+    sessions_time.sort((obj1, obj2) ->
+      return obj1.key2 - obj2.key2  
+    )
+    for session in intervention_sessions
+      for intervention in JSON.parse(session.val)
+        if enabled_interventions[intervention]
+          if !organized_time[intervention]?
+            organized_time[intervention] = {} 
+          if session.install_id?
+            if !organized_time[intervention][session.install_id]?
+              organized_time[intervention][session.install_id] = {}
+            session_time_duration = await find_corresponding_time_duration(sessions_time, session.key2, session.install_id, session.key)
+            organized_time[intervention][session.install_id][session.key2] = {time_spent: session_time_duration, timestamp: session.timestamp}
+    return organized_time
+  return {}
+expose_get_auth get_sessions_for_user, 'userid'
+
+/**
+ * Performs a binary search on the host array.
+ * This is modified for the sessions_time list in find_corresponding_time_duration
+ * Sourced from https://oli.me.uk/2013/06/08/searching-javascript-arrays-with-a-binary-search/
+ * @param {*} searchElement The item to search for within the array.
+ * @return {Number} The index of the element which defaults to -1 when not found.
+ */
+export binary_index_of = (list, searchElement) ->
+  minIndex = 0
+  maxIndex = list.length - 1
+  currentIndex = 0
+  currentElement = 0
+  while (minIndex <= maxIndex)
+      currentIndex = Math.floor((minIndex + maxIndex) / 2)
+      currentElement = list[currentIndex]
+      if (currentElement.key2 < searchElement)
+          minIndex = currentIndex + 1
+      else if (currentElement.key2 > searchElement)
+          maxIndex = currentIndex - 1
+      else
+          return currentIndex
+  return -1
+
+/**
+ * Finds the time spent on that site.
+ * @param sessions_time list from 'synced:seconds_on_domain_per_session' collection.
+ * @param id 'key2' value of session
+ * @param install_id
+ * @param domain of intervention. ids really are not very unique.
+ */
+export find_corresponding_time_duration = (sessions_time, id, install_id, domain) ->>
+  index = binary_index_of(sessions_time, id)
+  if index == -1
+   return 0
+  # Now, there can be multiple occurrences of this id, let's find the earliest one.
+  # this is because there can be multiple installs and syncing saves sessions even when they
+  # aren't finished yet.
+  start_index = index
+  while (start_index >= 0 and sessions_time[index].key2 == sessions_time[start_index].key2)
+    start_index -= 1
+  cursor = start_index + 1
+  # Now let's find the largest time for the install_id.
+  time = 0
+  while (cursor >= 0 and cursor < sessions_time.length and sessions_time[index].key2 == sessions_time[cursor].key2)
+    if sessions_time[cursor].install_id? and sessions_time[cursor].install_id == install_id and sessions_time[cursor].key == domain
+      time = Math.max(time, sessions_time[cursor].val)
+    cursor += 1
+  return time
+
 /*
 export get_user_to_dates_active_oldlogs = ->>
   users = []
