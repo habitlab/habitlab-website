@@ -1,0 +1,298 @@
+<link rel="import" href="../bower_components/polymer/polymer.html">
+<link rel="import" href="../bower_components/google-chart/google-chart.html">
+
+<dom-module id="visualize-intervention-suggestions">
+  <template>
+    <style>
+      #retention_curve_general {
+        width: 100%;
+        height: 600px;
+      }
+    </style>
+    <div>All Users with experiment_vars set</div>
+
+    <template is="dom-repeat" items="{{users_with_experiment_vars}}" as="userid">
+      <div>
+        <a href="/viewuser.html?userid={{userid}}">{{userid}}</a>
+      </div>
+    </template>
+
+    <br><br>
+
+    <template is="dom-repeat" items="{{selection_algorithm_and_users_list}}" as="selection_algorithm_and_users">
+      <div>Algorithm: {{selection_algorithm_and_users.algorithm}}</div>
+      <template is="dom-repeat" items="{{selection_algorithm_and_users.users}}" as="userid">
+        <div>
+          <a href="/viewuser.html?userid={{userid}}">{{userid}}</a>
+        </div>
+      </template>
+      <br><br>
+    </template>
+  </template>
+  <script>
+    Polymer({
+      is: 'visualize-intervention-suggestions',
+      properties: {
+        
+      },
+      /*
+      display_user_list: function(user_list, container) {
+        $('#num_active_users').text(user_ids.length)
+        for (let user_id of user_ids) {
+          $(container).append($('<a href="/viewuser.html?userid=' + user_id + '">' + user_id + '</a>'))
+          $('#user_list').append($('<br>'))
+        }
+      },
+      */
+      ready: async function() {
+        console.log('ready called in intervention-visulize-suggestions')
+        let all_collections = await listcollections()
+        console.log(all_collections)
+        let idx = 0
+        users_suggested = []
+        users_took_action = []
+        let users_suggested_fields = []
+        let users_took_action_fields = []
+        let impression_list = []
+
+        for (let collection of all_collections) {
+          // over all interventions
+          idx += 1
+          if ((idx % 1000) == 0) {
+            console.log(idx + '/' + all_collections.length)
+          }
+          if (collection.indexOf('synced') != -1) continue
+          if (collection.indexOf(':') == -1) continue
+          //console.log(collection)
+          let data = await get_collection_cached(collection)
+          //console.log(data)
+          try{
+            for (let line of data) {
+            // each log item for that intervention
+            // look for type == "impression"
+            // line.timestamp is when this intervention was seen this particular time
+
+            if (line.type && line.type == 'suggested') {
+              console.log('intervention was suggested')
+              console.log(line)
+              
+              users_suggested.push(line)
+              if (!Array.isArray(users_suggested_fields) || !users_suggested_fields.length)
+                {
+                users_suggested_fields = Object.keys(line)
+              }
+            }
+            if (line.type && line.type == 'suggestion_action') {
+              console.log('user either accepted or declined intervention suggestion')
+              console.log(line)
+              users_took_action.push(line)
+              if (!Array.isArray(users_took_action_fields) || !users_took_action_fields.length)
+                {
+                  users_took_action_fields = Object.keys(line)
+              }
+            }
+
+            //console.log(line.userid)   
+            /*
+            if (line.type && line.type == 'impression' && userids.includes(line.userid)) {
+              console.log('impression with proper userid appeared')
+              console.log(line)
+              impression_list.push(line)
+            }
+            */
+
+          }
+          }
+          catch(TypeError){
+            console.log("maybe not iterable")
+            console.log(data)
+          }
+          
+
+          if (collection.indexOf('experiment_vars') != -1) {
+            for (let line of data) {
+              if (line.key == 'intervention_suggestion_algorithm') {
+                console.log('intervention_suggestion_algorithm')
+                console.log(line.val)
+              }
+            }
+          }
+        }
+        console.log(users_suggested)
+        console.log(users_took_action)
+        console.log(JSON.stringify(impression_list))
+        
+        
+        // var users = new Set()
+        // for (let user of users_suggested){
+        //   users.add(user["userid"])
+        // }
+        
+        /**
+        userVsInterventionSeen = {}
+        for (let user of users) {
+          userVsInterventionSeen.push(
+            {user: get_intervention_to_time_most_recently_seen(user)})
+        }
+        */
+        /**
+        ['accepted', 'action', 'day', 'developer_mode', 'habitlab_version', 'id', 'install_id'
+        ,'intervention'
+        ,'is_new_session'
+        ,'is_preview_mode'
+        ,'is_previously_seen'
+        , 'is_suggestion_mode'
+        , 'itemid'
+        , 'localtime'
+        , 'log_major_ver'
+        , 'log_minor_ver'
+        , 'logname'
+        , 'session_id'
+        , 'synced'
+        , 'tab_id'
+        , 'timestamp'
+        , 'timestamp_local'
+        , 'type'
+        , 'unofficial_version'
+        , 'url'
+        , 'userid'
+        , '_id']
+        */
+
+        return
+
+        let user_to_reward_gifs = await get_users_to_conditions_in_experiment_by_name('reward_gifs_abtest')
+        let user_to_goal_notifications = await get_users_to_conditions_in_experiment_by_name('daily_goal_reminders_abtest')
+        let user_to_difficulty_selection_screen = await get_users_to_conditions_in_experiment_by_name('difficulty_selection_screen')
+        let user_list = await get_all_users_in_experiment_by_name('difficulty_selection_screen')
+        user_list = user_list.filter(x => user_to_reward_gifs[x] != null && user_to_goal_notifications[x] != null && user_to_difficulty_selection_screen[x] != null)
+        console.log(user_list)
+        console.log(user_to_difficulty_selection_screen)
+        let install_id_to_first_active_since_today = await list_first_active_date_for_all_install_ids_since_today()
+        let install_id_to_last_active_since_today = await list_last_active_date_for_all_install_ids_since_today()
+        let user_to_first_active_since_today = await list_first_active_date_for_all_users_since_today()
+        let user_to_last_active_since_today = await list_last_active_date_for_all_users_since_today()
+        let user_to_difficulty = await get_user_to_difficulty()
+        let user_to_install_ids = await get_user_to_all_install_ids_cached()
+        let user_to_is_official = await get_user_to_is_official()
+        let install_id_to_is_official = await get_install_id_to_is_official()
+        let user_to_install_times = await get_user_to_install_times_list_cached()
+        let csv_data = []
+        for (let userid of user_list) {
+          let install_ids = user_to_install_ids[userid]
+          let num_install_ids = 0
+          if (install_ids != null) {
+            num_install_ids = install_ids.length
+          }
+          if (num_install_ids == 0) {
+            continue
+          }
+          let install_id = install_ids[0]
+          if (user_to_is_official[userid] != true) {
+            continue
+          }
+          if (install_id_to_is_official[install_id] != true) {
+            continue
+          }
+          let difficulty_selection_screen = user_to_difficulty_selection_screen[userid]
+          let reward_gifs = user_to_reward_gifs[userid]
+          let goal_notifications = user_to_goal_notifications[userid]
+          let first_active = install_id_to_first_active_since_today[install_id]
+          let last_active = install_id_to_last_active_since_today[install_id]
+          if (first_active == null || last_active == null) {
+            continue
+          }
+          let first_active_user = user_to_first_active_since_today[userid]
+          let last_active_user = user_to_last_active_since_today[userid]
+          if (first_active_user == null || last_active_user == null) {
+            continue
+          }
+          let experiment_started_time_user = await get_timestamp_experiment_var_was_last_set_for_userid(userid, 'difficulty_selection_screen')
+          let experiment_started_time_install_id = await get_timestamp_experiment_var_was_last_set_for_install_id(install_id, 'difficulty_selection_screen')
+          let duplicate_user = false
+          let install_timestamps = user_to_install_times[userid] 
+          if (install_timestamps.length != 1) {
+            duplicate_user = true
+          }
+          let install_timestamp = install_timestamps[0]
+          if (Math.abs(install_timestamp - experiment_started_time_user) > 3600*1000*24) {
+            duplicate_user = true
+          }
+          if (Math.abs(install_timestamp - experiment_started_time_install_id) > 3600*1000*24) {
+            duplicate_user = true
+          }
+
+          let last_onboarding_slide_idx = await get_last_onboarding_slide_idx_for_user_cached(userid)
+          let onboarding_completed = await get_did_user_complete_onboarding_cached(userid)
+          let lifetime_user = first_active_user - last_active_user
+          let attritioned_user = last_active_user >= 3
+          let lifetime = first_active - last_active
+          let attritioned = last_active >= 3
+          let selected_difficulty = 'noneselected'
+          if (user_to_difficulty[userid] != null) {
+            selected_difficulty = user_to_difficulty[userid]
+          }
+          let domain_visit_info_compressed = await get_domain_visit_info_for_user_compressed(userid)
+          let cur_row = {
+            userid: userid,
+            install_id: install_id,
+            selected_difficulty: selected_difficulty,
+            difficulty_selection_screen: difficulty_selection_screen,
+            reward_gifs: reward_gifs,
+            goal_notifications: goal_notifications,
+            lifetime_user: lifetime_user,
+            attritioned_user: attritioned_user,
+            lifetime: lifetime,
+            attritioned: attritioned,
+            first_active: first_active,
+            last_active: last_active,
+            first_active_user: first_active_user,
+            last_active_user: last_active_user,
+            onboarding_completed: onboarding_completed,
+            last_onboarding_slide_idx: last_onboarding_slide_idx,
+            num_install_ids: num_install_ids,
+            duplicate_user: duplicate_user,
+            domain_visit_info_compressed: domain_visit_info_compressed,
+          }
+          csv_data.push(cur_row)
+        }
+        console.log('========= csv data =============')
+        console.log(await json2csv.json2csvPromisified(csv_data))
+        return
+        /*
+        let all_collections = await listcollections()
+        let users_with_experiment_vars = []
+        let user_to_selection_algorithm = {}
+        let selection_algorithm_and_users_list = []
+        let selection_algorithm_to_idx = {}
+        for (let collection_fullname of all_collections) {
+          let underscore_index = collection_fullname.indexOf('_')
+          let username = collection_fullname.substr(0, underscore_index)
+          let collection_name = collection_fullname.substr(underscore_index + 1)
+          if (collection_name == 'synced:experiment_vars') {
+            users_with_experiment_vars.push(username)
+          }
+        }
+        this.users_with_experiment_vars = users_with_experiment_vars
+        for (let userid of users_with_experiment_vars) {
+          let experiment_vars_list = await get_collection_for_user(userid, 'synced:experiment_vars')
+          for (let x of experiment_vars_list) {
+            if (x.key == 'selection_algorithm_for_visit') {
+              user_to_selection_algorithm[userid] = x.val
+              if (selection_algorithm_to_idx[x.val] == null) {
+                selection_algorithm_to_idx[x.val] = selection_algorithm_and_users_list.length
+                selection_algorithm_and_users_list.push({
+                  algorithm: x.val,
+                  users: [],
+                })
+              }
+              selection_algorithm_and_users_list[selection_algorithm_to_idx[x.val]].users.push(userid)
+            }
+          }
+        }
+        this.selection_algorithm_and_users_list = selection_algorithm_and_users_list
+        */
+      },
+    })
+  </script>
+</dom-module>
