@@ -530,6 +530,8 @@ app.get '/get_user_to_install_times', auth, (ctx) ->>
     all_results = await n2p -> installs.find({}).toArray(it)
     output = {}
     for install_info in all_results
+      if output[install_info.user_id]?
+        continue
       output[install_info.user_id] = install_info.timestamp
     ctx.body = JSON.stringify(output)
   catch err
