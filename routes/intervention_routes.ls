@@ -345,6 +345,14 @@ app.get '/getideas_vote', (ctx) ->>
   ctx.body = JSON.stringify(all_results)
   db?close()
 
+app.get '/getideas_logs', (ctx) ->>
+  ctx.type = 'json'
+  [collection, db] = await get_collection_goal_idea_logs()/*Find these functions*/
+  all_results = await n2p -> collection.find({}).toArray(it)
+  # console.log "Here are the shared results for " + website
+  ctx.body = JSON.stringify(all_results)
+  db?close()
+
 app.get '/getideas_vote_all', (ctx) ->>
   ctx.type = 'json'
   [collection, db] = await get_collection_goal_ideas()/*Find these functions*/
