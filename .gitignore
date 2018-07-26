@@ -14,3 +14,4 @@ scripts_secret
 listcollections
 yarn-error.log
 package-lock.json
+.README.md.swp
