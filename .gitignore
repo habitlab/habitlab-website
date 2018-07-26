@@ -15,3 +15,4 @@ listcollections
 yarn-error.log
 package-lock.json
 .README.md.swp
+.ipynb_checkpoints
