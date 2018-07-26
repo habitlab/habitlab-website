@@ -326,7 +326,9 @@ async function display_goals_enabled_by_users() {
 }
 
 async function display_interventions_enabled_by_users() {
+  console.log("done")
   let intervention_to_num_users = await get_interventions_enabled_by_users()
+  console.log("done")
   display_dictionary_as_table(intervention_to_num_users, '#interventions_enabled')
 }
 

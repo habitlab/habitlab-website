@@ -1,4 +1,5 @@
 
+//var fs = require("fs")
 let get_store_cached = {}
 
 async function record_that_store_exists(name) {
@@ -1170,6 +1171,8 @@ async function get_session_info_list_for_user(userid) {
     let userid_inlog = item.userid
     let interventions_active = JSON.parse(item.val)
     let intervention = interventions_active[0]
+    let a = JSON.stringify(intervention)
+    console.log(a)
     let timestamp = item.timestamp
     let timestamp_local = item.timestamp_local
     let install_id = item.install_id
@@ -2352,6 +2355,95 @@ async function get_web_install_clicks() {
   return output
 }
 
+async function get_intervention_for_users() {
+  //gets availability of each intervention for users 
+  let res = {}
+  let users = await get_all_users_with_experiment_vars()
+  for (let user of users) {
+    //console.log(user)
+   tmp = await get_collection_for_user(user, 'logs:interventions')
+   if (tmp.length >= 1) {
+      tmp2 = tmp[0]["enabled_interventions"]
+      res[user] = tmp2
+    }
+  }
+  console.log("done intervention for users")
+  return res
+}
+
+async function get_users_with_all_interventions_enabled() {
+  var res = []
+  usersToInterventions = await get_intervention_for_users()
+  for (var user in usersToInterventions) {
+    if (usersToInterventions.hasOwnProperty(user)) {
+      canadd = true
+      for (var intervention in usersToInterventions[user]) {
+        if (usersToInterventions[user].hasOwnProperty(intervention)) {
+           if (!usersToInterventions[user][intervention])
+              canadd = false;
+        }
+      }
+      if (canadd)
+        res.push(user)
+    }
+  }
+
+  console.log("done get users with all interventions enabled")
+  return res
+}
+
+async function get_session_lengths_with_intervention_users(users) {
+  res = {}
+  i = 0
+  for (i = 0; i < users.length; i++) {
+      user = users[i] 
+      res[user] = await get_session_lengths_with_intervention(user)
+      console.log(user)
+  }
+
+  console.log(res)
+  console.log("done get session lengths with interventions users")  
+  return res
+  
+}
+
+async function get_session_lengths_with_intervention_users_with_all_interventions_enabled() {
+  users = await get_users_with_all_interventions_enabled()
+  res =  await get_session_lengths_with_intervention_users(users)
+  console.log("done get session length with intervention users with all interventions enabld")
+  console.log(users)
+  console.log(res)
+  return res  
+}
+
+async function get_all_intervention_effectiveness() {
+  let domain_to_intervention_to_session_lengths;
+  domain_to_intervention_to_session_lengths = await get_session_lengths_with_intervention_all_users()
+  let domain_and_intervention_effectiveness_list = []
+  for (let domain of Object.keys(domain_to_intervention_to_session_lengths)) {
+    let intervention_info_list = []
+    let intervention_to_session_lengths = domain_to_intervention_to_session_lengths[domain]
+    for (let intervention_name of Object.keys(intervention_to_session_lengths)) {
+      let session_lengths = intervention_to_session_lengths[intervention_name]
+      let mean_session_length = prelude.mean(session_lengths)
+      let standard_deviation = math.std(session_lengths)
+      let confidence_interval = 1.645 * standard_deviation / Math.sqrt(session_lengths.length) // 90% confidence is 1.645, 95% confidence is 1.96
+      intervention_info_list.push([
+        intervention_name,
+        mean_session_length,
+        mean_session_length + confidence_interval,
+        mean_session_length - confidence_interval,
+      ])
+    }
+    domain_and_intervention_effectiveness_list.push({
+      domain: domain,
+      intervention_info_list: intervention_info_list
+    })
+  }
+
+  return domain_and_intervention_effectiveness_list;
+}
+
 async function get_web_install_accepts() {
   let visit_info_list = await get_all_web_visit_actions()
   let output = []
@@ -2460,9 +2552,10 @@ async function get_user_to_session_lengths_with_intervention() {
   }
   let output = {}
   for (let username of user_list) {
-    console.log(username)
+    //console.log(username)
     output[username] = await get_session_lengths_with_intervention(username)
   }
+  console.log("done")
   return output
   /*
   console.log(user_list)

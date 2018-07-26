@@ -65,7 +65,8 @@
         let user_to_install_dates = await get_user_to_install_dates_list_cached()
         
         //gets the data before this date 
-        let expected_date = "20180629"
+        let expected_date = "999999999999999"
+        console.log(expected_date)
 
         let csv_data = []
         for (let userid of user_list) {
@@ -143,9 +144,8 @@
             duplicate_user: duplicate_user,
             domain_visit_info_compressed: domain_visit_info_compressed,
           }
-          if (user_to_install_dates[cur_row.userid] < expected_date) {
-            csv_data.push(cur_row)
-          }
+         
+          csv_data.push(cur_row)
         }
         console.log(csv_data.length)
         console.log('========= csv data =============')

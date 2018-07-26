@@ -51,8 +51,10 @@
           domain_to_intervention_to_session_lengths = await get_session_lengths_with_intervention(userid)
         }
         let domain_and_intervention_effectiveness_list = []
+        let domain_and_intervention_effectiveness_json = []
         for (let domain of Object.keys(domain_to_intervention_to_session_lengths)) {
           let intervention_info_list = []
+          let intervention_info_json = []
           let intervention_to_session_lengths = domain_to_intervention_to_session_lengths[domain]
           for (let intervention_name of Object.keys(intervention_to_session_lengths)) {
             let session_lengths = intervention_to_session_lengths[intervention_name]
@@ -74,13 +76,25 @@
               mean_session_length + confidence_interval,
               mean_session_length - confidence_interval,
             ])
+            intervention_info_json.push([
+              intervention_name,
+              mean_session_length,
+              mean_session_length + confidence_interval,
+              mean_session_length - confidence_interval
+            ])
           }
           domain_and_intervention_effectiveness_list.push({
             domain: domain,
             intervention_info_list: intervention_info_list
           })
+          domain_and_intervention_effectiveness_json.push({
+            domain: domain,
+            intervention_info_list: intervention_info_json
+          })
         }
-        console.log(domain_and_intervention_effectiveness_list)
+
+        domain_and_intervention_effectiveness_json = JSON.stringify(domain_and_intervention_effectiveness_json)
+        console.log(domain_and_intervention_effectiveness_json)
         this.domain_and_intervention_effectiveness_list = domain_and_intervention_effectiveness_list
       }
     });
