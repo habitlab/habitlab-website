@@ -12,3 +12,5 @@ scripts_secret
 .node-persist
 .node-persist-old
 listcollections
+yarn-error.log
+package-lock.json
