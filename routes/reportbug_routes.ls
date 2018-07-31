@@ -129,9 +129,9 @@ app.post '/report_bug', (ctx) ->>
     gitter_message += '\n\n' + "[#{screenshot_url}](#{screenshot_url})"
   if other?
     gitter_message += '\n\n```\n' + jsyaml.safeDump(other) + '\n```\n'
-  if is_gitter
-    room = await gitter.rooms.join('habitlab/habitlab')
-    room.send(gitter_message)
+  #if is_gitter
+  #  room = await gitter.rooms.join('habitlab/habitlab')
+  #  room.send(gitter_message)
 
   response_message = 'Your message has been sent to <a href="mailto:' + default_to_email + '" target="_blank">' + default_to_email + '</a> <br><br>'
   if is_gitter

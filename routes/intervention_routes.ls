@@ -315,10 +315,12 @@ app.post '/postidea_candidate', (ctx) ->>
   # console.log ctx.request.body
   console.log 'postidea_candidate'
   # the user generated unique id will be the key to retrieve code
-  {goal, idea, userid, installid} = ctx.request.body
+  {goal, idea, userid, installid, email} = ctx.request.body
   if need_body_properties ctx, ['goal', 'idea', 'userid', 'installid']
     return
   new_idea = {goal, idea, userid, installid}
+  if email?
+    new_idea.email = email
   new_idea.timestamp = Date.now()
   new_idea.ip = ctx.request.ip_address_fixed
   try
@@ -341,6 +343,14 @@ app.get '/getideas_vote', (ctx) ->>
     return
   [collection, db] = await get_collection_goal_ideas()/*Find these functions*/
   all_results = await n2p -> collection.find({goal: goal}).toArray(it)
+  # console.log "Here are the shared results for " + website
+  ctx.body = JSON.stringify(all_results)
+  db?close()
+
+app.get '/getideas_logs', (ctx) ->>
+  ctx.type = 'json'
+  [collection, db] = await get_collection_goal_idea_logs()/*Find these functions*/
+  all_results = await n2p -> collection.find({}).toArray(it)
   # console.log "Here are the shared results for " + website
   ctx.body = JSON.stringify(all_results)
   db?close()

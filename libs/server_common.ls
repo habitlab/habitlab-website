@@ -10,32 +10,23 @@ require! {
   'n2p'
 }
 
-debounce = require('promise-debounce')
-
 memoizeSingleAsync = (func) ->
-  debounced_func = debounce func
-  cached_val = null
-  return ->>
-    if cached_val?
-      return cached_val
-    result = await debounced_func()
-    cached_val := result
+  cached_promise = null
+  return ->
+    if cached_promise?
+      return cached_promise
+    result = func()
+    cached_promise := result
     return result
 
 memoizeOneArgAsync = (func) ->
-  cached_vals = {}
-  cached_funcs = {}
-  return (x) ->>
-    cached_val = cached_vals[x]
-    if cached_val?
-      return cached_val
-    cached_func = cached_funcs[x]
-    if not cached_func?
-      cached_func = debounce ->> return await func(x)
-      cached_funcs[x] = cached_func
-    result = await cached_func()
-    cached_vals[x] = result
-    delete cached_funcs[x]
+  cached_promises = {}
+  return (x) ->
+    cached_promise = cached_promises[x]
+    if cached_promise?
+      return cached_promise
+    result = func(x)
+    cached_promises[x] = result
     return result
 
 export mongodb

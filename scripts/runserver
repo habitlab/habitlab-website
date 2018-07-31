@@ -20,7 +20,7 @@
       async: true
     });
   }
-  exec('node-dev --inspect server.js', {
+  exec('node-dev server.js', {
     async: true
   });
 }).call(this);
