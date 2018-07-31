@@ -51,10 +51,11 @@
         let idx = 0
         users_suggested = []
         users_took_action = []
+        users_exp_intervention_suggestion = []
         let users_suggested_fields = []
         let users_took_action_fields = []
         let impression_list = []
-
+        
         for (let collection of all_collections) {
           // over all interventions
           idx += 1
@@ -92,6 +93,13 @@
               }
             }
 
+            if (line.key && line.key == 'intervention_suggestion_algorith')
+              {
+                console.log('user experiment variables')
+                users_exp_intervention_suggestion.push(line)
+                
+              
+              }
             //console.log(line.userid)   
             /*
             if (line.type && line.type == 'impression' && userids.includes(line.userid)) {
@@ -121,7 +129,7 @@
         console.log(users_suggested)
         console.log(users_took_action)
         console.log(JSON.stringify(impression_list))
-        
+        console.log(users_exp_intervention_suggestion)
         
         // var users = new Set()
         // for (let user of users_suggested){
