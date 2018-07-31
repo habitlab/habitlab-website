@@ -92,7 +92,7 @@ kapp.use(app.allowedMethods())
 if roles.viewdata?
   kapp.use(require('koa-static')(__dirname + '/www'))
 
-port = process.env.PORT ? 5000
+port = getsecret('PORT') ? 5000
 kapp.listen(port)
 console.log "listening to port #{port} visit http://localhost:#{port}"
 
