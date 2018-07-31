@@ -40,7 +40,6 @@
     "octokat": "^0.8.0",
     "pandas": "0.0.3",
     "prelude-ls": "^1.1.2",
-    "promise-debounce": "^1.0.1",
     "semver": "^5.5.0",
     "sendgrid": "^5.2.3",
     "text-clipper": "^1.2.2"
