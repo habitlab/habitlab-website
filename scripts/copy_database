@@ -40,7 +40,7 @@
       console.error(err);
     }
   });
-  out$.get_mongo_db2 = get_mongo_db2 = async function(){
+  out$.get_mongo_db2 = get_mongo_db2 = memoizeSingleAsync(async function(){
     var err;
     try {
       return (await n2p(function(it){
@@ -57,7 +57,7 @@
       console.error('error getting mongodb2');
       console.error(err);
     }
-  };
+  });
   sleep = async function(time){
     return new Promise(function(it){
       return setTimeout(it, time);

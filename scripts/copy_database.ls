@@ -36,7 +36,7 @@ export get_mongo_db = memoizeSingleAsync ->>
     console.error err
     return
 
-export get_mongo_db2 = ->>
+export get_mongo_db2 = memoizeSingleAsync ->>
   try
     return await n2p -> mongodb.MongoClient.connect(
       mongourl2,
