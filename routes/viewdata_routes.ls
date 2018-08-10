@@ -20,6 +20,9 @@
   need_query_properties
   expose_get_auth
   get_collection_site_ideas
+  get_install_active_dates
+  get_intervention_votes
+  get_intervention_votes_total
 } = require 'libs/server_common'
 
 require! {
@@ -320,6 +323,12 @@ export get_user_to_is_logging_enabled = ->>
   return user_to_is_logging_enabled
 
 expose_get_auth get_user_to_is_logging_enabled
+
+export get_votes_for_interventions = ->>
+  results = await get_intervention_votes_total()
+  return results
+
+expose_get_auth get_votes_for_interventions
 
 export get_interventions_disabled_for_user = (user_id) ->>
   [collection, db] = await get_collection_for_user_and_logname(user_id, 'synced:interventions_currently_disabled')
@@ -1143,11 +1152,14 @@ app.get '/get_daily_active_counts', auth, (ctx) ->>
 */
 
 app.get '/get_ideas_votes', (ctx) ->>
+  
   ctx.type = 'json'
   {website} = ctx.request.query
   if need_query_property ctx, 'website'
     return
-  [collection, db] = await get_collection_site_ideas()/*Find these functions*/
+ 
+  [collection, db] = await get_collection_goal_ideas()/*Find these functions*/
+  console.log("ok")
   all_results = await n2p -> collection.find({site: website}).toArray(it)
   # console.log "Here are the shared results for " + website
   console.log all_results
