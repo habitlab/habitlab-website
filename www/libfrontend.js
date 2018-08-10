@@ -399,6 +399,8 @@ async function get_selection_algorithm_and_users_list() {
       users_with_experiment_vars.push(username)
     }
   }
+  console.log("collection done")
+  console.log(users_with_experiment_vars)
   for (let userid of users_with_experiment_vars) {
     let experiment_vars_list = await get_collection_for_user_cached(userid, 'synced:experiment_vars')
     for (let x of experiment_vars_list) {
@@ -488,6 +490,24 @@ async function get_all_users_in_experiment_by_name(experiment_name) {
     let experiment_vars_list = await get_collection_for_user_cached(userid, 'synced:experiment_vars')
     for (let x of experiment_vars_list) {
       if (x.key == experiment_name) {
+        if (output_set[userid] == null) {
+          output_set[userid] = true
+          output.push(userid)
+        }
+      }
+    }
+  }
+  return output
+}
+
+async function get_all_users_in_experiment_by_name_and_value(experiment_name, val) {
+  let output = []
+  let output_set = {}
+  let users_with_experiment_vars = await get_all_users_with_experiment_vars_cached()
+  for (let userid of users_with_experiment_vars) {
+    let experiment_vars_list = await get_collection_for_user_cached(userid, 'synced:experiment_vars')
+    for (let x of experiment_vars_list) {
+      if (x.key == experiment_name && x.val == val) {
         if (output_set[userid] == null) {
           output_set[userid] = true
           output.push(userid)
@@ -2142,12 +2162,65 @@ async function get_lifetimes_and_whether_attrition_was_observed_for_users(user_l
     lifetimes.push(days_active)
     attritions.push(attritioned)
   }
-  return {
-    lifetimes,
+  return [lifetimes,
     attritions
-  }
+  ]
 }
 
+async function get_lifetime_and_attrition_for_users(users) {
+  console.log('running : get_lifetime_and_attrition_for_users')
+  let lifetimes = []
+  let attritioned = []
+  let user_to_install_ids = await get_user_to_all_install_ids_cached()
+  let res = await get_lifetimes_and_whether_attrition_was_observed_for_users(users)
+  lifetimes = res[0]
+  attritioned = res[1]
+  let obj = {}
+  console.log(users)
+  for (let i = 0; i < users.length; i++) {
+    let install_ids = await get_userid_to_all_install_ids(users[i])
+    if (!install_ids || install_ids.length != 1)
+      continue
+    obj[users[i]] = {}
+    obj[users[i]]['lifetime'] = lifetimes[i]
+    obj[users[i]]['attritioned'] = attritioned[i]  
+  }
+  console.log('done: get_lifetime_and_attrition_for_users')
+  return obj
+}
+async function get_fist_active_date_for_user(userid) {
+  let user_to_first_active_since_today = await list_first_active_date_for_all_users_since_today()
+  return user_to_first_active_since_today[userid]
+}
+async function get_lifetime_and_attrition_for_users_in_experiment_and_values(experiment, values){
+  let res = {}
+  let user_to_first_active_since_today = await list_first_active_date_for_all_users_since_today()
+  console.log('running : get_lifetime_and_attrition_for_users_in_experiment_and_values')
+  if (values.length == 0) {
+    let users = await get_all_users_in_experiment_by_name(experiment)
+    res = await get_lifetime_and_attrition_for_users(users)
+  }
+  else {
+    res = {}
+    for (let value of values) {
+      let users = await get_all_users_in_experiment_by_name_and_value(experiment, value)
+      
+      let smp = await get_lifetime_and_attrition_for_users(users)
+      for (let user of Object.keys(smp)) {
+        smp[user][experiment] = value
+        smp[user]['first_active'] = user_to_first_active_since_today[user]
+      }
+      for (let key of Object.keys(smp)) {
+        res[key] = smp[key]
+      }
+      //res = Object.assign({}, res, smp)
+
+    }
+  }
+
+  console.log('done: get_lifetime_and_attrition_for_users_in_experiment_and_values')
+  return res
+}
 //async function get_intervention_to_num_impressions_for_user(userid) {
   //let interventions_with_data = await get_
 //}
