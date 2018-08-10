@@ -2175,10 +2175,10 @@ async function get_lifetime_and_attrition_for_users(users) {
   let res = await get_lifetimes_and_whether_attrition_was_observed_for_users(users)
   lifetimes = res[0]
   attritioned = res[1]
-  obj = {}
+  let obj = {}
   console.log(users)
   for (let i = 0; i < users.length; i++) {
-    install_ids = await get_userid_to_all_install_ids(users[i])
+    let install_ids = await get_userid_to_all_install_ids(users[i])
     if (!install_ids || install_ids.length != 1)
       continue
     obj[users[i]] = {}
@@ -2193,22 +2193,28 @@ async function get_fist_active_date_for_user(userid) {
   return user_to_first_active_since_today[userid]
 }
 async function get_lifetime_and_attrition_for_users_in_experiment_and_values(experiment, values){
+  let res = {}
+  let user_to_first_active_since_today = await list_first_active_date_for_all_users_since_today()
   console.log('running : get_lifetime_and_attrition_for_users_in_experiment_and_values')
   if (values.length == 0) {
-    users = await get_all_users_in_experiment_by_name(experiment)
+    let users = await get_all_users_in_experiment_by_name(experiment)
     res = await get_lifetime_and_attrition_for_users(users)
   }
   else {
     res = {}
     for (let value of values) {
-      users = await get_all_users_in_experiment_by_name_and_value(experiment, value)
+      let users = await get_all_users_in_experiment_by_name_and_value(experiment, value)
       
-      smp = await get_lifetime_and_attrition_for_users(users)
+      let smp = await get_lifetime_and_attrition_for_users(users)
       for (let user of Object.keys(smp)) {
         smp[user][experiment] = value
-        smp[user]['first_active'] = get_fist_active_date_for_user(user)
+        smp[user]['first_active'] = user_to_first_active_since_today[user]
       }
-      res = Object.assign({}, res, smp)
+      for (let key of Object.keys(smp)) {
+        res[key] = smp[key]
+      }
+      //res = Object.assign({}, res, smp)
+
     }
   }
 
