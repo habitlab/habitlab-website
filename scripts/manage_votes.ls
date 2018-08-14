@@ -119,6 +119,13 @@ goal_to_ideas = {
     'Asks what you aim to do this visit and puts a reminder up'
     
   ],
+  'generic/spend_less_time': [
+    #new ideas
+    'Makes the website only black and white/greyscale'
+    'Replace the UI with ugly fonts and colors'
+    'Slow down the scrolling speed'
+    'Slowly shrink the window'
+  ]
 }
 
 initialize = ->>
