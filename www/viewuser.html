@@ -102,8 +102,22 @@ async function show_basic_stats() {
   let user_to_install_times = await get_user_to_all_install_times()
   let user_to_uninstall_times = await get_user_to_all_uninstall_times()
   let user_to_install_ids = await get_user_to_all_install_ids()
+  console.log('install times')
+  console.log(user_to_install_times[user_id])
+  console.log('uninstallt imes')
+  console.log(user_to_uninstall_times[user_id])
   let install_times = user_to_install_times[user_id]
+  if (install_times == null) {
+    install_times = []
+  }
+  install_times = JSON.parse(JSON.stringify(install_times))
+  install_times.sort((a,b) => a-b)
   let uninstall_times = user_to_uninstall_times[user_id]
+  if (uninstall_times == null) {
+    uninstall_times = []
+  }
+  uninstall_times = JSON.parse(JSON.stringify(uninstall_times))
+  uninstall_times.sort((a,b) => a-b)
   let install_ids = user_to_install_ids[user_id]
   if (install_times != null) {
     $('#display_install_time').text(JSON.stringify(install_times.map(x => moment(x).toString())))

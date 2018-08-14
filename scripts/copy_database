@@ -31,7 +31,9 @@
           readConcern: {
             level: 'available'
           },
-          w: 0
+          w: 0,
+          reconnectTries: Number.MAX_VALUE,
+          reconnectInterval: 1000,
         }, it);
       }));
     } catch (e$) {
@@ -49,7 +51,9 @@
           readConcern: {
             level: 'available'
           },
-          w: 0
+          w: 0,
+          reconnectTries: Number.MAX_VALUE,
+          reconnectInterval: 1000,
         }, it);
       }));
     } catch (e$) {
