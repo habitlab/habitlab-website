@@ -74,14 +74,7 @@ goal_to_ideas = {
   'facebook/spend_less_time': [
     # new ideas
     'Remove the unread notifications icon'
-    'Type out your goals for visiting Facebook'
-    'Blur screen after a specific amount of time spent on the website'
     'Notify you of the average time users spend on the website'
-    'Inspirational/time saving quote from a prominent figure'
-    'Reward you with a nudge free visit after you have achieved significant success in saving time'
-    'Notify you of the average time of your Facebook vistis'
-    'Notify you of the number of minutes left until you hit your goal'
-    'Notify you of the number of minutes left in the day'
     # existing nudges
     'Injects timer into the Facebook feed'
     'Removes the Facebook news feed'
@@ -99,14 +92,7 @@ goal_to_ideas = {
   ],
   'youtube/spend_less_time': [
     # new ideas
-    'Type out your goals for visiting Youtube'
-    'Blur screen after a specific amount of time spent on the website'
     'Notify you of the average time users spend on the website'
-    'Inspirational/time saving quote from a prominent figure'
-    'Reward you with a nudge free visit after you have achieved significant success in saving time'
-    'Notify you of the average time of your Youtube vistis'
-    'Notify you of the number of minutes left until you hit your goal'
-    'Notify you of the number of minutes left in the day'
      # existing nudges
     'Notifies you of time spent in the corner of your desktop'
     'Removes Youtube comments'
@@ -117,7 +103,7 @@ goal_to_ideas = {
     'Closes tab after 60 seconds'
     'Asks how long you want to spend on site this visit'
     'Asks what you aim to do this visit and puts a reminder up'
-    
+
   ],
   'generic/spend_less_time': [
     #new ideas
@@ -125,6 +111,13 @@ goal_to_ideas = {
     'Replace the UI with ugly fonts and colors'
     'Slow down the scrolling speed'
     'Slowly shrink the window'
+    'Type out your goal for visiting the website'
+    'Notify you of the number of minutes left until you hit your goal'
+    'Notify you of the number of minutes left in the day'
+    'Notify you of the average length of your visits to the site'
+    'Blur screen after a specific amount of time spent on the website'
+    'Inspirational/time saving quote from a prominent figure'
+    'Reward you with a nudge free visit after you have achieved significant success in saving time'
   ]
 }
 
