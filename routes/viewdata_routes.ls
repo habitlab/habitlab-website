@@ -679,6 +679,25 @@ app.get '/get_user_to_duration_kept_installed', auth, (ctx) ->>
     db?close()
     db2?close()
 
+app.get '/lookupintervention', auth, (ctx) ->>
+  {share, id} = ctx.request.query
+  console.log {share, id}
+  try
+    if share == 'y'
+      [collection,db] = await get_collection_share_intervention()
+      all_results = await n2p -> collection.find({key: id}).toArray(it)
+      ctx.body = all_results[0].code
+    else
+      [collection,db] = await get_collection_non_share_intervention()
+      all_results = await n2p -> collection.find({key: id}).toArray(it)
+      ctx.body = all_results[0].code
+  catch err
+    console.log 'error in get_collection_non_share_intervention'
+    console.log err
+  finally
+    db?close()
+
+
 app.get '/get_user_to_dates_active', auth, (ctx) ->>
   ctx.type = 'json'
   try

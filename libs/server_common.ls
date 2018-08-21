@@ -84,6 +84,12 @@ export get_mongo_db = memoizeSingleAsync ->>
     console.error err
     return
 
+
+export get_collection_share_intervention = ->>
+  return await get_collection('share_intervention_repo')
+export get_collection_non_share_intervention = ->>
+  return await get_collection('non_share_intervention_repo')
+
 export get_mongo_db2 = memoizeSingleAsync ->>
   connection_options = {
     w: 0
