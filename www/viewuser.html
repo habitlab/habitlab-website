@@ -47,6 +47,10 @@
 <div>Install times: <span id="display_install_time"></span></div>
 <div>Install ids: <span id="display_install_ids"></span></div>
 <div>Uninstall times: <span id="display_uninstall_time"></span></div>
+<div>Install info list:</div>
+<div id="display_install_info"></div>
+<div>Uninstall info list:</div>
+<div id="display_uninstall_info"></div>
 <div>Last intervention seen: <span id="display_last_intervention_seen"></span></div>
 <div>Last log sent: <span id="display_last_log_sent_time"></span></div>
 <div>Is logging enabled: <span id="display_is_logging_enabled"></span></div>
@@ -99,12 +103,22 @@ let user_id = geturlparameters().userid
 
 async function show_basic_stats() {
   $('#display_user_id').text(user_id)
-  let user_to_install_times = await get_user_to_all_install_times()
-  let user_to_uninstall_times = await get_user_to_all_uninstall_times()
-  let user_to_install_ids = await get_user_to_all_install_ids()
+  let user_to_install_times = await get_user_to_all_install_times_cached()
+  let user_to_uninstall_times = await get_user_to_all_uninstall_times_cached()
+  let user_to_install_ids = await get_user_to_all_install_ids_cached()
+  let user_to_install_info = await get_user_to_all_install_info_cached()
+  let user_to_uninstall_info = await get_user_to_all_uninstall_info_cached()
+  for (let x of user_to_install_info[user_id]) {
+    $('#display_install_info').append(JSON.stringify(x))
+    $('#display_install_info').append('<br><br>')
+  }
+  for (let x of user_to_uninstall_info[user_id]) {
+    $('#display_uninstall_info').append(JSON.stringify(x))
+    $('#display_uninstall_info').append('<br><br>')
+  }
   console.log('install times')
   console.log(user_to_install_times[user_id])
-  console.log('uninstallt imes')
+  console.log('uninstall times')
   console.log(user_to_uninstall_times[user_id])
   let install_times = user_to_install_times[user_id]
   if (install_times == null) {

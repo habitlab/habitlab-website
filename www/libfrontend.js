@@ -2364,7 +2364,11 @@ expose_getjson('get_user_to_install_times')
 
 expose_getjson('get_user_to_uninstall_times')
 
+expose_getjson('get_user_to_all_install_info')
+
 expose_getjson('get_user_to_all_install_times')
+
+expose_getjson('get_user_to_all_uninstall_info')
 
 expose_getjson('get_user_to_all_uninstall_times')
 
