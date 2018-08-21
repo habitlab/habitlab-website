@@ -2208,6 +2208,28 @@ async function get_intervention_polling_results() {
 
   return res
 }
+
+async function get_intervention_polling_for_users() {
+  let users = await get_all_users_in_experiment_by_name('intervention_intensity_polling_abtest')
+  let res = {}
+  for (let user of users) {
+    let pollres = await get_collection_for_user(user, 'synced:interventions_to_intensity_ratings')
+    console.log(pollres)
+    res[user] = {}
+    for (let i of pollres)
+      if (res[user][i.key])
+        res[user][i.key].push(i.val)
+      else {
+        res[user][i.key] = []
+        res[user][i.key].push(i.val)
+      }
+  }
+
+  console.log("done intervention polling")
+
+  return res
+}
+
 async function get_fist_active_date_for_user(userid) {
   let user_to_first_active_since_today = await list_first_active_date_for_all_users_since_today()
   return user_to_first_active_since_today[userid]
