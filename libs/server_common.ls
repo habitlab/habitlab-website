@@ -58,6 +58,8 @@ export mongourl = getsecret('MONGODB_URI') ? 'mongodb://localhost:27017/default'
 
 export mongourl2 = getsecret('MONGODB_URI_VOTING') ? 'mongodb://localhost:27017/default'
 
+export mongourl_mobile = getsecret('MONGODB_URI_MOBILE') ? 'mongodb://localhost:27017/default'
+
 sleep = (time) ->>
   return new Promise ->
     setTimeout(it, time)
@@ -106,6 +108,30 @@ export get_mongo_db2 = memoizeSingleAsync ->>
   try
     return await n2p -> mongodb.MongoClient.connect(
       mongourl2,
+      connection_options,
+      it
+    )
+  catch err
+    console.error 'error getting mongodb2'
+    console.error err
+    return
+
+export get_mongo_db_mobile = memoizeSingleAsync ->>
+  connection_options = {
+    w: 0
+    j: false
+    #readConcern: ''
+  }
+  if process.env.PORT? # on heroku
+    connection_options.readPreference = mongodb.ReadPreference.PRIMARY_PREFERRED
+  else # local machine
+    connection_options.readPreference = mongodb.ReadPreference.SECONDARY
+    connection_options.readConcern = {
+      level: 'available'
+    }
+  try
+    return await n2p -> mongodb.MongoClient.connect(
+      mongourl_mobile,
       connection_options,
       it
     )
@@ -192,6 +218,16 @@ export get_collection2 = (collection_name) ->>
     close: ->
   }
   return [db.collection(collection_name), fakedb]
+
+export get_collection_mobile = (collection_name) ->>
+  db = await get_mongo_db_mobile()
+  fakedb = {
+    close: ->
+  }
+  return [db.collection(collection_name), fakedb]
+
+export get_email_to_user_mobile = ->>
+  return await get_collection_mobile('email_to_user')
 
 export get_signups = ->>
   return await get_collection('signups')
