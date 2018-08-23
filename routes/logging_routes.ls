@@ -333,8 +333,8 @@ app.get '/get_sharedinterventions_for_site', (ctx) ->>
     return
   [collection, db] = await get_collection_share_intervention()/*Find these functions*/
   all_results = await n2p -> collection.find({sitename: website}).toArray(it)
-  console.log "Here are the shared results for " + website
-  console.log all_results
+  #console.log "Here are the shared results for " + website
+  #console.log all_results
   ctx.body = JSON.stringify(all_results)
   db?close()
 
