@@ -14,6 +14,7 @@
   get_collection_share_intervention
   get_collection_non_share_intervention
   mongodb
+  need_query_property
   need_query_properties
   get_webvisits
   fix_object
