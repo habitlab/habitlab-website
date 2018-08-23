@@ -269,16 +269,35 @@ app.get '/logwebvisit', (ctx) ->>
     db?close()
   ctx.body = JSON.stringify {response: 'done', success: true}
 
+# TODO: These routes might be consolidated with others in the future
 # specifically for adding shared intervention accross users
 app.post '/sharedintervention', (ctx) ->>
   ctx.type = 'json'
   # construct new sharable item
-  # console.log ctx.request.body
+  console.log ctx.request.body
   # the user generated unique id will be the key to retrieve code
-  {auther_email, auther_id, description, 
-  goals, name, code, is_sharing, preview, key} = ctx.request.body
-  new_share_item = {auther_email, auther_id, description, 
-  goals, name, code, preview, key}
+  {author_email, author_id, description, 
+  goals, name, code, is_sharing, preview, 
+  key, sitename, numusers, stars, comments,
+  displayname, domain, matches, sitename_printable} = ctx.request.body
+  # validate the input
+  if not author_id? or not author_email? or not key?
+    ctx.body = JSON.stringify {response: 'error', error: 'need parameter user info'}
+    return
+  if not goals? or not name? or not sitename?
+    ctx.body = JSON.stringify {response: 'error', error: 'need parameter goals'}
+    return
+  if not code?
+    ctx.body = JSON.stringify {response: 'error', error: 'need parameter code'}
+    return
+
+  # TODO: we are saving these blank fields
+  numusers ?= 0
+  stars ?= 0
+  comments ?= []
+  new_share_item = {author_email, author_id, description, 
+  goals, name, code, preview, key, sitename, numusers, stars, comments,
+  displayname, domain, matches, sitename_printable}
   # inject into database
   if is_sharing
     # sharable
