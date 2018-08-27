@@ -532,6 +532,20 @@ async function get_users_to_conditions_in_experiment_by_name(experiment_name) {
   return output
 }
 
+async function get_users_chosen_difficulty() {
+  let output = {}
+  let users_with_experiment_vars = await get_all_users_with_experiment_vars_cached()
+  for (let userid of users_with_experiment_vars) {
+    let experiment_vars_list = await get_collection_for_user_cached(userid, 'synced:experiment_vars')
+    for (let x of experiment_vars_list) {
+      if (x.key == "user_chosen_difficulty") {
+        output[userid] = x.val
+      }
+    }
+  }
+  return output
+} 
+
 async function get_user_to_difficulty() {
   let infolist = await get_collection_cached('features:difficuty') // yes typo was made whoops
   let output = {}

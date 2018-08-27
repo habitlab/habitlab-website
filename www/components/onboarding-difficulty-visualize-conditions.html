@@ -63,6 +63,7 @@
         let install_id_to_is_official = await get_install_id_to_is_official()
         let user_to_install_times = await get_user_to_install_times_list_cached()
         let user_to_install_dates = await get_user_to_install_dates_list_cached()
+        let users_chosen_difficulty = await get_users_chosen_difficulty()
         
         //gets the data before this date 
         let expected_date = "999999999999999"
@@ -123,6 +124,7 @@
           if (user_to_difficulty[userid] != null) {
             selected_difficulty = user_to_difficulty[userid]
           }
+          let user_chosen_difficulty = get_users_chosen_difficulty[userid]
           let domain_visit_info_compressed = await get_domain_visit_info_for_user_compressed(userid)
           let cur_row = {
             userid: userid,
@@ -144,6 +146,7 @@
             num_install_ids: num_install_ids,
             duplicate_user: duplicate_user,
             domain_visit_info_compressed: domain_visit_info_compressed,
+            user_chosen_difficulty: user_chosen_difficulty,
           }
           
           if (duplicate_user)
