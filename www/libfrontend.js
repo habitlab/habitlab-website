@@ -538,7 +538,7 @@ async function get_users_chosen_difficulty() {
   for (let userid of users_with_experiment_vars) {
     let experiment_vars_list = await get_collection_for_user_cached(userid, 'synced:experiment_vars')
     for (let x of experiment_vars_list) {
-      if (x.key == "user_chosen_difficulty") {
+      if (x.key == 'user_chosen_difficulty_survey') {
         output[userid] = x.val
       }
     }
