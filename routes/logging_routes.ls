@@ -14,6 +14,7 @@
   get_collection_share_intervention
   get_collection_non_share_intervention
   mongodb
+  need_query_property
   need_query_properties
   get_webvisits
   fix_object
@@ -268,16 +269,35 @@ app.get '/logwebvisit', (ctx) ->>
     db?close()
   ctx.body = JSON.stringify {response: 'done', success: true}
 
+# TODO: These routes might be consolidated with others in the future
 # specifically for adding shared intervention accross users
 app.post '/sharedintervention', (ctx) ->>
   ctx.type = 'json'
   # construct new sharable item
-  # console.log ctx.request.body
+  console.log ctx.request.body
   # the user generated unique id will be the key to retrieve code
-  {auther_email, auther_id, description, 
-  goals, name, code, is_sharing, preview, key} = ctx.request.body
-  new_share_item = {auther_email, auther_id, description, 
-  goals, name, code, preview, key}
+  {author_email, author_id, description, 
+  goals, name, code, is_sharing, preview, 
+  key, sitename, numusers, stars, comments,
+  displayname, domain, matches, sitename_printable} = ctx.request.body
+  # validate the input
+  if not author_id? or not author_email? or not key?
+    ctx.body = JSON.stringify {response: 'error', error: 'need parameter user info'}
+    return
+  if not goals? or not name? or not sitename?
+    ctx.body = JSON.stringify {response: 'error', error: 'need parameter goals'}
+    return
+  if not code?
+    ctx.body = JSON.stringify {response: 'error', error: 'need parameter code'}
+    return
+
+  # TODO: we are saving these blank fields
+  numusers ?= 0
+  stars ?= 0
+  comments ?= []
+  new_share_item = {author_email, author_id, description, 
+  goals, name, code, preview, key, sitename, numusers, stars, comments,
+  displayname, domain, matches, sitename_printable}
   # inject into database
   if is_sharing
     # sharable
@@ -305,5 +325,30 @@ app.post '/sharedintervention', (ctx) ->>
       db?close()
   ctx.body = JSON.stringify {response: 'success', success: true}
 
+# TODO: These routes might be consolidated with others in the future
+app.get '/get_sharedinterventions_for_site', (ctx) ->>
+  ctx.type = 'json'
+  {website} = ctx.request.query
+  if need_query_property ctx, 'website'
+    return
+  [collection, db] = await get_collection_share_intervention()/*Find these functions*/
+  all_results = await n2p -> collection.find({sitename: website}).toArray(it)
+  #console.log "Here are the shared results for " + website
+  #console.log all_results
+  ctx.body = JSON.stringify(all_results)
+  db?close()
+
+# TODO: These routes might be consolidated with others in the future
+app.get '/delete_shared_intervention', (ctx) ->>
+  ctx.type = 'json'
+  {key} = ctx.request.query
+  if need_query_property ctx, 'key'
+    ctx.body = JSON.stringify {response: 'failure', success: false}
+    return
+  [collection, db] = await get_collection_share_intervention()/*Find these functions*/
+  # all_results = await n2p -> collection.find({sitename: website}).toArray(it)
+  await n2p -> collection.remove({key: key}, it)
+  ctx.body = JSON.stringify {response: 'success', success: true}
+db?close()
 
 require('libs/globals').add_globals(module.exports)
