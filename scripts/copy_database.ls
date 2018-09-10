@@ -121,6 +121,19 @@ list_collections = (db_src) ->>
     output.push('collections')
   return output
 
+drop_db_by_url = (url) ->>
+  db = await n2p -> mongodb.MongoClient.connect(
+    url,
+    {
+      readPreference: mongodb.ReadPreference.SECONDARY,
+      readConcern: {level: 'available'},
+      w: 0,
+    },
+    it
+  )
+  await n2p -> db.dropDatabase(it)
+  return
+
 set_mongourl_to_inactive = ->
   mongodb_uri_heroku = exec('heroku config:get MONGODB_URI --app habitlab').stdout.trim()
   mongodb_uri_server1_heroku = exec('heroku config:get MONGODB_URI_SERVER1 --app habitlab').stdout.trim()
@@ -184,13 +197,14 @@ do ->>
     set_mongourl_to_inactive()
     console.log 'droping database'
     console.log mongourl
+    process.exit()
+    await drop_db_by_url(mongourl)
     return
-    #await drop_db_by_url(mongourl)
-    #return
   if argv.switchactive
     set_mongourl_to_inactive()
     exec("heroku config:set MONGODB_URI='#{mongourl}' --app habitlab")
-    return
+    console.log 'done setting mongourl to inactive'
+    process.exit()
   db_src = await get_mongo_db()
   db_dst = await get_mongo_db2()
   if argv.fresh
@@ -213,6 +227,7 @@ do ->>
   resumable = argv.resumable
   if resumable
     storage.initSync()
+  thread_to_finished = [false for x in [0 til num_threads]]
   start_thread = (threadnum) ->>
     for x,idx in all_collections
       if idx % num_threads != threadnum
@@ -228,5 +243,12 @@ do ->>
         await sync_all_in_collection_fresh x, db_src, db_dst
       if resumable
         storage.setItemSync(x, true)
+    thread_to_finished[threadnum] = true
   for threadnum from 0 til num_threads
     start_thread threadnum
+  while true
+    console.log thread_to_finished
+    await sleep(10000)
+    if thread_to_finished.indexOf(false) == -1
+      console.log 'all finished'
+      process.exit()
