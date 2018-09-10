@@ -546,6 +546,21 @@ async function get_users_chosen_difficulty() {
   return output
 } 
 
+async function get_users_difficulty_seen() {
+  let output = await get_user_to_difficulty()
+  let selection_screen = await get_users_to_conditions_in_experiment_by_name('difficulty_selection_screen')
+  let users_with_experiment_vars = await get_all_users_with_experiment_vars_cached()
+  let output2 = await get_users_chosen_difficulty()
+  for (let userid of Object.keys(output)) {
+    if (!selection_screen[userid])
+      continue
+    let strs = selection_screen[userid].split('_')
+    if (strs[0] == 'survey') 
+      output[userid] = output2[userid]
+  }
+  return output
+}
+
 async function get_user_to_difficulty() {
   let infolist = await get_collection_cached('features:difficuty') // yes typo was made whoops
   let output = {}
