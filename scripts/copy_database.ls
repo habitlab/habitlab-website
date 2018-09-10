@@ -2,9 +2,11 @@ require! {
   mongodb
   getsecret
   n2p
+  process
 }
 
 fs = require('fs-extra')
+{exec} = require('shelljs')
 
 storage = require('node-persist')
 
@@ -119,9 +121,23 @@ list_collections = (db_src) ->>
     output.push('collections')
   return output
 
+set_mongourl_to_inactive = ->
+  mongodb_uri_heroku = exec('heroku config:get MONGODB_URI --app habitlab').stdout.trim()
+  mongodb_uri_server1_heroku = exec('heroku config:get MONGODB_URI_SERVER1 --app habitlab').stdout.trim()
+  mongodb_uri_server2_heroku = exec('heroku config:get MONGODB_URI_SERVER2 --app habitlab').stdout.trim()
+  if (not mongodb_uri_heroku.startsWith('mongodb://')) or (not mongodb_uri_server1_heroku.startsWith('mongodb://')) or (not mongodb_uri_server2_heroku.startsWith('mongodb://'))
+    console.log('heroku config vars MONGODB_URI MONGODB_URI_SERVER1 MONGODB_URI_SERVER2 must all be set')
+    process.exit()
+  if (mongodb_uri_heroku == mongodb_uri_server1_heroku) and (mongodb_uri_heroku != mongodb_uri_server2_heroku)
+    mongourl := mongodb_uri_server2_heroku
+  else if (mongodb_uri_heroku != mongodb_uri_server1_heroku) and (mongodb_uri_heroku == mongodb_uri_server2_heroku)
+    mongourl := mongodb_uri_server1_heroku
+  else
+    console.log('MONGODB_URI must equal one of either MONGODB_URI_SERVER1 or MONGODB_URI_SERVER2')
+    process.exit()
+  return
+
 do ->>
-  db_src = await get_mongo_db()
-  db_dst = await get_mongo_db2()
   argv = require('yargs')
   .option('collection', {
     describe: 'collection to sync. if empty all collections are synced'
@@ -138,11 +154,45 @@ do ->>
     describe: 'number of threads to use for syncing'
     default: 1
   })
-  #.option('fresh', {
-  #  describe: 'perform a fresh sync (deleting the listcio )'
-  #})
+  .option('printnonactive', {
+    describe: 'print the mongourl of the non-active server'
+    default: false
+  })
+  .option('syncnonactive', {
+    describe: 'use the non-active server as the source instead of MONGODB_SRC'
+    default: false
+  })
+  .option('dropnonactive', {
+    describe: 'drop the non-active server database'
+    default: false
+  })
+  .option('switchactive', {
+    describe: 'switch the currently active server'
+    default: false
+  })
   .strict()
   .argv
+  if argv.printnonactive
+    set_mongourl_to_inactive()
+    console.log mongourl
+    return
+  if argv.syncnonactive
+    set_mongourl_to_inactive()
+    argv.fresh = true
+    argv.threads = 20
+  if argv.dropnonactive
+    set_mongourl_to_inactive()
+    console.log 'droping database'
+    console.log mongourl
+    return
+    #await drop_db_by_url(mongourl)
+    #return
+  if argv.switchactive
+    set_mongourl_to_inactive()
+    exec("heroku config:set MONGODB_URI='#{mongourl}' --app habitlab")
+    return
+  db_src = await get_mongo_db()
+  db_dst = await get_mongo_db2()
   if argv.fresh
     if fs.existsSync('.node-persist')
       fs.removeSync('.node-persist')
