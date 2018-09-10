@@ -188,7 +188,7 @@ do ->>
   if argv.printnonactive
     set_mongourl_to_inactive()
     console.log mongourl
-    return
+    process.exit()
   if argv.syncnonactive
     set_mongourl_to_inactive()
     argv.fresh = true
@@ -197,9 +197,9 @@ do ->>
     set_mongourl_to_inactive()
     console.log 'droping database'
     console.log mongourl
-    process.exit()
     await drop_db_by_url(mongourl)
-    return
+    console.log 'done'
+    process.exit()
   if argv.switchactive
     set_mongourl_to_inactive()
     exec("heroku config:set MONGODB_URI='#{mongourl}' --app habitlab")
