@@ -2057,12 +2057,6 @@ async function list_last_active_date_for_user(userid) {
   return dates_active[dates_active.length - 1]
 }
 
-async function list_last_active_date_for_install_id(install_id) {
-  let install_id_to_dates_active = await get_install_id_to_dates_active_cached()
-  let dates_active = install_id_to_dates_active[install_id]
-  return dates_active[dates_active.length - 1]
-}
-
 async function list_first_active_date_for_user_since_today(userid) {
   let today = moment().hours(0).minutes(0).seconds(0).milliseconds(0)
   let first_active = await list_first_active_date_for_user(userid)
@@ -2653,33 +2647,6 @@ async function get_all_page_views() {
   for (let username of user_list) {
     let infolist = await get_collection_for_user(username, 'logs:pages')
     for (let x of infolist) {
-      if (x.type != 'view') {
-        continue
-      }
-      let page = x.page
-      console.log(page)
-      console.log(output)
-      if (output[page] == null) {
-        output[page] = 0
-      }
-      output[page] += 1
-    }
-  }
-  return output
-}
-
-async function get_all_page_views() {
-  let user_to_is_logging_enabled = await get_user_to_is_logging_enabled()
-  let user_list = []
-  for (let username of Object.keys(user_to_is_logging_enabled)) {
-    if (user_to_is_logging_enabled[username]) {
-      user_list.push(username)
-    }
-  }
-  let output = {}
-  for (let username of user_list) {
-    let infolist = await get_collection_for_user(username, 'logs:pages')
-    for (let x of infolist) {
       let page = x.page
       if (output[page] != null) {
         output[page] = 0
@@ -2724,7 +2691,7 @@ async function get_user_to_session_lengths_with_intervention() {
   }
   console.log('done with computation')
   */
-  return output
+  //return output
 }
 
 async function get_session_lengths_with_intervention_all_users() {
@@ -2751,8 +2718,8 @@ async function get_session_lengths_with_intervention_all_users() {
   return output
 }
 
-async function get_session_lengths_with_intervention(user_id) {
-  seconds_on_domain_per_session = await get_collection_for_user(user_id, 'synced:seconds_on_domain_per_session')
+async function get_session_lengths_with_intervention_real(user_id) {
+  let seconds_on_domain_per_session = await get_collection_for_user(user_id, 'synced:seconds_on_domain_per_session')
   let interventions_active_for_domain_and_session = await get_collection_for_user(user_id, 'synced:interventions_active_for_domain_and_session')
   let domain_to_intervention_to_session_lengths = {}
   let domain_to_session_to_intervention = {}
@@ -2779,7 +2746,7 @@ async function get_session_lengths_with_intervention(user_id) {
     if (!domain_to_session_to_intervention[domain]) {
       continue
     }
-    intervention_name = domain_to_session_to_intervention[domain][session_id]
+    let intervention_name = domain_to_session_to_intervention[domain][session_id]
     if (!intervention_name) {
       continue
     }
@@ -2810,7 +2777,7 @@ async function get_session_lengths_with_intervention(user_id) {
   //console.log(interventions_active_for_domain_and_session)
 }
 
-get_session_lengths_with_intervention = memoize_to_disk(get_session_lengths_with_intervention)
+let get_session_lengths_with_intervention = memoize_to_disk(get_session_lengths_with_intervention_real)
 
 function printcb(err, result) {
   console.log(err)
