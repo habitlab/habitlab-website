@@ -69,6 +69,7 @@ if roles.logging?
   require('routes/logging_routes')
 if roles.viewdata?
   require('routes/viewdata_routes')
+  require('routes/viewdata_routes_js')
   require('routes/webpage_routes')
 
 

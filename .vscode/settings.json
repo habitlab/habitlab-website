@@ -11,7 +11,6 @@
     ".vscode": true,
     ".bowerrc": true,
     "yarn.lock": true,
-    "www/dashboard.js": true,
     "runserver": true,
     "runserver.bat": true,
     ".gitignore": true,

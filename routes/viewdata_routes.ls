@@ -735,44 +735,87 @@ app.get '/lookupintervention', auth, (ctx) ->>
   finally
     db?close()
 
+export get_user_to_dates_active = ->>
+  [user_active_dates, db] = await get_user_active_dates()
+  all_results = await n2p -> user_active_dates.find({}).toArray(it)
+  db?close()
+  output = {}
+  for {day, user} in all_results
+    if not output[user]?
+      output[user] = []
+    output[user].push day
+  for user in Object.keys(output)
+    output[user].sort()
+  return output
 
 app.get '/get_user_to_dates_active', auth, (ctx) ->>
   ctx.type = 'json'
   try
-    [user_active_dates, db] = await get_user_active_dates()
-    all_results = await n2p -> user_active_dates.find({}).toArray(it)
-    output = {}
-    for {day, user} in all_results
-      if not output[user]?
-        output[user] = []
-      output[user].push day
-    for user in Object.keys(output)
-      output[user].sort()
+    output = await get_user_to_dates_active()
     ctx.body = JSON.stringify output
   catch err
     console.log 'error in get_user_active_dates'
     console.log err
-  finally
-    db?close()
+
+# app.get '/get_user_to_dates_active', auth, (ctx) ->>
+#   ctx.type = 'json'
+#   try
+#     [user_active_dates, db] = await get_user_active_dates()
+#     all_results = await n2p -> user_active_dates.find({}).toArray(it)
+#     output = {}
+#     for {day, user} in all_results
+#       if not output[user]?
+#         output[user] = []
+#       output[user].push day
+#     for user in Object.keys(output)
+#       output[user].sort()
+#     ctx.body = JSON.stringify output
+#   catch err
+#     console.log 'error in get_user_active_dates'
+#     console.log err
+#   finally
+#     db?close()
+
+export get_install_id_to_dates_active = ->>
+  [install_active_dates, db] = await get_install_active_dates()
+  all_results = await n2p -> install_active_dates.find({}).toArray(it)
+  db?close()
+  output = {}
+  for {day, user, install} in all_results
+    if not output[install]?
+      output[install] = []
+    output[install].push day
+  for install in Object.keys(output)
+    output[install].sort()
+  return output
 
 app.get '/get_install_id_to_dates_active', auth, (ctx) ->>
   ctx.type = 'json'
   try
-    [install_active_dates, db] = await get_install_active_dates()
-    all_results = await n2p -> install_active_dates.find({}).toArray(it)
-    output = {}
-    for {day, user, install} in all_results
-      if not output[install]?
-        output[install] = []
-      output[install].push day
-    for install in Object.keys(output)
-      output[install].sort()
+    output = await get_install_id_to_dates_active()
     ctx.body = JSON.stringify output
   catch err
     console.log 'error in get_install_id_to_active_dates'
     console.log err
-  finally
-    db?close()
+
+# app.get '/get_install_id_to_dates_active', auth, (ctx) ->>
+#   ctx.type = 'json'
+#   try
+#     [install_active_dates, db] = await get_install_active_dates()
+#     all_results = await n2p -> install_active_dates.find({}).toArray(it)
+#     output = {}
+#     for {day, user, install} in all_results
+#       if not output[install]?
+#         output[install] = []
+#       output[install].push day
+#     for install in Object.keys(output)
+#       output[install].sort()
+#     ctx.body = JSON.stringify output
+#   catch err
+#     console.log 'error in get_install_id_to_active_dates'
+#     console.log err
+#   finally
+#     db?close()
 
 app.get '/get_dates_active_for_user', auth, (ctx) ->>
   ctx.type = 'json'

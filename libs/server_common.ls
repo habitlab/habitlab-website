@@ -10,7 +10,7 @@ require! {
   'n2p'
 }
 
-memoizeSingleAsync = (func) ->
+export memoizeSingleAsync = (func) ->
   cached_promise = null
   return ->
     if cached_promise?
@@ -19,7 +19,7 @@ memoizeSingleAsync = (func) ->
     cached_promise := result
     return result
 
-memoizeOneArgAsync = (func) ->
+export memoizeOneArgAsync = (func) ->
   cached_promises = {}
   return (x) ->
     cached_promise = cached_promises[x]
