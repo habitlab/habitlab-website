@@ -97,7 +97,7 @@ sync_all_in_collection = (collection_name, db_src, db_dst) ->>
   else
     console.log 'individually incrementally inserting ' + all_ids_which_need_to_be_inserted.length + ' items'
     for idname,idx in all_ids_which_need_to_be_inserted
-      if idx % 100
+      if idx % 100 == 0
         console.log(idx + ' / ' + all_ids_which_need_to_be_inserted.length)
       item_src = await keep_trying -> c_src.find({_id: idname}).toArray(it)
       if not item_src? # should never happen

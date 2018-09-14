@@ -135,7 +135,7 @@
       for (i$ = 0, len$ = all_ids_which_need_to_be_inserted.length; i$ < len$; ++i$) {
         idx = i$;
         idname = all_ids_which_need_to_be_inserted[i$];
-        if (idx % 100) {
+        if (idx % 100 === 0) {
           console.log(idx + ' / ' + all_ids_which_need_to_be_inserted.length);
         }
         item_src = (await keep_trying(fn$));
