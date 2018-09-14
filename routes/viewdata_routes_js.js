@@ -122,16 +122,25 @@ async function get_domain_to_session_id_to_time_spent(userid) {
 async function list_last_active_date_for_user(userid) {
   let user_to_dates_active = await get_user_to_dates_active_cached()
   let dates_active = user_to_dates_active[userid]
+  if (dates_active == null) {
+    return null
+  }
   return dates_active[dates_active.length - 1]
 }
 
 async function list_last_active_date_for_install_id(install_id) {
   let install_id_to_dates_active = await get_install_id_to_dates_active_cached()
   let dates_active = install_id_to_dates_active[install_id]
+  if (dates_active == null) {
+    return null
+  }
   return dates_active[0]
 }
 
 function convert_date_to_epoch(date) {
+  if (date == null) {
+    return null
+  }
   let start_of_epoch = moment().year(2016).month(0).date(1).hours(0).minutes(0).seconds(0).milliseconds(0)
   let year = parseInt(date.substr(0, 4))
   let month = parseInt(date.substr(4, 2)) - 1
