@@ -81,7 +81,7 @@
     return output;
   };
   sync_all_in_collection = async function(collection_name, db_src, db_dst){
-    var c_src, c_dst, all_ids_src, all_ids_dst, all_ids_dst_str, dst_id_set, all_ids_which_need_to_be_inserted, all_items_src, all_items_which_need_to_be_inserted, i$, len$, idname, item_src, this$ = this;
+    var c_src, c_dst, all_ids_src, all_ids_dst, all_ids_dst_str, dst_id_set, all_ids_which_need_to_be_inserted, all_items_src, all_items_which_need_to_be_inserted, i$, len$, idx, idname, item_src, this$ = this;
     c_src = db_src.collection(collection_name);
     c_dst = db_dst.collection(collection_name);
     all_ids_src = (await keep_trying(function(it){
@@ -133,7 +133,11 @@
     } else {
       console.log('individually incrementally inserting ' + all_ids_which_need_to_be_inserted.length + ' items');
       for (i$ = 0, len$ = all_ids_which_need_to_be_inserted.length; i$ < len$; ++i$) {
+        idx = i$;
         idname = all_ids_which_need_to_be_inserted[i$];
+        if (idx % 100) {
+          console.log(idx + ' / ' + all_ids_which_need_to_be_inserted.length);
+        }
         item_src = (await keep_trying(fn$));
         if (item_src == null) {
           console.log('could not find item with id ' + idname + ' in collection ' + collection_name);
