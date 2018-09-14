@@ -191,8 +191,6 @@ do ->>
     process.exit()
   if argv.syncnonactive
     set_mongourl_to_inactive()
-    argv.fresh = true
-    argv.threads = 20
   if argv.dropnonactive
     set_mongourl_to_inactive()
     console.log 'droping database'
