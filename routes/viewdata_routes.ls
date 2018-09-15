@@ -23,6 +23,7 @@
   get_install_active_dates
   get_intervention_votes
   get_intervention_votes_total
+  get_webvisits
 } = require 'libs/server_common'
 
 require! {

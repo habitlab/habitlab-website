@@ -119,6 +119,8 @@ async function get_domain_to_session_id_to_time_spent(userid) {
   return domain_to_session_id_to_time_spent
 }
 
+expose_get_auth(get_domain_to_session_id_to_time_spent, 'userid')
+
 async function list_last_active_date_for_user(userid) {
   let user_to_dates_active = await get_user_to_dates_active_cached()
   let dates_active = user_to_dates_active[userid]
