@@ -1167,6 +1167,14 @@ async function get_enabled_interventions_for_user(userid) {
   return output
 }
 
+async function get_enabled_interventions_for_users(users){
+  output = {}
+  for (let user of users) 
+    output[user] = await get_enabled_interventions_for_user(user)
+  
+  return output
+}
+
 async function get_disabled_interventions_for_user(userid) {
   let results = await get_collection_for_user(userid, 'synced:interventions_currently_disabled')
   let output = {}
@@ -1177,6 +1185,14 @@ async function get_disabled_interventions_for_user(userid) {
     } else if (info.val == false) {
       output[name] = false
     }
+  }
+  return output
+}
+
+async function get_disabled_interventions_for_users(users) {
+  let output = {}
+  for (let user of users) {
+    output[user] = await get_disabled_interventions_for_user(user)
   }
   return output
 }
@@ -2195,6 +2211,7 @@ async function get_lifetime_and_attrition_for_users(users) {
   let lifetimes = []
   let attritioned = []
   let user_to_install_ids = await get_user_to_all_install_ids_cached()
+  console.log(user_to_install_ids)
   let res = await get_lifetimes_and_whether_attrition_was_observed_for_users(users)
   lifetimes = res[0]
   attritioned = res[1]
@@ -2538,7 +2555,7 @@ async function get_session_lengths_with_intervention_users(users) {
   res = {}
   i = 0
   for (i = 0; i < users.length; i++) {
-      user = users[i] 
+      let user = users[i] 
       res[user] = await get_session_lengths_with_intervention(user)
       console.log(user)
   }
@@ -2550,7 +2567,7 @@ async function get_session_lengths_with_intervention_users(users) {
 }
 
 async function get_session_lengths_with_intervention_users_with_all_interventions_enabled() {
-  users = await get_users_with_all_interventions_enabled()
+  let users = await get_users_with_all_interventions_enabled()
   res =  await get_session_lengths_with_intervention_users(users)
   console.log("done get session length with intervention users with all interventions enabld")
   console.log(users)
@@ -2586,28 +2603,45 @@ async function get_all_intervention_effectiveness() {
   return domain_and_intervention_effectiveness_list;
 }
 
-async function get_web_install_accepts() {
-  let visit_info_list = await get_all_web_visit_actions()
-  let output = []
-  for (let visit_info of visit_info_list) {
-    if (visit_info.action != 'install_accept') {
-      continue
-    }
-    output.push(visit_info)
+async function get_acceptance_rates() {
+  console.log("new")
+  /*let users = await get_all_users_in_experiment_by_name('intervention_suggestion_optout')
+  let obj = {}
+  for (let user of users)
+    obj[user] = true
+  let rate = {optout: {},
+              optin: {},
+              total: {}
+            }
+  console.log(obj)
+  let collections = await listcollections()
+  for (let x of collections) {
+     let smp = x.split('_')
+      if (obj[smp[0]]) {
+        let col = await get_collection(x)
+        for (let tmp of col) {
+          if (tmp['optout'] || tmp['suggestion_optout']) {
+            console.log('optout')
+            if (tmp['action'] == 'accepted')
+                if (!rate['optout'][tmp['intervention']]) 
+                  rate['optout'][tmp['intervention']] = {suggested:0, rejected:0}
+                rate['optout'][tmp['intervention']]['suggested'] += 1
+            if (tmp['action'] == 'rejected')
+              rate['optout'][tmp['intervention']]['rejected'] += 1
+          }
+          else if (tmp['type'] == "suggested") {
+            console.log(optin)
+            if (!rate['optin'][tmp['intervention']]) 
+              rate['optin'][tmp['intervention']] = {suggested:0, accepted:0}
+            rate['optin'][tmp['intervention']]['suggested'] += 1
+          }
+          else if (tmp['type'] == 'suggestion_action' && tmp['action'] == 'accepted')
+            rate['optin'][tmp['intervention']]['accepted'] += 1
+        }
+      }
   }
-  return output
-}
+  return rate;*/
 
-async function get_web_install_rejects() {
-  let visit_info_list = await get_all_web_visit_actions()
-  let output = []
-  for (let visit_info of visit_info_list) {
-    if (visit_info.action != 'install_reject') {
-      continue
-    }
-    output.push(visit_info)
-  }
-  return output
 }
 
 async function get_all_page_click_to() {
@@ -2777,6 +2811,57 @@ async function get_session_lengths_with_intervention_real(user_id) {
   //console.log(interventions_active_for_domain_and_session)
 }
 
+async function get_acceptance_rates() {
+  console.log("new")
+  let users = await get_all_users_in_experiment_by_name('intervention_suggestion_optout')
+  let obj = {}
+  for (let user of users)
+    obj[user] = true
+  let rate = {optout: {},
+              optin: {},
+              total: {}
+            }
+  console.log(obj)
+  let collections = await listcollections()
+  for (let x of collections) {
+     let smp = x.split('_')
+      if (obj[smp[0]]) {
+        let col = await get_collection(x)
+        for (let tmp of col) {
+          try {
+          if (!tmp)
+            continue
+          
+          if (tmp['optout'] || tmp['suggestion_optout']) {
+            console.log('optout')
+            if (tmp['action'] == 'accepted')
+                if (!rate['optout'][tmp['intervention']])
+                  rate['optout'][tmp['intervention']] = {suggested:0, rejected:0}
+                rate['optout'][tmp['intervention']]['suggested'] += 1
+            if (tmp['action'] == 'rejected')
+              rate['optout'][tmp['intervention']]['rejected'] += 1
+          }
+          else if (tmp['type'] == "suggested") {
+            console.log('optin')
+            if (!rate['optin'][tmp['intervention']]) 
+              rate['optin'][tmp['intervention']] = {suggested:0, accepted:0}
+            rate['optin'][tmp['intervention']]['suggested'] += 1
+          }
+          else if (tmp['type'] == 'suggestion_action' && tmp['action'] == 'accepted')
+            if (rate['optin'][tmp['intervention']])
+              rate['optin'][tmp['intervention']]['accepted'] += 1
+            else console.log(tmp)
+          }
+          catch {
+            console.log("why")
+            continue
+          }
+      }
+    }
+  }
+  return rate;
+
+}
 let get_session_lengths_with_intervention = memoize_to_disk(get_session_lengths_with_intervention_real)
 
 function printcb(err, result) {
