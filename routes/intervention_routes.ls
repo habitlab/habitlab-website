@@ -12,6 +12,7 @@
   get_collection_goal_ideas
   get_collection_goal_idea_logs
   get_collection_goal_idea_candidates
+  get_contributed_interventions
 } = require 'libs/server_common'
 
 require! {
