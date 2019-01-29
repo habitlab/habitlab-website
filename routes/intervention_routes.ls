@@ -86,6 +86,7 @@ app.get '/add_contributed_intervention', (ctx) ->>
   ctx.body = JSON.stringify {response: 'done', success: true}
   db?close()
 
+/*
 app.get '/delete_contributed_intervention', (ctx) ->>
   {intervention_id} = ctx.request.query
   if need_query_property ctx, 'intervention_id'
@@ -94,6 +95,7 @@ app.get '/delete_contributed_intervention', (ctx) ->>
   await n2p -> contributed_interventions.remove({_id: mongodb.ObjectID(intervention_id)}, it)
   ctx.body = JSON.stringify {response: 'done', success: true}
   db?close()
+*/
 
 app.get '/get_all_contributed_interventions', (ctx) ->>
   ctx.type = 'json'
@@ -153,11 +155,13 @@ app.get '/downvote_intervention', (ctx) ->>
   return
 */
 
+/*
 export clear_intervention_upvotes_total = ->>
   [intervention_votes_total, db] = await get_intervention_votes_total()
   intervention_votes_total.deleteMany()
   db.close()
   return
+*/
 
 export get_intervention_upvotes_total = (intervention_name) ->>
   [intervention_votes_total, db] = await get_intervention_votes_total()
@@ -179,6 +183,7 @@ app.get '/get_intervention_downvotes', (ctx) ->>
   ctx.body = 0
 */
 
+/*
 app.get '/delete_proposed_goal', (ctx) ->>
   {goal_id} = ctx.request.query
   if need_query_property ctx, 'goal_id'
@@ -187,6 +192,7 @@ app.get '/delete_proposed_goal', (ctx) ->>
   await n2p -> proposed_goals.remove({_id: mongodb.ObjectID(goal_id)}, it)
   ctx.body = JSON.stringify {response: 'done', success: true}
   db?close()
+*/
 
 app.get '/add_proposed_goal', (ctx) ->>
   {description} = ctx.request.query
